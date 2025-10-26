@@ -9,7 +9,7 @@ export default function App() {
   const timeoutRef = useRef(null);
 
   useEffect(() => {
-    fetch("/ranked_project_local_seattle.json")
+    fetch(`${process.env.PUBLIC_URL}/ranked_project_local_seattle.json`)
       .then((res) => res.json())
       .then((data) => {
         setRepos(data);
