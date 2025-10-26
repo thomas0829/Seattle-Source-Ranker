@@ -2,6 +2,8 @@
 
 > A data-driven tool that identifies and ranks the most influential open-source projects from the Seattle area by analyzing GitHub repository metrics.
 
+🌐 **Live Demo**: [https://thomas0829.github.io/Seattle-Source-Ranker](https://thomas0829.github.io/Seattle-Source-Ranker)
+
 ---
 
 ## 🌎 Overview
