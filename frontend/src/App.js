@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import "./App.css";
 
 export default function App() {
+  const [allData, setAllData] = useState(null);
+  const [currentLanguage, setCurrentLanguage] = useState("Python");
   const [repos, setRepos] = useState([]);
   const [hoveredRepo, setHoveredRepo] = useState(null);
   const [maxScore, setMaxScore] = useState(1);
@@ -9,16 +11,27 @@ export default function App() {
   const timeoutRef = useRef(null);
 
   useEffect(() => {
-    fetch(`${process.env.PUBLIC_URL}/ranked_project_local_seattle.json`)
+    fetch(`${process.env.PUBLIC_URL}/ranked_by_language_seattle.json`)
       .then((res) => res.json())
       .then((data) => {
-        setRepos(data);
-        // Find the highest score as baseline
-        const max = Math.max(...data.map(r => r.score));
+        setAllData(data);
+        // Set initial language data
+        const initialRepos = data["Python"] || [];
+        setRepos(initialRepos);
+        // Find the highest score across all languages
+        const allRepos = [...(data["Python"] || []), ...(data["C++"] || []), ...(data["Other"] || [])];
+        const max = allRepos.length > 0 ? Math.max(...allRepos.map(r => r.score)) : 1;
         setMaxScore(max);
       })
       .catch((err) => console.error("❌ Failed to load data:", err));
   }, []);
+
+  // Update repos when language changes
+  useEffect(() => {
+    if (allData && allData[currentLanguage]) {
+      setRepos(allData[currentLanguage]);
+    }
+  }, [currentLanguage, allData]);
 
   // Fetch repository details when mouse hovers
   const fetchRepoDetails = async (repo) => {
@@ -75,7 +88,26 @@ export default function App() {
     <div className="container">
       <header>
         <h1>Seattle-Source-Ranker</h1>
+        <p className="subtitle">Top Open-Source Projects by Seattle-Area Developers</p>
       </header>
+
+      {/* Language Filter Tabs */}
+      <div className="language-tabs">
+        {["Python", "C++", "Other"].map(lang => (
+          <button
+            key={lang}
+            className={`language-tab ${currentLanguage === lang ? 'active' : ''}`}
+            onClick={() => setCurrentLanguage(lang)}
+          >
+            {lang}
+            {allData && allData.metadata && (
+              <span className="tab-count">
+                {allData.metadata.by_language[lang] || 0}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {/* Ranking Table */}
       <div className="ranking-table">

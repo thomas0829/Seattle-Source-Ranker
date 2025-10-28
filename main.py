@@ -157,6 +157,7 @@ def main():
         watchers = repo.get("watchers_count", 0)
         issues = repo.get("open_issues_count", 0)
         created = repo.get("created_at", "2020-01-01T00:00:00Z")
+        language = repo.get("language") or "Unknown"
 
         S = normalize(stars, max_stars)
         F = normalize(forks, max_forks)
@@ -173,24 +174,63 @@ def main():
             "watchers": watchers,
             "issues": issues,
             "created_at": created,
+            "language": language,
             "score": round(score, 4),
             "html_url": repo.get("html_url")
         })
 
-    # 🏆 Sort & Output
-    ranked = sorted(results, key=lambda x: x["score"], reverse=True)
-    top_repos = ranked[:args.topk]
+    # 🏆 Group by language
+    language_groups = {"Python": [], "C++": [], "Other": []}
+    for r in results:
+        lang = r["language"]
+        if lang == "Python":
+            language_groups["Python"].append(r)
+        elif lang == "C++":
+            language_groups["C++"].append(r)
+        else:
+            language_groups["Other"].append(r)
+    
+    # Sort each language group by score
+    for lang in language_groups:
+        language_groups[lang] = sorted(language_groups[lang], key=lambda x: x["score"], reverse=True)
+    
+    # Create output structure
+    output_data = {
+        "Python": language_groups["Python"][:args.topk],
+        "C++": language_groups["C++"][:args.topk],
+        "Other": language_groups["Other"][:args.topk],
+        "metadata": {
+            "total_repos": len(results),
+            "by_language": {
+                "Python": len(language_groups["Python"]),
+                "C++": len(language_groups["C++"]),
+                "Other": len(language_groups["Other"])
+            },
+            "location": args.location,
+            "generated_at": datetime.now(timezone.utc).isoformat()
+        }
+    }
 
-    print("🏆 Top repositories by Seattle-based developers:")
-    print("--------------------------------------------")
-    print(f"{'Repo':38s} {'Stars':>6s} {'Forks':>6s} {'Score':>8s}")
-    print("--------------------------------------------")
-    for r in top_repos:
-        print(f"{r['name'][:36]:38s} {r['stars']:6d} {r['forks']:6d} {r['score']:8.3f}")
-    print("--------------------------------------------")
+    # Print summary
+    print("\n🏆 Top repositories by Seattle-based developers (by language):")
+    print("=" * 80)
+    for lang in ["Python", "C++", "Other"]:
+        count = output_data["metadata"]["by_language"][lang]
+        print(f"\n📊 {lang} ({count} projects)")
+        print("-" * 80)
+        print(f"{'Repo':38s} {'Stars':>6s} {'Forks':>6s} {'Score':>8s}")
+        print("-" * 80)
+        for r in output_data[lang][:10]:  # Show top 10 per language
+            print(f"{r['name'][:36]:38s} {r['stars']:6d} {r['forks']:6d} {r['score']:8.3f}")
+    print("=" * 80)
 
-    save_json(top_repos, f"data/ranked_project_local_{args.location.lower()}.json")
-    print("🏁 Done! Project-based localization ranking complete.")
+    save_json(output_data, f"data/ranked_by_language_{args.location.lower()}.json")
+    
+    # Also save legacy format for backward compatibility
+    all_ranked = sorted(results, key=lambda x: x["score"], reverse=True)[:args.topk]
+    save_json(all_ranked, f"data/ranked_project_local_{args.location.lower()}.json")
+    
+    print("🏁 Done! Language-based ranking complete.")
 
 if __name__ == "__main__":
     main()
