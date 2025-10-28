@@ -10,7 +10,12 @@
       "created_at": "2017-02-26T16:15:28Z",
       "score": 0.8803,
       "html_url": "https://github.com/donnemartin/system-design-primer",
-      "language": "Python"
+      "language": "Python",
+      "pypi_package": "system-design-primer",
+      "pypi_exists": false,
+      "pypi_downloads_month": 0,
+      "final_score": 0.8803,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/generative-ai-for-beginners",
@@ -22,7 +27,12 @@
       "created_at": "2023-06-19T16:28:59Z",
       "score": 0.5663,
       "html_url": "https://github.com/microsoft/generative-ai-for-beginners",
-      "language": "Python"
+      "language": "Python",
+      "pypi_package": "generative-ai-for-beginners",
+      "pypi_exists": false,
+      "pypi_downloads_month": 0,
+      "final_score": 0.5663,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/ML-For-Beginners",
@@ -34,7 +44,12 @@
       "created_at": "2021-03-03T01:34:05Z",
       "score": 0.3781,
       "html_url": "https://github.com/microsoft/ML-For-Beginners",
-      "language": "Python"
+      "language": "Python",
+      "pypi_package": "ML-For-Beginners",
+      "pypi_exists": false,
+      "pypi_downloads_month": 0,
+      "final_score": 0.3781,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/AI-For-Beginners",
@@ -46,7 +61,12 @@
       "created_at": "2021-03-03T16:27:36Z",
       "score": 0.2742,
       "html_url": "https://github.com/microsoft/AI-For-Beginners",
-      "language": "Python"
+      "language": "Python",
+      "pypi_package": "AI-For-Beginners",
+      "pypi_exists": false,
+      "pypi_downloads_month": 0,
+      "final_score": 0.2742,
+      "score_type": "github_only"
     }
   ],
   "C++": [
@@ -60,7 +80,9 @@
       "created_at": "2017-08-11T18:38:22Z",
       "score": 0.2935,
       "html_url": "https://github.com/microsoft/terminal",
-      "language": "C++"
+      "language": "C++",
+      "final_score": 0.2935,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/calculator",
@@ -72,7 +94,9 @@
       "created_at": "2019-01-28T17:55:49Z",
       "score": 0.158,
       "html_url": "https://github.com/microsoft/calculator",
-      "language": "C++"
+      "language": "C++",
+      "final_score": 0.158,
+      "score_type": "github_only"
     }
   ],
   "Other": [
@@ -86,7 +110,9 @@
       "created_at": "2015-09-03T20:23:38Z",
       "score": 0.5529,
       "html_url": "https://github.com/microsoft/vscode",
-      "language": "TypeScript"
+      "language": "TypeScript",
+      "final_score": 0.5529,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/TypeScript",
@@ -98,7 +124,9 @@
       "created_at": "2014-06-17T15:28:39Z",
       "score": 0.3272,
       "html_url": "https://github.com/microsoft/TypeScript",
-      "language": "TypeScript"
+      "language": "TypeScript",
+      "final_score": 0.3272,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/PowerToys",
@@ -110,7 +138,9 @@
       "created_at": "2019-05-01T17:44:02Z",
       "score": 0.324,
       "html_url": "https://github.com/microsoft/PowerToys",
-      "language": "C#"
+      "language": "C#",
+      "final_score": 0.324,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/Web-Dev-For-Beginners",
@@ -122,7 +152,9 @@
       "created_at": "2020-11-10T02:44:00Z",
       "score": 0.3157,
       "html_url": "https://github.com/microsoft/Web-Dev-For-Beginners",
-      "language": "JavaScript"
+      "language": "JavaScript",
+      "final_score": 0.3157,
+      "score_type": "github_only"
     },
     {
       "name": "kelseyhightower/kubernetes-the-hard-way",
@@ -134,7 +166,9 @@
       "created_at": "2016-07-07T14:15:27Z",
       "score": 0.2558,
       "html_url": "https://github.com/kelseyhightower/kubernetes-the-hard-way",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2558,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/Data-Science-For-Beginners",
@@ -146,7 +180,9 @@
       "created_at": "2021-03-03T16:30:15Z",
       "score": 0.2368,
       "html_url": "https://github.com/microsoft/Data-Science-For-Beginners",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2368,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/playwright",
@@ -158,7 +194,9 @@
       "created_at": "2019-11-15T18:32:42Z",
       "score": 0.2322,
       "html_url": "https://github.com/microsoft/playwright",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2322,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/ai-agents-for-beginners",
@@ -170,7 +208,9 @@
       "created_at": "2024-11-28T10:42:52Z",
       "score": 0.2308,
       "html_url": "https://github.com/microsoft/ai-agents-for-beginners",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2308,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/MS-DOS",
@@ -182,7 +222,9 @@
       "created_at": "2018-06-25T18:26:02Z",
       "score": 0.23,
       "html_url": "https://github.com/microsoft/MS-DOS",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.23,
+      "score_type": "github_only"
     },
     {
       "name": "karan/Projects",
@@ -194,7 +236,9 @@
       "created_at": "2013-07-04T13:37:27Z",
       "score": 0.2248,
       "html_url": "https://github.com/karan/Projects",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2248,
+      "score_type": "github_only"
     },
     {
       "name": "ryanoasis/nerd-fonts",
@@ -206,7 +250,9 @@
       "created_at": "2014-12-05T04:31:17Z",
       "score": 0.2218,
       "html_url": "https://github.com/ryanoasis/nerd-fonts",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2218,
+      "score_type": "github_only"
     },
     {
       "name": "schollz/croc",
@@ -218,7 +264,9 @@
       "created_at": "2017-10-17T15:20:18Z",
       "score": 0.211,
       "html_url": "https://github.com/schollz/croc",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.211,
+      "score_type": "github_only"
     },
     {
       "name": "kelseyhightower/nocode",
@@ -230,7 +278,9 @@
       "created_at": "2018-02-06T23:54:00Z",
       "score": 0.2109,
       "html_url": "https://github.com/kelseyhightower/nocode",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2109,
+      "score_type": "github_only"
     },
     {
       "name": "PowerShell/PowerShell",
@@ -242,7 +292,9 @@
       "created_at": "2016-01-13T23:41:35Z",
       "score": 0.2071,
       "html_url": "https://github.com/PowerShell/PowerShell",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.2071,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/markitdown",
@@ -254,7 +306,9 @@
       "created_at": "2024-11-13T19:56:40Z",
       "score": 0.1957,
       "html_url": "https://github.com/microsoft/markitdown",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1957,
+      "score_type": "github_only"
     },
     {
       "name": "alex/what-happens-when",
@@ -266,7 +320,9 @@
       "created_at": "2013-11-07T04:30:06Z",
       "score": 0.1849,
       "html_url": "https://github.com/alex/what-happens-when",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1849,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/autogen",
@@ -278,7 +334,9 @@
       "created_at": "2023-08-18T11:43:45Z",
       "score": 0.1774,
       "html_url": "https://github.com/microsoft/autogen",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1774,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/monaco-editor",
@@ -290,7 +348,9 @@
       "created_at": "2016-06-07T16:56:31Z",
       "score": 0.1774,
       "html_url": "https://github.com/microsoft/monaco-editor",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1774,
+      "score_type": "github_only"
     },
     {
       "name": "donnemartin/interactive-coding-challenges",
@@ -302,7 +362,9 @@
       "created_at": "2015-04-28T21:36:39Z",
       "score": 0.1695,
       "html_url": "https://github.com/donnemartin/interactive-coding-challenges",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1695,
+      "score_type": "github_only"
     },
     {
       "name": "lukehoban/es6features",
@@ -314,7 +376,9 @@
       "created_at": "2014-03-03T18:29:30Z",
       "score": 0.169,
       "html_url": "https://github.com/lukehoban/es6features",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.169,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/qlib",
@@ -326,7 +390,9 @@
       "created_at": "2020-08-14T06:46:00Z",
       "score": 0.1544,
       "html_url": "https://github.com/microsoft/qlib",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1544,
+      "score_type": "github_only"
     },
     {
       "name": "colinhacks/zod",
@@ -338,7 +404,9 @@
       "created_at": "2020-03-07T20:59:08Z",
       "score": 0.1535,
       "html_url": "https://github.com/colinhacks/zod",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1535,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/WSL",
@@ -350,7 +418,9 @@
       "created_at": "2016-04-06T17:32:56Z",
       "score": 0.142,
       "html_url": "https://github.com/microsoft/WSL",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.142,
+      "score_type": "github_only"
     },
     {
       "name": "microsoft/graphrag",
@@ -362,7 +432,9 @@
       "created_at": "2024-03-27T17:57:52Z",
       "score": 0.1139,
       "html_url": "https://github.com/microsoft/graphrag",
-      "language": "Other"
+      "language": "Other",
+      "final_score": 0.1139,
+      "score_type": "github_only"
     }
   ],
   "metadata": {
@@ -373,6 +445,8 @@
       "Other": 24
     },
     "location": "Seattle",
-    "note": "Language classification based on project names (heuristic)"
+    "note": "Language classification based on project names (heuristic)",
+    "pypi_integrated": true,
+    "python_with_pypi": 0
   }
 }

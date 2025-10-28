@@ -6,6 +6,13 @@ from datetime import datetime, timezone
 from tqdm import tqdm  # Progress bar for better UX
 from github_client import GitHubClient
 
+try:
+    from pypi_client import PyPIClient
+    PYPI_AVAILABLE = True
+except ImportError:
+    PYPI_AVAILABLE = False
+    print("⚠️ PyPI client not available. Install 'requests' to enable PyPI integration.")
+
 """
 ===========================================================
  Seattle-Source-Ranker (Project-based Localization Model)
@@ -57,10 +64,11 @@ def save_json(data, filename):
 
 # -------------------------- Main --------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Seattle-Source-Ranker (cached with progress bar)")
+    parser = argparse.ArgumentParser(description="Seattle-Source-Ranker (with PyPI integration)")
     parser.add_argument("--location", type=str, default="Seattle", help="Developer location keyword (e.g. Seattle)")
     parser.add_argument("--topk", type=int, default=50, help="Number of Seattle-based repos to collect")
     parser.add_argument("--max-pages", type=int, default=20, help="Max number of pages to fetch (safety cap)")
+    parser.add_argument("--fetch-pypi", action="store_true", help="Fetch PyPI download stats for Python projects")
     args = parser.parse_args()
 
     client = GitHubClient()
@@ -190,9 +198,52 @@ def main():
         else:
             language_groups["Other"].append(r)
     
-    # Sort each language group by score
-    for lang in language_groups:
+    # 📦 Fetch PyPI data for Python projects if requested
+    if args.fetch_pypi and PYPI_AVAILABLE and len(language_groups["Python"]) > 0:
+        print(f"\n📦 Fetching PyPI download statistics for {len(language_groups['Python'])} Python projects...")
+        pypi_client = PyPIClient()
+        
+        for repo in tqdm(language_groups["Python"], desc="PyPI lookup", ncols=80):
+            pypi_info = pypi_client.get_package_info(repo["name"])
+            repo["pypi_package"] = pypi_info["package_name"]
+            repo["pypi_exists"] = pypi_info["exists"]
+            repo["pypi_downloads_month"] = pypi_info["downloads_month"]
+        
+        print(f"✅ PyPI data fetched for {sum(1 for r in language_groups['Python'] if r.get('pypi_exists', False))} packages")
+    
+    # 🔢 Recalculate scores with PyPI/Release data if available
+    if args.fetch_pypi:
+        # Get max values for normalization
+        max_downloads = max((r.get("pypi_downloads_month", 0) for r in language_groups["Python"]), default=1)
+        
+        print(f"\n🔢 Recalculating scores with integrated data...")
+        print(f"   Max PyPI downloads/month: {max_downloads:,}")
+        
+        # Recalculate Python scores with PyPI data
+        for repo in language_groups["Python"]:
+            downloads = repo.get("pypi_downloads_month", 0)
+            if downloads > 0:
+                # 40% GitHub + 60% PyPI
+                import math
+                pypi_score = math.log10(downloads + 1) / math.log10(max_downloads + 1)
+                repo["pypi_score"] = round(pypi_score, 4)
+                repo["final_score"] = round(0.4 * repo["score"] + 0.6 * pypi_score, 4)
+                repo["score_type"] = "github+pypi"
+            else:
+                repo["final_score"] = repo["score"]
+                repo["score_type"] = "github_only"
+        
+        # Sort by final_score
+        language_groups["Python"] = sorted(language_groups["Python"], key=lambda x: x.get("final_score", x["score"]), reverse=True)
+    
+    # Sort other language groups by score
+    for lang in ["C++", "Other"]:
         language_groups[lang] = sorted(language_groups[lang], key=lambda x: x["score"], reverse=True)
+        # Add final_score for consistency
+        for repo in language_groups[lang]:
+            if "final_score" not in repo:
+                repo["final_score"] = repo["score"]
+                repo["score_type"] = "github_only"
     
     # Create output structure
     output_data = {
@@ -218,10 +269,23 @@ def main():
         count = output_data["metadata"]["by_language"][lang]
         print(f"\n📊 {lang} ({count} projects)")
         print("-" * 80)
-        print(f"{'Repo':38s} {'Stars':>6s} {'Forks':>6s} {'Score':>8s}")
+        
+        # Adjust header based on whether PyPI data is included
+        if lang == "Python" and args.fetch_pypi:
+            print(f"{'Repo':30s} {'Stars':>6s} {'Downloads':>12s} {'Final':>8s} {'Type':>12s}")
+        else:
+            print(f"{'Repo':38s} {'Stars':>6s} {'Forks':>6s} {'Score':>8s}")
         print("-" * 80)
+        
         for r in output_data[lang][:10]:  # Show top 10 per language
-            print(f"{r['name'][:36]:38s} {r['stars']:6d} {r['forks']:6d} {r['score']:8.3f}")
+            if lang == "Python" and args.fetch_pypi and r.get("pypi_downloads_month", 0) > 0:
+                downloads_str = f"{r['pypi_downloads_month']:,}"[:10]
+                score_display = r.get("final_score", r["score"])
+                score_type = r.get("score_type", "github")[:10]
+                print(f"{r['name'][:28]:30s} {r['stars']:6d} {downloads_str:>12s} {score_display:8.3f} {score_type:>12s}")
+            else:
+                score_display = r.get("final_score", r["score"])
+                print(f"{r['name'][:36]:38s} {r['stars']:6d} {r['forks']:6d} {score_display:8.3f}")
     print("=" * 80)
 
     save_json(output_data, f"data/ranked_by_language_{args.location.lower()}.json")
