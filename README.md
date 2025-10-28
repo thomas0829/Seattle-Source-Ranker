@@ -10,7 +10,7 @@
 
 **Seattle-Source-Ranker (SSR)** is a comprehensive tool designed to discover and rank influential open-source projects where the owner/maintainer is located in the Seattle metropolitan area (including Seattle, Redmond, Bellevue, Kirkland, and surrounding Washington cities).
 
-The tool fetches popular GitHub repositories, verifies owner locations, and calculates multi-dimensional influence scores to identify the most impactful projects from the Seattle tech community.
+The tool fetches popular GitHub repositories, verifies owner locations, and calculates multi-dimensional influence scores to identify the most impactful projects from the Seattle tech community.＝
 
 ---
 
@@ -29,11 +29,19 @@ SSR solves these problems by providing objective, multi-metric analysis of Seatt
 
 ### **Influence Score Formula**
 
-SSR uses a comprehensive scoring model that considers five key dimensions:
+SSR uses a language-aware scoring model that integrates real-world usage metrics:
+
+#### **Base GitHub Score:**
 
 ```
-Score = 0.4 × S_norm + 0.25 × F_norm + 0.15 × W_norm + 0.10 × T_age + 0.10 × H_health
+GitHub Score = 0.4 × S_norm + 0.25 × F_norm + 0.15 × W_norm + 0.10 × T_age + 0.10 × H_health
 ```
+
+#### **Final Score (Language-Dependent):**
+
+- **Python Projects**: `Final = 0.4 × GitHub Score + 0.6 × PyPI Downloads Score`
+- **C++ Projects**: `Final = 0.7 × GitHub Score + 0.3 × Release Downloads Score`
+- **Other Languages**: `Final = GitHub Score`
 
 #### **Component Breakdown:**
 
@@ -45,9 +53,11 @@ Score = 0.4 × S_norm + 0.25 × F_norm + 0.15 × W_norm + 0.10 × T_age + 0.10 �
 | **T_age** | 10% | **Project Age Weight** - Maturity and longevity bonus | years / (years + 2) |
 | **H_health** | 10% | **Health Score** - Project maintenance quality | 1 - (open_issues / (open_issues + 10)) |
 
-#### **Why These Weights?**
+#### **Why This Approach?**
 
-- **Stars (40%)**: Primary indicator of community recognition and project popularity
+- **GitHub Metrics (Base)**: Universal indicators of community engagement
+- **PyPI Downloads**: Real-world Python package adoption (60% weight for Python projects)
+- **Release Downloads**: C++ binary/library usage (30% weight for C++ projects)
 - **Forks (25%)**: Shows active contribution and real-world usage
 - **Watchers (15%)**: Indicates sustained interest and monitoring
 - **Age (10%)**: Rewards established, proven projects
