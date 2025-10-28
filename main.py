@@ -66,8 +66,8 @@ def save_json(data, filename):
 def main():
     parser = argparse.ArgumentParser(description="Seattle-Source-Ranker (with PyPI integration)")
     parser.add_argument("--location", type=str, default="Seattle", help="Developer location keyword (e.g. Seattle)")
-    parser.add_argument("--topk", type=int, default=50, help="Number of Seattle-based repos to collect")
-    parser.add_argument("--max-pages", type=int, default=20, help="Max number of pages to fetch (safety cap)")
+    parser.add_argument("--topk", type=int, default=50, help="Number of Seattle-based repos to collect per language")
+    parser.add_argument("--max-pages", type=int, default=50, help="Max number of pages to fetch (safety cap)")
     parser.add_argument("--fetch-pypi", action="store_true", help="Fetch PyPI download stats for Python projects")
     args = parser.parse_args()
 
@@ -90,113 +90,162 @@ def main():
         except Exception:
             owner_cache = {}
 
-    # 🚀 Fetch repositories page by page with progress bar
-    page = 1
-    pbar = tqdm(total=args.topk, desc="Collecting Seattle-area repositories", ncols=80)
-
-    while len(localized_repos) < args.topk and page <= args.max_pages:
-        url = f"https://api.github.com/search/repositories?q=stars:>10&sort=stars&order=desc&per_page={per_page}&page={page}"
-        res = requests.get(url, headers=headers)
-        if res.status_code != 200:
-            pbar.close()
-            print(f"\n⚠️ API Error {res.status_code}: {res.text}")
-            break
-
-        repos = res.json().get("items", [])
-        if not repos:
-            pbar.close()
-            print("\n❌ No more repositories found.")
-            break
-
-        for repo in repos:
-            owner_login = repo["owner"]["login"]
-
-            # ✅ Use cached data if available
-            if owner_login in owner_cache:
-                location = owner_cache[owner_login]
-            else:
-                owner_url = repo["owner"]["url"]
-                try:
-                    owner_data = requests.get(owner_url, headers=headers).json()
-                    location = (owner_data.get("location") or "").lower()
-                    owner_cache[owner_login] = location
-                except Exception:
-                    continue
-
-            if any(loc in location for loc in location_keywords):
-                localized_repos.append(repo)
-                pbar.update(1)  # ✅ Update progress bar
-
-            if len(localized_repos) >= args.topk:
-                pbar.n = args.topk
-                pbar.last_print_n = args.topk
-                pbar.refresh()
-                pbar.close()
-                print(f"\n🎯 Reached target of {args.topk} repositories, stopping early.")
+    # 🚀 Fetch repositories for each language separately with star range segmentation
+    target_languages = ["Python", "C++", None]  # None = Other languages
+    language_groups = {"Python": [], "C++": [], "Other": []}
+    
+    # Define star ranges to bypass 1000 result limit
+    star_ranges = [
+        ("10000..*", "10k+"),
+        ("5000..9999", "5k-10k"),
+        ("1000..4999", "1k-5k"),
+        ("500..999", "500-1k"),
+        ("100..499", "100-500"),
+        ("50..99", "50-100"),
+        ("10..49", "10-50"),
+        ("1..9", "1-10")
+    ]
+    
+    for target_lang in target_languages:
+        lang_display = target_lang if target_lang else "Other"
+        print(f"\n🔍 Collecting {args.topk} {lang_display} repositories...")
+        
+        lang_repos = []
+        seen_repos = set()  # Avoid duplicates
+        pbar = tqdm(total=args.topk, desc=f"Fetching {lang_display}", ncols=80)
+        
+        for star_range, range_label in star_ranges:
+            if len(lang_repos) >= args.topk:
                 break
+                
+            page = 1
+            while len(lang_repos) < args.topk and page <= args.max_pages:
+                # Build query with language filter and star range
+                if target_lang == "Python":
+                    query = f"stars:{star_range}+language:Python"
+                elif target_lang == "C++":
+                    query = f"stars:{star_range}+language:C++"
+                else:
+                    # For "Other", just search all repos and filter out Python/C++ in post-processing
+                    query = f"stars:{star_range}"
+                
+                url = f"https://api.github.com/search/repositories?q={query}&sort=stars&order=desc&per_page={per_page}&page={page}"
+                res = requests.get(url, headers=headers)
+                
+                if res.status_code != 200:
+                    # If we hit 1000 result limit, move to next star range
+                    if res.status_code == 422:
+                        break
+                    else:
+                        pbar.close()
+                        print(f"\n⚠️ API Error {res.status_code}: {res.text}")
+                        break
 
-        if len(localized_repos) >= args.topk:
-            break
+                repos = res.json().get("items", [])
+                if not repos:
+                    break
 
-        page += 1
+                for repo in repos:
+                    # Skip duplicates
+                    repo_id = repo["id"]
+                    if repo_id in seen_repos:
+                        continue
+                    
+                    # Skip if this is Python or C++ (for "Other" category)
+                    repo_lang = repo.get("language")
+                    if target_lang is None and repo_lang in ["Python", "C++"]:
+                        continue
+                    
+                    owner_login = repo["owner"]["login"]
 
-    if not pbar.disable:
+                    # ✅ Use cached data if available
+                    if owner_login in owner_cache:
+                        location = owner_cache[owner_login]
+                    else:
+                        owner_url = repo["owner"]["url"]
+                        try:
+                            owner_data = requests.get(owner_url, headers=headers).json()
+                            location = (owner_data.get("location") or "").lower()
+                            owner_cache[owner_login] = location
+                        except Exception:
+                            continue
+
+                    if any(loc in location for loc in location_keywords):
+                        lang_repos.append(repo)
+                        localized_repos.append(repo)
+                        seen_repos.add(repo_id)
+                        pbar.update(1)
+
+                    if len(lang_repos) >= args.topk:
+                        break
+
+                if len(lang_repos) >= args.topk:
+                    break
+
+                page += 1
+
         pbar.close()
+        
+        # Store in appropriate language group
+        if target_lang == "Python":
+            language_groups["Python"] = lang_repos
+        elif target_lang == "C++":
+            language_groups["C++"] = lang_repos
+        else:
+            language_groups["Other"] = lang_repos
+        
+        print(f"✅ Collected {len(lang_repos)} {lang_display} repositories")
 
     # 🧠 Save owner location cache
     save_json(owner_cache, cache_file)
-    print(f"🧠 Cached {len(owner_cache)} owner locations")
-    print(f"🎯 Final collected {len(localized_repos)} repositories (across {page-1} pages)\n")
+    print(f"\n🧠 Cached {len(owner_cache)} owner locations")
+    print(f"🎯 Total collected {len(localized_repos)} repositories\n")
 
     if not localized_repos:
         print("❌ No repositories found for this location.")
         return
 
-    # 🧮 Calculate influence scores
-    max_stars = max((r["stargazers_count"] for r in localized_repos), default=1)
-    max_forks = max((r["forks_count"] for r in localized_repos), default=1)
-    max_watchers = max((r["watchers_count"] for r in localized_repos), default=1)
+    # 🧮 Calculate influence scores for each language group
+    for lang_key, repos in language_groups.items():
+        if not repos:
+            continue
+            
+        max_stars = max((r["stargazers_count"] for r in repos), default=1)
+        max_forks = max((r["forks_count"] for r in repos), default=1)
+        max_watchers = max((r["watchers_count"] for r in repos), default=1)
 
-    results = []
-    for repo in localized_repos:
-        name = repo["full_name"]
-        stars = repo.get("stargazers_count", 0)
-        forks = repo.get("forks_count", 0)
-        watchers = repo.get("watchers_count", 0)
-        issues = repo.get("open_issues_count", 0)
-        created = repo.get("created_at", "2020-01-01T00:00:00Z")
-        language = repo.get("language") or "Unknown"
+        results = []
+        for repo in repos:
+            name = repo["full_name"]
+            stars = repo.get("stargazers_count", 0)
+            forks = repo.get("forks_count", 0)
+            watchers = repo.get("watchers_count", 0)
+            issues = repo.get("open_issues_count", 0)
+            created = repo.get("created_at", "2020-01-01T00:00:00Z")
+            language = repo.get("language") or "Unknown"
 
-        S = normalize(stars, max_stars)
-        F = normalize(forks, max_forks)
-        W = normalize(watchers, max_watchers)
-        T = age_weight(created)
-        H = health_score(issues)
-        score = 0.4 * S + 0.25 * F + 0.15 * W + 0.10 * T + 0.10 * H
+            S = normalize(stars, max_stars)
+            F = normalize(forks, max_forks)
+            W = normalize(watchers, max_watchers)
+            T = age_weight(created)
+            H = health_score(issues)
+            score = 0.4 * S + 0.25 * F + 0.15 * W + 0.10 * T + 0.10 * H
 
-        results.append({
-            "name": name,
-            "owner": repo["owner"]["login"],
-            "stars": stars,
-            "forks": forks,
-            "watchers": watchers,
-            "issues": issues,
-            "created_at": created,
-            "language": language,
-            "score": round(score, 4),
-            "html_url": repo.get("html_url")
-        })
-
-    # 🏆 Group by language
-    language_groups = {"Python": [], "C++": [], "Other": []}
-    for r in results:
-        lang = r["language"]
-        if lang == "Python":
-            language_groups["Python"].append(r)
-        elif lang == "C++":
-            language_groups["C++"].append(r)
-        else:
-            language_groups["Other"].append(r)
+            results.append({
+                "name": name,
+                "owner": repo["owner"]["login"],
+                "stars": stars,
+                "forks": forks,
+                "watchers": watchers,
+                "issues": issues,
+                "created_at": created,
+                "language": language,
+                "score": round(score, 4),
+                "html_url": repo.get("html_url")
+            })
+        
+        # Update language group with scored results
+        language_groups[lang_key] = results
     
     # 📦 Fetch PyPI data for Python projects if requested
     if args.fetch_pypi and PYPI_AVAILABLE and len(language_groups["Python"]) > 0:
@@ -245,13 +294,13 @@ def main():
                 repo["final_score"] = repo["score"]
                 repo["score_type"] = "github_only"
     
-    # Create output structure
+    # Create output structure - now each language has exactly topk repos
     output_data = {
-        "Python": language_groups["Python"][:args.topk],
-        "C++": language_groups["C++"][:args.topk],
-        "Other": language_groups["Other"][:args.topk],
+        "Python": language_groups["Python"],
+        "C++": language_groups["C++"],
+        "Other": language_groups["Other"],
         "metadata": {
-            "total_repos": len(results),
+            "total_repos": len(localized_repos),
             "by_language": {
                 "Python": len(language_groups["Python"]),
                 "C++": len(language_groups["C++"]),
@@ -290,8 +339,11 @@ def main():
 
     save_json(output_data, f"data/ranked_by_language_{args.location.lower()}.json")
     
-    # Also save legacy format for backward compatibility
-    all_ranked = sorted(results, key=lambda x: x["score"], reverse=True)[:args.topk]
+    # Also save legacy format for backward compatibility (all repos combined, top topk)
+    all_ranked = []
+    for repos in language_groups.values():
+        all_ranked.extend(repos)
+    all_ranked = sorted(all_ranked, key=lambda x: x.get("final_score", x["score"]), reverse=True)[:args.topk]
     save_json(all_ranked, f"data/ranked_project_local_{args.location.lower()}.json")
     
     print("🏁 Done! Language-based ranking complete.")
