@@ -126,18 +126,68 @@ python3 manage_projects.py --full-update --target 10000 --days 7
 
 ## How It Works
 
-### Incremental Collection
+### Data Collection Strategy
+
+**Why Not Direct Repo Search?**
+GitHub's search API has a 1,000 result limit per query. To collect 10,000+ Seattle projects, we use a user-centric approach:
+
+1. **Search Seattle Developers** - Find users with location keywords (seattle, redmond, bellevue, kirkland)
+2. **Sort by Followers** - Prioritize influential developers
+3. **Fetch Their Repos** - Get all public repositories from each developer
+4. **Deduplicate** - Use `name_with_owner` as unique key
+
+### GitHub API Usage
+
+**Authentication:**
+```bash
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
+```
+
+**Rate Limits:**
+- Authenticated: 5,000 requests/hour
+- Unauthenticated: 60 requests/hour
+
+**Endpoints Used:**
+- `GET /search/users` - Find Seattle developers
+- `GET /users/{username}/repos` - Fetch user's repositories
+- `GET /repos/{owner}/{repo}` - Update project stats
+
+**Smart Caching:**
+- Owner locations cached in `data/owner_location_cache.json`
+- Avoids redundant API calls for known developers
+- Automatically saves on each update
+
+### Incremental Collection System
 
 1. **Load Existing Data** - Reads `seattle_projects_10000.json`
-2. **Deduplication** - Uses `name_with_owner` as unique key
-3. **Smart Refresh** - Only updates stale projects
-4. **Intelligent Replace** - Better projects replace lower-scored ones
+2. **Check Staleness** - Identifies projects older than N days
+3. **Refresh Stale Projects** - Updates stats via GitHub API
+4. **Collect New Projects** - Fills gaps up to target count
+5. **Intelligent Replace** - Better projects replace lower-scored ones
+6. **Auto Backup** - Creates `_backup.json` before updates
 
 ### Replacement Strategies
 
 - `lowest_stars` - Replace projects with fewest stars (default)
-- `oldest` - Replace least recently updated projects
+- `oldest` - Replace least recently updated projects  
 - `lowest_activity` - Replace by activity score (stars + forks + watchers)
+
+### Scoring Algorithm
+
+**GitHub Score Formula:**
+```
+Score = 0.4 × S_norm + 0.25 × F_norm + 0.15 × W_norm + 0.10 × T_age + 0.10 × H_health
+```
+
+**Components:**
+- **S_norm**: Normalized stars (community popularity)
+- **F_norm**: Normalized forks (community engagement)
+- **W_norm**: Normalized watchers (long-term attention)
+- **T_age**: Project age weight - `years / (years + 2)`
+- **H_health**: Health score - `1 - (issues / (issues + 10))`
+
+**Normalization:**
+All values normalized against dataset maximum for fair comparison across different project scales.
 
 ## Python API
 
@@ -170,6 +220,31 @@ stats = collector.add_new_projects(
 )
 ```
 
+## Data Update Workflow
+
+### Generate Frontend Data
+
+After collecting or updating projects, regenerate the frontend data:
+
+```bash
+python3 generate_frontend_data.py
+```
+
+This will:
+- Calculate scores using SSR algorithm
+- Classify projects by language (Python, JavaScript, Go, etc.)
+- Sort by score within each language category
+- Generate `ranked_by_language_seattle.json` for frontend
+
+### Deploy to GitHub Pages
+
+```bash
+cd frontend
+npm run deploy
+```
+
+Updates the live website at: https://thomas0829.github.io/Seattle-Source-Ranker
+
 ## Performance
 
 | Operation | Time | API Calls |
@@ -178,10 +253,46 @@ stats = collector.add_new_projects(
 | Refresh 100 projects | ~2 min | ~100 |
 | Refresh 1000 projects | ~15 min | ~1000 |
 | Collect 10000 projects | ~5 min | ~1000 |
+| Generate frontend data | ~2s | 0 |
+| Deploy to GitHub Pages | ~30s | 0 |
 
 **Recommendations**:
-- Daily: `--refresh --days 1` (fast)
-- Weekly: `--full-update` (complete)
+- Daily: `--refresh --days 1` (fast, minimal API usage)
+- Weekly: `--full-update` (complete, ~1000 API calls)
+- After updates: Run `generate_frontend_data.py` + `npm run deploy`
+
+## API Rate Limit Management
+
+**Check Current Limit:**
+```bash
+curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/rate_limit
+```
+
+**If Rate Limited:**
+- Wait 1 hour for reset
+- Use multiple GitHub tokens (rotate)
+- Reduce `--days` parameter for smaller updates
+
+## Troubleshooting
+
+### Update Failed?
+
+```bash
+# Restore from backup
+cp data/seattle_projects_10000_backup.json data/seattle_projects_10000.json
+```
+
+### Rate Limit Hit?
+
+GitHub API allows 5,000 requests/hour. Wait 1 hour or use multiple tokens.
+
+### Frontend Not Updating?
+
+```bash
+# Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R)
+# Or check if data was regenerated:
+ls -lh frontend/build/ranked_by_language_seattle.json
+```
 
 ## License
 
