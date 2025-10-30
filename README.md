@@ -1,239 +1,188 @@
-# Seattle-Source-Ranker (SSR)
+# Seattle Source Ranker
 
-> A data-driven tool that identifies and ranks the most influential open-source projects from the Seattle area by analyzing GitHub repository metrics.
+A data-driven system to identify and rank influential software projects from Seattle-area developers.
 
-🌐 **Live Demo**: [https://thomas0829.github.io/Seattle-Source-Ranker](https://thomas0829.github.io/Seattle-Source-Ranker)
+## Features
 
----
+- 🔍 **Smart Collection** - Collect 10,000+ Seattle projects from GitHub
+- 📊 **Influence Scoring** - Calculate project influence using SSR algorithm
+- 🔄 **Incremental Updates** - Smart refresh without re-fetching existing data
+- 💾 **Data Persistence** - Automatic backup and versioning
+- 🎯 **Language Analytics** - Rank projects by programming language
 
-## 🌎 Overview
+## Quick Start
 
-**Seattle-Source-Ranker (SSR)** is a comprehensive tool designed to discover and rank influential open-source projects where the owner/maintainer is located in the Seattle metropolitan area (including Seattle, Redmond, Bellevue, Kirkland, and surrounding Washington cities).
+### 1. Setup
 
-The tool fetches popular GitHub repositories, verifies owner locations, and calculates multi-dimensional influence scores to identify the most impactful projects from the Seattle tech community.＝
+```bash
+# Clone repository
+git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
+cd Seattle-Source-Ranker
 
----
+# Install dependencies
+pip install requests tqdm
 
-## 🧠 Motivation
-
-The Seattle area hosts one of the world's most vibrant tech communities, with thousands of developers contributing to open-source projects. However, it's challenging to:
-- Identify which projects are actually maintained by Seattle-area developers
-- Measure project influence beyond simple star counts
-- Understand the health and sustainability of these projects
-
-SSR solves these problems by providing objective, multi-metric analysis of Seattle-based open-source contributions.
-
----
-
-## ⚙️ Methodology
-
-### **Influence Score Formula**
-
-SSR uses a language-aware scoring model that integrates real-world usage metrics:
-
-#### **Base GitHub Score:**
-
-```
-GitHub Score = 0.4 × S_norm + 0.25 × F_norm + 0.15 × W_norm + 0.10 × T_age + 0.10 × H_health
+# Set GitHub token
+export GITHUB_TOKEN="your_github_token_here"
 ```
 
-#### **Final Score (Language-Dependent):**
+### 2. Collect Projects (First Time)
 
-- **Python Projects**: `Final = 0.4 × GitHub Score + 0.6 × PyPI Downloads Score`
-- **C++ Projects**: `Final = 0.7 × GitHub Score + 0.3 × Release Downloads Score`
-- **Other Languages**: `Final = GitHub Score`
+```bash
+# Collect 10,000 Seattle projects
+python3 -m collectors.collect_seattle_projects
+```
 
-#### **Component Breakdown:**
+This will:
+- Search for Seattle developers on GitHub (sorted by followers)
+- Fetch their public repositories
+- Save to `data/seattle_projects_10000.json`
+- Takes ~5 minutes
 
-| Metric | Weight | Description | Formula |
-|--------|--------|-------------|---------|
-| **S_norm** | 40% | **Normalized Stars** - Community popularity and visibility | stars / max_stars |
-| **F_norm** | 25% | **Normalized Forks** - Community engagement and contribution level | forks / max_forks |
-| **W_norm** | 15% | **Normalized Watchers** - Long-term interest and active followers | watchers / max_watchers |
-| **T_age** | 10% | **Project Age Weight** - Maturity and longevity bonus | years / (years + 2) |
-| **H_health** | 10% | **Health Score** - Project maintenance quality | 1 - (open_issues / (open_issues + 10)) |
+### 3. Check Status
 
-#### **Why This Approach?**
+```bash
+python3 manage_projects.py --status
+```
 
-- **GitHub Metrics (Base)**: Universal indicators of community engagement
-- **PyPI Downloads**: Real-world Python package adoption (60% weight for Python projects)
-- **Release Downloads**: C++ binary/library usage (30% weight for C++ projects)
-- **Forks (25%)**: Shows active contribution and real-world usage
-- **Watchers (15%)**: Indicates sustained interest and monitoring
-- **Age (10%)**: Rewards established, proven projects
-- **Health (10%)**: Ensures projects are well-maintained and actively managed
+### 4. Daily/Weekly Maintenance
 
-### **Location Verification**
+```bash
+# Refresh stale data (weekly)
+python3 manage_projects.py --full-update --target 10000
 
-The tool identifies Seattle-area developers by:
-1. Searching GitHub's API for repositories with high star counts
-2. Checking owner profiles for location data
-3. Matching against Seattle-area keywords: seattle, redmond, bellevue, kirkland, washington
-4. Caching results to minimize API calls
+# Quick refresh (daily)
+python3 manage_projects.py --refresh --days 1
+```
 
----
-
-## 🧩 Features
-
-- 📊 **Multi-Dimensional Ranking** – Combines stars, forks, watchers, age, and health metrics
-- 🎯 **Location-Based Filtering** – Identifies projects by Seattle-area developers
-- 💾 **Smart Caching** – Reduces API calls by caching owner location data
-- 📈 **Progress Tracking** – Real-time progress bars for data collection
-- 🔧 **Configurable Parameters** – Adjustable collection limits and search depth
-- 📁 **JSON Export** – Exports ranked results for further analysis or visualization
-
----
-
-## 🧰 Tech Stack
-
-- **Python 3.8+**
-- **APIs:** GitHub REST API v3
-- **Libraries:** 
-  - requests - HTTP API calls
-  - tqdm - Progress bar visualization
-  - argparse - CLI argument parsing
-- **Frontend (Optional):** React app for web-based visualization
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 Seattle-Source-Ranker/
+├── manage_projects.py            # CLI management tool
+├── main.py                       # Original v1.0 script
 │
-├── main.py                      # Main CLI entry point with scoring logic
-├── github_client.py             # GitHub API client wrapper
-├── analyzer.py                  # Influence calculation and analysis
-├── ranker.py                    # Repository ranking utilities
-├── verifier.py                  # Location verification (simulated)
-├── verifier_serpapi.py          # Location verification (SerpAPI-based)
+├── collectors/                   # Data collection modules
+│   ├── collect_seattle_projects.py
+│   ├── incremental_collector.py
+│   ├── github_client.py
+│   ├── graphql_client.py
+│   └── cursor_manager.py
 │
-├── data/                        # Generated data files
-│   ├── owner_location_cache.json       # Cached owner locations
-│   ├── ranked_project_local_seattle.json   # Main ranking results
-│   └── ranked_multifactor.json         # Alternative ranking output
+├── analysis/                     # Analysis & scoring
+│   ├── scoring.py
+│   ├── analyzer.py
+│   ├── ranker.py
+│   ├── api.py
+│   └── models.py
 │
-└── frontend/                    # React-based web interface
-    ├── src/
-    ├── public/
-    └── package.json
+├── utils/                        # Utilities
+│   ├── pypi_client.py
+│   ├── classify_languages.py
+│   ├── update_with_pypi.py
+│   ├── celery_config.py
+│   ├── fetch_worker.py
+│   └── score_worker.py
+│
+├── verification/                 # Location verification
+│   ├── verifier.py
+│   └── verifier_serpapi.py
+│
+├── data/                         # Project database
+│   ├── seattle_projects_10000.json
+│   └── seattle_projects_10000_metadata.json
+│
+└── frontend/                     # React visualization
 ```
 
----
+## Usage
 
-## 🚀 Usage
-
-### **Prerequisites**
-
-1. Obtain a GitHub Personal Access Token:
-   - Go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
-   - Generate a new token with public_repo scope
-   
-2. Set the token as an environment variable:
-   ```bash
-   export GITHUB_TOKEN='your_github_token_here'
-   ```
-
-### **Installation**
+### View Current Status
 
 ```bash
-git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
-cd Seattle-Source-Ranker
-pip install -r requirements.txt
+python3 manage_projects.py --status
 ```
 
-### **Running the Tool**
+### Refresh Stale Data
 
-Basic usage:
 ```bash
-python main.py
+# Refresh projects older than 7 days
+python3 manage_projects.py --refresh --days 7
 ```
 
-With custom parameters:
+### Collect New Projects
+
 ```bash
-python main.py --location Seattle --topk 50 --max-pages 20
+# Add new projects up to 10,000
+python3 manage_projects.py --collect-new --target 10000
 ```
 
-#### **Command-Line Options:**
+### Full Update (Recommended)
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| --location | Seattle | Target location keyword |
-| --topk | 50 | Number of top repositories to collect |
-| --max-pages | 20 | Maximum GitHub API pages to fetch (100 repos/page) |
-
-### **Output**
-
-The tool generates:
-1. **Console output** - Formatted table showing top repositories
-2. **JSON file** - data/ranked_project_local_seattle.json with detailed metrics
-3. **Cache file** - data/owner_location_cache.json for faster subsequent runs
-
----
-
-## 🔬 Example Output
-
-```
-🏆 Top repositories by Seattle-based developers:
---------------------------------------------
-Repo                                    Stars  Forks    Score
---------------------------------------------
-microsoft/vscode                        145000  24500    0.987
-microsoft/TypeScript                     89000  11800    0.921
-atom/atom                                58000   17200   0.856
-dotnet/roslyn                            17500    3850   0.742
-...
---------------------------------------------
-```
-
----
-
-## 📊 Sample Analysis Results
-
-Based on real data collection, typical findings include:
-
-- **Top Languages**: TypeScript, C#, Python, JavaScript
-- **Common Project Types**: Developer tools, frameworks, ML libraries
-- **Average Project Age**: 6-8 years for top-ranked projects
-- **Health Trends**: Highly-ranked projects typically have <50 open issues relative to their size
-
----
-
-## 🔮 Future Work
-
-- Multi-language ecosystem support (npm, PyPI, Cargo for cross-platform analysis)
-- Time-series tracking (monitor ranking changes over time)
-- Contributor network analysis (identify collaboration patterns)
-- Web dashboard (interactive visualization with charts and filters)
-- Machine learning enhancement (predict project sustainability)
-- Expanded geographic analysis (compare Seattle to other tech hubs)
-
----
-
-## 🛠️ Development
-
-### Running Tests
 ```bash
-pytest tests/
+# Refresh + collect new
+python3 manage_projects.py --full-update --target 10000 --days 7
 ```
 
-### Frontend Development
-```bash
-cd frontend
-npm install
-npm start
+## How It Works
+
+### Incremental Collection
+
+1. **Load Existing Data** - Reads `seattle_projects_10000.json`
+2. **Deduplication** - Uses `name_with_owner` as unique key
+3. **Smart Refresh** - Only updates stale projects
+4. **Intelligent Replace** - Better projects replace lower-scored ones
+
+### Replacement Strategies
+
+- `lowest_stars` - Replace projects with fewest stars (default)
+- `oldest` - Replace least recently updated projects
+- `lowest_activity` - Replace by activity score (stars + forks + watchers)
+
+## Python API
+
+### Basic Usage
+
+```python
+from collectors.incremental_collector import IncrementalProjectCollector
+
+# Initialize
+collector = IncrementalProjectCollector()
+
+# Check status
+print(f"Projects: {len(collector.existing_projects)}")
 ```
 
----
+### Refresh Data
 
-## 📚 Acknowledgements
+```python
+# Refresh projects older than 7 days
+updated_count = collector.refresh_stale_projects(days_old=7)
+```
 
-- **GitHub API** for providing comprehensive repository and user data
-- **tqdm** for excellent progress bar functionality
-- Inspired by the vibrant Seattle open-source community
+### Add New Projects
 
----
+```python
+stats = collector.add_new_projects(
+    new_projects,
+    max_total=10000,
+    replace_strategy="lowest_stars"
+)
+```
 
-## 📄 License
+## Performance
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+| Operation | Time | API Calls |
+|-----------|------|-----------|
+| View status | <1s | 0 |
+| Refresh 100 projects | ~2 min | ~100 |
+| Refresh 1000 projects | ~15 min | ~1000 |
+| Collect 10000 projects | ~5 min | ~1000 |
+
+**Recommendations**:
+- Daily: `--refresh --days 1` (fast)
+- Weekly: `--full-update` (complete)
+
+## License
+
+MIT License - see [LICENSE](LICENSE)
