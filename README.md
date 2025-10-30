@@ -28,16 +28,31 @@ export GITHUB_TOKEN="your_github_token_here"
 
 ### 2. Collect Projects (First Time)
 
+**Option A: GraphQL API (Recommended)**
+
 ```bash
-# Collect 10,000 Seattle projects
+# Collect 10,000 Seattle projects using GraphQL
+python3 collect_with_graphql.py --target 10000
+```
+
+This will:
+- Search repos with Seattle-related topics and README mentions
+- Use cursor-based pagination (no 1,000 limit!)
+- Save to `data/seattle_projects_10000.json`
+- Takes ~5-10 minutes
+
+**Option B: REST API (Legacy)**
+
+```bash
+# Collect via Seattle developers' repos
 python3 -m collectors.collect_seattle_projects
 ```
 
 This will:
 - Search for Seattle developers on GitHub (sorted by followers)
 - Fetch their public repositories
-- Save to `data/seattle_projects_10000.json`
-- Takes ~5 minutes
+- Slower but gets developer metadata
+- Takes ~10-15 minutes
 
 ### 3. Check Status
 
