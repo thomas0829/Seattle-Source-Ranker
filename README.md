@@ -28,31 +28,41 @@ export GITHUB_TOKEN="your_github_token_here"
 
 ### 2. Collect Projects (First Time)
 
-**Option A: GraphQL API (Recommended)**
+**Option A: Hybrid Collection (Recommended - Best of Both Worlds)**
 
 ```bash
-# Collect 10,000 Seattle projects using GraphQL
-python3 collect_with_graphql.py --target 10000
+# Collect 10,000 Seattle projects using REST + GraphQL
+python3 collect_hybrid.py --target 10000 --max-users 1000
 ```
 
 This will:
-- Search repos with Seattle-related topics and README mentions
-- Use cursor-based pagination (no 1,000 limit!)
-- Save to `data/seattle_projects_10000.json`
-- Takes ~5-10 minutes
+- **REST API**: Find Seattle developers (fast, location-based search)
+- **GraphQL**: Batch-fetch all their repos (efficient, detailed)
+- Combines speed of REST user search + efficiency of GraphQL repo fetching
+- Save to `data/seattle_projects_hybrid_10000.json`
+- Takes ~5-8 minutes
 
-**Option B: REST API (Legacy)**
+**Option B: REST API Only (Legacy)**
 
 ```bash
-# Collect via Seattle developers' repos
+# Collect via Seattle developers' repos (REST only)
 python3 -m collectors.collect_seattle_projects
 ```
 
 This will:
-- Search for Seattle developers on GitHub (sorted by followers)
-- Fetch their public repositories
-- Slower but gets developer metadata
+- Search for Seattle developers on GitHub
+- Fetch repos one-by-one using REST API
+- Slower due to multiple API calls per user
 - Takes ~10-15 minutes
+
+**Option C: GraphQL Direct Search (Experimental)**
+
+```bash
+# Direct repo search using GraphQL
+python3 collect_with_graphql.py --target 10000
+```
+
+Note: Limited by GitHub's repo search capabilities. Works better for topic-based searches rather than location-based.
 
 ### 3. Check Status
 
@@ -143,33 +153,45 @@ python3 manage_projects.py --full-update --target 10000 --days 7
 
 ### Data Collection Strategy
 
-**Two Collection Methods:**
+**Three Collection Methods:**
 
-#### 1. GraphQL API (Recommended for large-scale collection)
-- **Breaks through 1,000 result limit** with cursor-based pagination
-- Can collect unlimited results using `after` cursor
-- More efficient - fetches all data in single query
-- Supports checkpoint recovery for long-running operations
-- Used by `graphql_client.py`
+#### 1. Hybrid Approach (Recommended) ⭐
+**Best of both worlds: REST API for users + GraphQL for repos**
+
+- **Step 1**: Use REST API to find Seattle developers (fast, precise location search)
+- **Step 2**: Use GraphQL to batch-fetch all repos from each developer (efficient)
+- **Advantages**:
+  - No 1,000 result limit on repos per user
+  - Efficient batch operations
+  - Detailed repository data in single query
+  - Faster than pure REST API approach
 
 ```python
-from collectors.graphql_client import GitHubGraphQLClient
+from collect_hybrid import HybridCollector
 
-client = GitHubGraphQLClient()
-repos = client.fetch_all_repositories(
-    query="location:seattle stars:>10",
-    max_results=10000
-)
+collector = HybridCollector()
+projects = collector.collect(target_projects=10000, max_users=1000)
 ```
 
-#### 2. REST API + User-Centric Approach (Alternative method)
-- Search Seattle developers by location
-- Fetch all repos from each developer
-- Useful when you need detailed user information
-- Used by `collect_seattle_projects.py`
+**Performance**: ~5-8 minutes for 10,000 projects
 
-**Why User-Centric?**
-GitHub's REST search API has a 1,000 result limit per query. By searching developers first, we bypass this limit and can collect 10,000+ projects.
+#### 2. Pure GraphQL (Experimental)
+- Direct repository search using GraphQL
+- Cursor-based pagination (no 1,000 limit)
+- **Limitation**: GitHub's repo search doesn't support direct location-based queries
+- Better for topic-based or language-based searches
+- Used by `collect_with_graphql.py`
+
+#### 3. Pure REST API (Legacy)
+- Search Seattle developers by location
+- Fetch repos one-by-one using REST API
+- Multiple API calls per developer (slower)
+- Used by `collectors/collect_seattle_projects.py`
+
+**Why Hybrid is Better:**
+- REST API: Great for user search, poor for fetching many repos (N requests)
+- GraphQL: Poor for user search, excellent for batch repo fetching (1 request per user)
+- Hybrid: Uses each API for what it does best!
 
 ### GitHub API Usage
 
