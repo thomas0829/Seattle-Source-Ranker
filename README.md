@@ -128,13 +128,33 @@ python3 manage_projects.py --full-update --target 10000 --days 7
 
 ### Data Collection Strategy
 
-**Why Not Direct Repo Search?**
-GitHub's search API has a 1,000 result limit per query. To collect 10,000+ Seattle projects, we use a user-centric approach:
+**Two Collection Methods:**
 
-1. **Search Seattle Developers** - Find users with location keywords (seattle, redmond, bellevue, kirkland)
-2. **Sort by Followers** - Prioritize influential developers
-3. **Fetch Their Repos** - Get all public repositories from each developer
-4. **Deduplicate** - Use `name_with_owner` as unique key
+#### 1. GraphQL API (Recommended for large-scale collection)
+- **Breaks through 1,000 result limit** with cursor-based pagination
+- Can collect unlimited results using `after` cursor
+- More efficient - fetches all data in single query
+- Supports checkpoint recovery for long-running operations
+- Used by `graphql_client.py`
+
+```python
+from collectors.graphql_client import GitHubGraphQLClient
+
+client = GitHubGraphQLClient()
+repos = client.fetch_all_repositories(
+    query="location:seattle stars:>10",
+    max_results=10000
+)
+```
+
+#### 2. REST API + User-Centric Approach (Alternative method)
+- Search Seattle developers by location
+- Fetch all repos from each developer
+- Useful when you need detailed user information
+- Used by `collect_seattle_projects.py`
+
+**Why User-Centric?**
+GitHub's REST search API has a 1,000 result limit per query. By searching developers first, we bypass this limit and can collect 10,000+ projects.
 
 ### GitHub API Usage
 
@@ -144,16 +164,24 @@ export GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
 ```
 
 **Rate Limits:**
-- Authenticated: 5,000 requests/hour
-- Unauthenticated: 60 requests/hour
+- GraphQL: 5,000 points/hour (queries cost different points)
+- REST Authenticated: 5,000 requests/hour
+- REST Unauthenticated: 60 requests/hour
 
-**Endpoints Used:**
+**GraphQL Advantages:**
+- Single query fetches all needed data
+- Cursor-based pagination (no 1,000 limit)
+- Efficient batch operations
+- Built-in rate limit info in response
+
+**REST API Endpoints (legacy/incremental updates):**
 - `GET /search/users` - Find Seattle developers
 - `GET /users/{username}/repos` - Fetch user's repositories
 - `GET /repos/{owner}/{repo}` - Update project stats
 
 **Smart Caching:**
 - Owner locations cached in `data/owner_location_cache.json`
+- Checkpoint recovery for GraphQL pagination
 - Avoids redundant API calls for known developers
 - Automatically saves on each update
 
