@@ -3,11 +3,12 @@ import "./App.css";
 
 export default function App() {
   const [allData, setAllData] = useState(null);
-  const [currentLanguage, setCurrentLanguage] = useState("Python");
+  const [currentLanguage, setCurrentLanguage] = useState("Other");
   const [repos, setRepos] = useState([]);
   const [hoveredRepo, setHoveredRepo] = useState(null);
   const [maxScore, setMaxScore] = useState(1);
   const [repoDetails, setRepoDetails] = useState({});
+  const [languages, setLanguages] = useState([]);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -15,12 +16,27 @@ export default function App() {
       .then((res) => res.json())
       .then((data) => {
         setAllData(data);
-        // Set initial language data
-        const initialRepos = data["Python"] || [];
+        // Get available languages sorted by project count
+        const langs = data.metadata?.languages || [];
+        const sortedLangs = langs.sort((a, b) => {
+          return (data.metadata.by_language[b] || 0) - (data.metadata.by_language[a] || 0);
+        });
+        setLanguages(sortedLangs);
+        
+        // Set initial language data (first language with most projects)
+        const initialLang = sortedLangs[0] || "Other";
+        setCurrentLanguage(initialLang);
+        const initialRepos = data[initialLang] || [];
         setRepos(initialRepos);
+        
         // Find the highest score across all languages
-        const allRepos = [...(data["Python"] || []), ...(data["C++"] || []), ...(data["Other"] || [])];
-        const max = allRepos.length > 0 ? Math.max(...allRepos.map(r => r.score)) : 1;
+        let max = 1;
+        for (const lang of langs) {
+          if (data[lang] && data[lang].length > 0) {
+            const langMax = Math.max(...data[lang].map(r => r.score));
+            if (langMax > max) max = langMax;
+          }
+        }
         setMaxScore(max);
       })
       .catch((err) => console.error("❌ Failed to load data:", err));
@@ -93,7 +109,7 @@ export default function App() {
 
       {/* Language Filter Tabs */}
       <div className="language-tabs">
-        {["Python", "C++", "Other"].map(lang => (
+        {languages.map(lang => (
           <button
             key={lang}
             className={`language-tab ${currentLanguage === lang ? 'active' : ''}`}
