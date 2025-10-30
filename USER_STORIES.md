@@ -6,10 +6,6 @@ Alex is a software engineer who actively contributes to open-source projects. Al
 
 Maria is a technology journalist covering the Seattle tech scene. Maria wants to identify trending open-source projects for articles and track the local tech ecosystem's growth. She needs comprehensive statistics, easy identification of top projects across languages, and quick access to developer information for interviews. Maria has basic technical literacy and needs a straightforward interface with clear visualizations.
 
-Muwen is a graduate student in mathematics at the University of Washington.
-He studies data science and programming to connect theory with real-world projects.
-He uses Seattle Source Ranker to explore influential open-source projects from local developers.
-He needs clear project metrics, language comparisons, and transparent data for analysis.
-Muwen is technically skilled and comfortable using Python and GitHub tools.
+Muwen is a graduate student in mathematics at the University of Washington. He wants to explore local open-source projects to learn real-world coding practices and understand developer influence. He needs access to clear project metrics, contribution trends, and language comparisons to support his analysis. Muwen is technically skilled but values simple, transparent tools that make data easy to interpret.
 
 
