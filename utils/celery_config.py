@@ -17,9 +17,7 @@ celery_app = Celery(
     broker=REDIS_URL,
     backend=REDIS_URL,
     include=[
-        "workers.fetch_worker",
-        "workers.score_worker",
-        "workers.pypi_worker"
+        "workers.collection_worker"
     ]
 )
 
@@ -27,9 +25,7 @@ celery_app = Celery(
 celery_app.conf.update(
     # Task routing
     task_routes={
-        "workers.fetch_worker.*": {"queue": "fetch"},
-        "workers.score_worker.*": {"queue": "score"},
-        "workers.pypi_worker.*": {"queue": "pypi"},
+        "workers.collection_worker.*": {"queue": "default"},
     },
     
     # Task queues

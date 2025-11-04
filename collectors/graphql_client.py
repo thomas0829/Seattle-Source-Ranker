@@ -24,7 +24,7 @@ class GitHubGraphQLClient:
         
         self.endpoint = "https://api.github.com/graphql"
         self.headers = {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"bearer {self.token}",
             "Content-Type": "application/json"
         }
         self.rate_limit_remaining = 5000

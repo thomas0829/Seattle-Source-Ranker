@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # Redis - Message broker for Celery
+  redis:
+    image: redis:7-alpine
+    container_name: ssr-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ssr-network
+
+  # PostgreSQL - Centralized data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: ssr-postgres
+    environment:
+      POSTGRES_DB: seattle_source_ranker
+      POSTGRES_USER: ssr_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ssr_password_change_me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ssr_user -d seattle_source_ranker"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ssr-network
+
+  # Celery Worker 1
+  worker1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: ssr-worker-1
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=seattle_source_ranker
+      - POSTGRES_USER=ssr_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ssr_password_change_me}
+      - WORKER_NAME=worker-1
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: celery -A workers.collection_worker worker --loglevel=info --concurrency=2 -n worker1@%h
+    volumes:
+      - ./:/app
+    networks:
+      - ssr-network
+
+  # Celery Worker 2
+  worker2:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: ssr-worker-2
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=seattle_source_ranker
+      - POSTGRES_USER=ssr_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ssr_password_change_me}
+      - WORKER_NAME=worker-2
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: celery -A workers.collection_worker worker --loglevel=info --concurrency=2 -n worker2@%h
+    volumes:
+      - ./:/app
+    networks:
+      - ssr-network
+
+  # Celery Worker 3
+  worker3:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: ssr-worker-3
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=seattle_source_ranker
+      - POSTGRES_USER=ssr_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ssr_password_change_me}
+      - WORKER_NAME=worker-3
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: celery -A workers.collection_worker worker --loglevel=info --concurrency=2 -n worker3@%h
+    volumes:
+      - ./:/app
+    networks:
+      - ssr-network
+
+  # Flower - Celery monitoring dashboard
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: ssr-flower
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    command: celery -A workers.collection_worker flower --port=5555
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./:/app
+    networks:
+      - ssr-network
+
+  # Coordinator (optional - can be run from host)
+  coordinator:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: ssr-coordinator
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=seattle_source_ranker
+      - POSTGRES_USER=ssr_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ssr_password_change_me}
+    depends_on:
+      - redis
+      - postgres
+      - worker1
+      - worker2
+      - worker3
+    volumes:
+      - ./:/app
+      - ./data:/app/data
+    networks:
+      - ssr-network
+    # Don't start automatically - run manually when needed
+    profiles:
+      - manual
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  ssr-network:
+    driver: bridge
