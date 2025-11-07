@@ -1,0 +1,49 @@
+{
+  "languages": {
+    "Other": {
+      "total": 212704,
+      "pages": 4255
+    },
+    "JavaScript": {
+      "total": 118025,
+      "pages": 2361
+    },
+    "Python": {
+      "total": 57260,
+      "pages": 1146
+    },
+    "Java": {
+      "total": 29247,
+      "pages": 585
+    },
+    "C++": {
+      "total": 21349,
+      "pages": 427
+    },
+    "Ruby": {
+      "total": 15423,
+      "pages": 309
+    },
+    "Go": {
+      "total": 8266,
+      "pages": 166
+    },
+    "Rust": {
+      "total": 5976,
+      "pages": 120
+    },
+    "Swift": {
+      "total": 5689,
+      "pages": 114
+    },
+    "PHP": {
+      "total": 5369,
+      "pages": 108
+    },
+    "Kotlin": {
+      "total": 2015,
+      "pages": 41
+    }
+  },
+  "page_size": 50
+}
