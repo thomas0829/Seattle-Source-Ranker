@@ -461,10 +461,10 @@ This project is developed and maintained by a collaborative team:
 
 | Member | Role | Responsibilities |
 |--------|------|------------------|
-| **ycl0829** | Project Architecture & System Design Lead | Project conceptualization, system architecture, technical infrastructure, project coordination |
-| **Zouqs2** | Data Validation & Reliability Engineer | Validation methods design, data quality assurance, verification mechanisms, integrity testing |
-| **muwenc** | Scoring Algorithm & Interpretability Specialist | Scoring methodology, ranking metrics interpretability, algorithm documentation, transparent scoring |
-| **wszhao87** | Frontend Developer & UI/UX Designer | Web page implementation, UI/UX design, frontend development, user experience optimization |
+| **thomas0829** | Project Architecture & System Design Lead | Project conceptualization, system architecture, technical infrastructure, project coordination |
+| **Qianshi Zou** | Data Validation & Reliability Engineer | Validation methods design, data quality assurance, verification mechanisms, integrity testing |
+| **Chen Muwen** | Scoring Algorithm & Interpretability Specialist | Scoring methodology, ranking metrics interpretability, algorithm documentation, transparent scoring |
+| **Wenshu0206** | Frontend Developer & UI/UX Designer | Web page implementation, UI/UX design, frontend development, user experience optimization |
 
 ## 📈 Project Statistics
 
