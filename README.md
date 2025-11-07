@@ -183,8 +183,8 @@ Then open http://localhost:5555
 
 | Projects | Workers | Concurrency | Time | Success Rate |
 |----------|---------|-------------|------|--------------|
-| 30,000 | 8 | 2 each (16 total) | ~2 hours | 99.95% |
-| 481,323 | 8 | 2 each (16 total) | ~12 hours | 99.98% |
+| 30,000 | 8 | 2 each (16 total) | ~0.5 hours | 99.95% |
+| 481,323 | 8 | 2 each (16 total) | ~3 hours | 99.98% |
 
 **Latest Collection Stats (Nov 6, 2025):**
 - Total Projects: **481,323**
