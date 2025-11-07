@@ -43,9 +43,9 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     
-    # Task timeouts
-    task_soft_time_limit=300,  # 5 minutes
-    task_time_limit=600,  # 10 minutes
+    # Task timeouts - increased to handle rate limit waits (up to 1 hour)
+    task_soft_time_limit=3300,  # 55 minutes (warn before hard limit)
+    task_time_limit=3600,  # 60 minutes (allow for full rate limit wait)
     
     # Task retries
     task_acks_late=True,
@@ -55,8 +55,9 @@ celery_app.conf.update(
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,
     
-    # Result backend
-    result_expires=3600,  # 1 hour
+    # Result backend - store full results for recovery
+    result_expires=86400,  # 24 hours (keep results for a day)
+    result_extended=True,  # Store full task result in backend
     result_backend_transport_options={
         "master_name": "mymaster"
     },
