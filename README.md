@@ -42,10 +42,10 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 | Team Member | Role | Contributions |
 |------------|------|---------------|
-| **thomas0829** | Project Architecture & System Design Lead | • System architecture design<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• GitHub Actions automation |
-| **Wenshu0206** | Frontend Developer & UI/UX Designer | • React frontend development<br>• Lazy loading pagination system<br>• Multi-select language filtering<br>• Glass morphism design implementation<br>• Real-time search with debounce |
+| **thomas0829** | Project Architecture & System Design Lead | • System architecture design<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• Lazy loading pagination system<br>• Multi-select language filtering<br>• Glass morphism design implementation<br>• Real-time search with debounce<br>• GitHub Actions automation |
+| **Wenshu0206** | Frontend Developer & UI/UX Designer | • React frontend development<br>• Component design & implementation<br>• User experience optimization<br>• Responsive layout design<br>• UI/UX testing & refinement |
 | **Chen Muwen** | Scoring Algorithm & Interpretability Specialist | • SSR scoring algorithm design<br>• Multi-factor ranking system<br>• Language classification logic<br>• Algorithm documentation<br>• Transparent scoring methodology |
-| **Qianshi Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing<br>• GitHub Actions workflow setup |
+| **Qianshi Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing<br>• Error handling & recovery |
 
 ---
 
