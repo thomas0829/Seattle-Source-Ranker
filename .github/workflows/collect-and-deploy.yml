@@ -258,7 +258,6 @@ jobs:
         # Only add user files (small enough for Git)
         # Projects files are too large (252MB) and exceed Git LFS quota
         git add data/seattle_users_*.json
-        git add data/owner_location_cache.json
         
         # Check if there are changes
         if git diff --staged --quiet; then
