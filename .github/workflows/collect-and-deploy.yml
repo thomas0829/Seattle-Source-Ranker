@@ -1,0 +1,241 @@
+name: Collect Data and Deploy Website
+
+on:
+  schedule:
+    # 每天 UTC 08:00 執行 (西雅圖時間 00:00 PST / 01:00 PDT)
+    - cron: '0 8 * * *'
+  workflow_dispatch:  # 允許手動觸發
+
+jobs:
+  collect-and-deploy:
+    runs-on: ubuntu-latest
+    
+    env:
+      TZ: America/Los_Angeles  # 西雅圖時區 (PST/PDT)
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 完整歷史記錄
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y redis-server
+    
+    - name: Install Python dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Start Redis server
+      run: |
+        sudo systemctl start redis-server
+        sudo systemctl status redis-server
+    
+    - name: Setup GitHub tokens
+      run: |
+        # Create .env.tokens file for TokenManager
+        cat > .env.tokens << EOF
+        GITHUB_TOKEN_1=${{ secrets.GITHUB_TOKEN_1 }}
+        GITHUB_TOKEN_2=${{ secrets.GITHUB_TOKEN_2 }}
+        GITHUB_TOKEN_3=${{ secrets.GITHUB_TOKEN_3 }}
+        GITHUB_TOKEN_4=${{ secrets.GITHUB_TOKEN_4 }}
+        GITHUB_TOKEN_5=${{ secrets.GITHUB_TOKEN_5 }}
+        GITHUB_TOKEN_6=${{ secrets.GITHUB_TOKEN_6 }}
+        EOF
+        
+        # Also set as environment variables (backup method)
+        echo "GITHUB_TOKEN_1=${{ secrets.GITHUB_TOKEN_1 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_2=${{ secrets.GITHUB_TOKEN_2 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_3=${{ secrets.GITHUB_TOKEN_3 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_4=${{ secrets.GITHUB_TOKEN_4 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_5=${{ secrets.GITHUB_TOKEN_5 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_6=${{ secrets.GITHUB_TOKEN_6 }}" >> $GITHUB_ENV
+        
+        echo "✅ Tokens configured (6 tokens)"
+    
+    - name: Run distributed collection
+      run: |
+        echo "🚀 Starting distributed collection..."
+        python3 << 'PYTHON_EOF'
+        from distributed.distributed_collector import DistributedCollector
+        import json
+        import os
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        
+        SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
+        
+        collector = DistributedCollector(
+            batch_size=50,
+            auto_manage_workers=True,
+            num_workers=8,
+            concurrency=2
+        )
+        
+        # Collect data for 30,000 users
+        timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
+        output_file = f"data/seattle_projects_{timestamp}.json"
+        collector.collect_projects(max_users=30000, output_file=output_file)
+        
+        # Load the collected data
+        with open(output_file, 'r') as f:
+            data = json.load(f)
+        
+        # Create ranked_project_local_seattle.json (sorted by score)
+        projects = data.get('projects', [])
+        
+        # Sort by score (stars * 0.6 + forks * 0.3 + watchers * 0.1)
+        for proj in projects:
+            proj['score'] = (proj.get('stargazers_count', 0) * 0.6 + 
+                           proj.get('forks_count', 0) * 0.3 + 
+                           proj.get('watchers_count', 0) * 0.1)
+        
+        projects.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Save ranked project list
+        ranked_output = {
+            'total_projects': data.get('total_projects', 0),
+            'total_stars': data.get('total_stars', 0),
+            'successful_users': data.get('successful_users', 0),
+            'filtered_users': data.get('filtered_users', 0),
+            'failed_users': data.get('failed_users', 0),
+            'collected_at': data.get('collected_at', ''),
+            'projects': projects
+        }
+        
+        with open('data/ranked_project_local_seattle.json', 'w') as f:
+            json.dump(ranked_output, f, indent=2)
+        
+        # Create language-based ranking
+        language_groups = {}
+        for proj in projects:
+            lang = proj.get('language') or 'Unknown'
+            if lang not in language_groups:
+                language_groups[lang] = []
+            language_groups[lang].append(proj)
+        
+        # Save by language
+        with open('data/ranked_by_language_seattle.json', 'w') as f:
+            json.dump(language_groups, f, indent=2)
+        
+        print(f"\n✅ Created ranked_project_local_seattle.json ({len(projects)} projects)")
+        print(f"✅ Created ranked_by_language_seattle.json ({len(language_groups)} languages)")
+        
+        # Create success marker
+        with open('data/.collection_success', 'w') as f:
+            f.write(datetime.now(SEATTLE_TZ).isoformat())
+        print("✅ Collection completed successfully")
+        PYTHON_EOF
+      timeout-minutes: 180  # 3小時超時
+    
+    - name: Verify collection success
+      run: |
+        if [ ! -f "data/.collection_success" ]; then
+          echo "❌ Collection failed - success marker not found"
+          exit 1
+        fi
+        
+        if [ ! -f "data/ranked_project_local_seattle.json" ]; then
+          echo "❌ Collection failed - ranked data not found"
+          exit 1
+        fi
+        
+        echo "✅ Collection verification passed"
+    
+    - name: Clean old data files
+      run: |
+        echo "🧹 Cleaning old data files..."
+        # 保留最新的文件，刪除舊的
+        cd data
+        
+        # 保留 ranked_* 文件 (剛生成的)
+        # 刪除舊的 seattle_projects_*.json (保留最新的)
+        ls -t seattle_projects_*.json | tail -n +2 | xargs -r rm -v
+        
+        # 刪除舊的 seattle_users_*.json (保留最新的)
+        ls -t seattle_users_*.json | tail -n +2 | xargs -r rm -v
+        
+        # 刪除成功標記文件（不需要提交到 Git）
+        rm -f .collection_success
+        
+        echo "✅ Old data files cleaned"
+        echo "📁 Remaining files:"
+        ls -lh *.json
+    
+    - name: Update README with latest stats
+      run: |
+        python3 scripts/update_readme.py
+    
+    - name: Copy data to frontend
+      run: |
+        # 複製最新的數據到 frontend/public
+        cp data/ranked_by_language_seattle.json frontend/public/
+        cp data/ranked_project_local_seattle.json frontend/public/
+        echo "✅ Data copied to frontend/public"
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm ci
+        npm run build
+    
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./frontend/build
+        publish_branch: gh-pages
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        commit_message: 'Deploy: Update with latest data'
+    
+    - name: Commit updated data
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Add all changes in data directory (including deletions)
+        git add -A data/
+        git add README.md
+        
+        # Check if there are changes
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: Update data - $(date +'%Y-%m-%d')"
+          git push
+        fi
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Collection Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f data/ranked_project_local_seattle.json ]; then
+          USERS=$(jq '.successful_users // 0' data/ranked_project_local_seattle.json)
+          PROJECTS=$(jq '.total_projects // 0' data/ranked_project_local_seattle.json)
+          STARS=$(jq '.total_stars // 0' data/ranked_project_local_seattle.json)
+          
+          echo "- 👥 Users: **$USERS**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
+          echo "- ⭐ Stars: **$STARS**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Data file not found" >> $GITHUB_STEP_SUMMARY
+        fi

@@ -209,3 +209,10 @@ __marimo__/
 
 # GitHub Personal Access Tokens - NEVER COMMIT!
 .env.tokens
+
+# Logs directory
+logs/
+*.log
+
+# Collection success markers
+.collection_success
