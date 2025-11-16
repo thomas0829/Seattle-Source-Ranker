@@ -5,7 +5,7 @@ Coordinates multiple Celery workers to collect Seattle projects in parallel.
 Uses Redis as message broker and PostgreSQL for data persistence.
 
 Usage:
-    python3 distributed_collector.py --target 10000 --workers 5 --batch-size 10
+    python3 distributed_collector.py --max-users 50000 --workers 8 --batch-size 50
 """
 import argparse
 import os
@@ -16,14 +16,18 @@ import subprocess
 import signal
 import atexit
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import List, Dict, Any
 from celery import group
+
+# 西雅圖時區
+SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
 from celery.result import GroupResult
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from workers.collection_worker import (
+from distributed.workers.collection_worker import (
     search_seattle_users_task,
     fetch_users_batch_task,
     collect_seattle_projects_task
@@ -36,24 +40,112 @@ class DistributedCollector:
     Coordinator for distributed data collection
     
     Responsibilities:
-    - Search for Seattle developers (REST API)
+    - Search for Seattle developers (REST API or GraphQL)
     - Split developers into batches
     - Distribute batches to workers
     - Monitor progress
     - Aggregate and save results
     """
     
-    def __init__(self, batch_size: int = 10, auto_manage_workers: bool = True, num_workers: int = 8):
+    # Pre-optimized filters shared by both REST and GraphQL search
+    # Strategy: repos>=10 all users, repos:1-9 only followers>=5 (quality filter)
+    # Total: ~28,000 users (24K high-activity + 4K quality low-repo)
+    PREOPTIMIZED_FILTERS = [
+        # High activity users - repos>=10 (all users, no follower restriction)
+        "repos:>=500",
+        "repos:300..499",
+        "repos:200..299",
+        "repos:150..199",
+        "repos:100..149",
+        "repos:80..99",
+        "repos:60..69",
+        "repos:70..79",
+        "repos:50..54",
+        "repos:55..59",
+        "repos:40..42",
+        "repos:43..44",
+        "repos:45..49",
+        "repos:30..31",
+        "repos:32",
+        "repos:33..34",
+        "repos:35..37",
+        "repos:38..39",
+        "repos:20",
+        "repos:21",
+        "repos:22",
+        "repos:23",
+        "repos:24",
+        "repos:25",
+        "repos:26",
+        "repos:27",
+        "repos:28..29",
+        "repos:15",
+        "repos:16",
+        "repos:17",
+        "repos:18",
+        "repos:19",
+        # repos:10-14 need followers subdivision (all users)
+        "repos:10 followers:>=100",
+        "repos:10 followers:50..99",
+        "repos:10 followers:20..49",
+        "repos:10 followers:10..19",
+        "repos:10 followers:5..9",
+        "repos:10 followers:1..4",
+        "repos:10 followers:0",
+        "repos:11 followers:>=100",
+        "repos:11 followers:50..99",
+        "repos:11 followers:20..49",
+        "repos:11 followers:10..19",
+        "repos:11 followers:5..9",
+        "repos:11 followers:1..4",
+        "repos:11 followers:0",
+        "repos:12 followers:>=100",
+        "repos:12 followers:50..99",
+        "repos:12 followers:20..49",
+        "repos:12 followers:10..19",
+        "repos:12 followers:5..9",
+        "repos:12 followers:1..4",
+        "repos:12 followers:0",
+        "repos:13 followers:>=100",
+        "repos:13 followers:50..99",
+        "repos:13 followers:20..49",
+        "repos:13 followers:10..19",
+        "repos:13 followers:5..9",
+        "repos:13 followers:1..4",
+        "repos:13 followers:0",
+        "repos:14 followers:>=100",
+        "repos:14 followers:50..99",
+        "repos:14 followers:20..49",
+        "repos:14 followers:10..19",
+        "repos:14 followers:5..9",
+        "repos:14 followers:1..4",
+        "repos:14 followers:0",
+        # Low repo count - only quality users (followers>=5)
+        # repos:1-9 with followers>=5: ~4K users, all ranges < 500
+        "repos:1 followers:>=5",
+        "repos:2 followers:>=5",
+        "repos:3 followers:>=5",
+        "repos:4 followers:>=5",
+        "repos:5 followers:>=5",
+        "repos:6 followers:>=5",
+        "repos:7 followers:>=5",
+        "repos:8 followers:>=5",
+        "repos:9 followers:>=5",
+    ]
+    
+    def __init__(self, batch_size: int = 10, auto_manage_workers: bool = True, num_workers: int = 8, concurrency: int = 2):
         """
         Args:
             batch_size: Number of users per worker batch
             auto_manage_workers: Automatically start/stop workers
             num_workers: Number of workers to start if auto_manage_workers is True
+            concurrency: Number of concurrent tasks per worker
         """
         self.batch_size = batch_size
         self.results = []
         self.auto_manage_workers = auto_manage_workers
         self.num_workers = num_workers
+        self.concurrency = concurrency
         self.worker_processes = []
         
         # Register cleanup on exit
@@ -87,11 +179,17 @@ class DistributedCollector:
         print(f"🚀 Starting {self.num_workers} Celery workers...")
         
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        log_dir = os.path.join(project_root, "distributed", "logs")
+        
+        # Create logs directory with date subdirectory
+        date_str = datetime.now(SEATTLE_TZ).strftime("%Y%m%d")
+        log_dir = os.path.join(project_root, "logs", date_str)
         os.makedirs(log_dir, exist_ok=True)
         
+        # Timestamp for this run (time only, no date in filename)
+        timestamp = datetime.now(SEATTLE_TZ).strftime("%H%M%S")
+        
         for i in range(1, self.num_workers + 1):
-            log_file = os.path.join(log_dir, f"worker_{i}.log")
+            log_file = os.path.join(log_dir, f"worker_{i}_{timestamp}.log")
             
             # Start worker process
             cmd = [
@@ -99,7 +197,7 @@ class DistributedCollector:
                 "-A", "distributed.workers.collection_worker",
                 "worker",
                 "--loglevel=info",
-                f"--concurrency=2",
+                f"--concurrency={self.concurrency}",
                 f"-n", f"worker{i}@%h"
             ]
             
@@ -117,16 +215,24 @@ class DistributedCollector:
         
         # Wait for workers to register
         print("   Waiting for workers to register...", end="", flush=True)
-        for _ in range(30):  # Wait up to 15 seconds
+        max_wait_iterations = 60  # Wait up to 30 seconds
+        for i in range(max_wait_iterations):
             time.sleep(0.5)
             active = self.check_workers()
             if active >= self.num_workers:
                 print(f" ✅ {active} workers ready!")
                 return
+            if i % 10 == 0 and i > 0:  # Every 5 seconds
+                print(f"\n   ({active}/{self.num_workers} workers registered, waiting...)", end="", flush=True)
             print(".", end="", flush=True)
         
-        print(f"\n   ⚠️  Only {self.check_workers()} workers registered (expected {self.num_workers})")
-        print(f"   Continuing anyway...")
+        final_count = self.check_workers()
+        if final_count > 0:
+            print(f"\n   ⚠️  Only {final_count} workers registered (expected {self.num_workers})")
+            print(f"   Continuing with {final_count} workers...")
+        else:
+            print(f"\n   ❌ No workers registered after 30 seconds!")
+            raise RuntimeError("Failed to start workers")
     
     def cleanup_workers(self):
         """
@@ -232,11 +338,11 @@ class DistributedCollector:
             filepath, user_count = result
             filename = os.path.basename(filepath)
             
-            # Check if file is less than 3 days old
+            # Check if file is less than 1 day old
             file_mtime = os.path.getmtime(filepath)
             age_hours = (time.time() - file_mtime) / 3600
             
-            if age_hours < 72:  # Less than 3 days
+            if age_hours < 24:  # Less than 1 day
                 print(f"🔍 Step 1: Loading existing user data...")
                 print(f"   File: {filename}")
                 print(f"   Users: {user_count:,}")
@@ -271,7 +377,7 @@ class DistributedCollector:
     
     def search_users(self, max_users: int, start_user: int = 0) -> List[str]:
         """
-        Search for Seattle developers using REST API with multiple queries to bypass 1000 limit
+        Search for Seattle developers using GraphQL API (5000 req/hour vs REST Search 30 req/min)
         
         Args:
             max_users: Maximum number of users to find
@@ -282,9 +388,9 @@ class DistributedCollector:
         """
         import requests
         
-        print(f"🔍 Step 1: Searching for Seattle developers...")
+        print(f"🔍 Step 1: Searching for Seattle developers (GraphQL)...")
         print(f"   Target: {max_users} users (starting from index {start_user})")
-        print(f"   Strategy: Multiple queries with repo filters to bypass 1000 limit")
+        print(f"   Strategy: GraphQL Search API (5000 req/hour limit)")
         
         # Use TokenManager for multi-token support
         from utils.token_manager import get_token_manager
@@ -300,252 +406,201 @@ class DistributedCollector:
             print(f"   Using single token")
             use_token_manager = False
         
-        usernames_set = set()  # Use set to avoid duplicates
+        usernames_set = set()
         
-        # Strategy: Pre-defined optimal filters + dynamic subdivision fallback
-        # Use known working filters, auto-split if user counts change over time
-        print(f"   Using pre-optimized filters with dynamic fallback")
-        
-        def get_user_count(repo_filter: str) -> int:
-            """Get total user count for a repo filter"""
-            url = "https://api.github.com/search/users"
-            params = {"q": f"location:seattle {repo_filter}", "per_page": 1}
-            
-            if use_token_manager:
-                current_token = tm.get_token()
-            else:
-                current_token = token
-            
-            headers_check = {
-                "Authorization": f"token {current_token}",
-                "Accept": "application/vnd.github.v3+json"
+        # GraphQL search query
+        query_template = """
+        query($searchQuery: String!, $cursor: String) {
+          search(query: $searchQuery, type: USER, first: 100, after: $cursor) {
+            userCount
+            pageInfo {
+              hasNextPage
+              endCursor
             }
-            
-            response = requests.get(url, headers=headers_check, params=params, timeout=10)
-            if response.status_code == 200:
-                return response.json().get("total_count", 0)
-            return 0
+            nodes {
+              ... on User {
+                login
+              }
+            }
+          }
+        }
+        """
         
-        def subdivide_range(start: int, end: int) -> List[str]:
-            """
-            Recursively subdivide a range if it has > 900 users
-            Returns list of repo filters that are safe to query
-            """
-            if start == end:
-                repo_filter = f"repos:{start}"
-            else:
-                repo_filter = f"repos:{start}..{end}"
-            
-            count = get_user_count(repo_filter)
-            print(f"      Checking {repo_filter}: {count} users", end="")
-            
-            # If under threshold, use this range as-is
-            if count <= 900:
-                print(f" ✅")
-                time.sleep(0.2)
-                return [repo_filter]
-            
-            # If it's a single number and still > 900, try subdividing by followers
-            if start == end:
-                print(f" 🔄 (trying followers subdivision)")
-                time.sleep(0.2)
+        # Use shared pre-optimized filters (same as REST API)
+        repo_filters = self.PREOPTIMIZED_FILTERS
+        
+        print(f"   Using {len(repo_filters)} pre-optimized filters")
+        print(f"   (Same strategy as REST API for ~28K users)")
+        
+        for idx, repo_filter in enumerate(repo_filters, 1):
+            if len(usernames_set) >= max_users:
+                break
                 
-                # Try to subdivide by followers
-                followers_ranges = [
-                    "followers:>=100",
-                    "followers:50..99",
-                    "followers:20..49",
-                    "followers:10..19",
-                    "followers:5..9",
-                    "followers:1..4",
-                    "followers:0",
-                ]
-                
-                sub_filters = []
-                for followers in followers_ranges:
-                    sub_filter = f"{repo_filter} {followers}"
-                    sub_count = get_user_count(sub_filter)
-                    print(f"         {sub_filter}: {sub_count} users", end="")
-                    
-                    if sub_count <= 900:
-                        print(f" ✅")
-                        sub_filters.append(sub_filter)
-                    else:
-                        print(f" ⚠️ (still too many, accepting anyway)")
-                        sub_filters.append(sub_filter)
-                    
-                    time.sleep(0.2)
-                
-                # Verify we got them all
-                return sub_filters if sub_filters else [repo_filter]
+            search_query = f"location:seattle {repo_filter}"
+            print(f"   [{idx}/{len(repo_filters)}] Searching: {search_query}")
             
-            # Otherwise, split in half and recurse
-            print(f" 🔄 (splitting)")
-            mid = (start + end) // 2
-            time.sleep(0.2)
-            
-            left = subdivide_range(start, mid)
-            right = subdivide_range(mid + 1, end)
-            
-            return left + right
-        
-        # Pre-defined optimal filters (based on testing, valid as of 2025-11-06)
-        # Strategy: repos>=10 all users, repos:1-9 only followers>=5 (quality filter)
-        # Total: ~28,000 users (24K high-activity + 4K quality low-repo)
-        preoptimized_filters = [
-            # High activity users - repos>=10 (all users, no follower restriction)
-            "repos:>=500",
-            "repos:300..499",
-            "repos:200..299",
-            "repos:150..199",
-            "repos:100..149",
-            "repos:80..99",
-            "repos:60..69",
-            "repos:70..79",
-            "repos:50..54",
-            "repos:55..59",
-            "repos:40..42",
-            "repos:43..44",
-            "repos:45..49",
-            "repos:30..31",
-            "repos:32",
-            "repos:33..34",
-            "repos:35..37",
-            "repos:38..39",
-            "repos:20",
-            "repos:21",
-            "repos:22",
-            "repos:23",
-            "repos:24",
-            "repos:25",
-            "repos:26",
-            "repos:27",
-            "repos:28..29",
-            "repos:15",
-            "repos:16",
-            "repos:17",
-            "repos:18",
-            "repos:19",
-            # repos:10-14 need followers subdivision (all users)
-            "repos:10 followers:>=100",
-            "repos:10 followers:50..99",
-            "repos:10 followers:20..49",
-            "repos:10 followers:10..19",
-            "repos:10 followers:5..9",
-            "repos:10 followers:1..4",
-            "repos:10 followers:0",
-            "repos:11 followers:>=100",
-            "repos:11 followers:50..99",
-            "repos:11 followers:20..49",
-            "repos:11 followers:10..19",
-            "repos:11 followers:5..9",
-            "repos:11 followers:1..4",
-            "repos:11 followers:0",
-            "repos:12 followers:>=100",
-            "repos:12 followers:50..99",
-            "repos:12 followers:20..49",
-            "repos:12 followers:10..19",
-            "repos:12 followers:5..9",
-            "repos:12 followers:1..4",
-            "repos:12 followers:0",
-            "repos:13 followers:>=100",
-            "repos:13 followers:50..99",
-            "repos:13 followers:20..49",
-            "repos:13 followers:10..19",
-            "repos:13 followers:5..9",
-            "repos:13 followers:1..4",
-            "repos:13 followers:0",
-            "repos:14 followers:>=100",
-            "repos:14 followers:50..99",
-            "repos:14 followers:20..49",
-            "repos:14 followers:10..19",
-            "repos:14 followers:5..9",
-            "repos:14 followers:1..4",
-            "repos:14 followers:0",
-            # Low repo count - only quality users (followers>=5)
-            # repos:1-9 with followers>=5: ~4K users, all ranges < 500
-            "repos:1 followers:>=5",
-            "repos:2 followers:>=5",
-            "repos:3 followers:>=5",
-            "repos:4 followers:>=5",
-            "repos:5 followers:>=5",
-            "repos:6 followers:>=5",
-            "repos:7 followers:>=5",
-            "repos:8 followers:>=5",
-            "repos:9 followers:>=5",
-        ]
-        
-        print(f"   Using {len(preoptimized_filters)} pre-optimized filters")
-        print(f"   (Dynamic subdivision available as fallback if counts change)")
-        
-        repo_ranges = preoptimized_filters
-        
-        for idx, repo_filter in enumerate(repo_ranges, 1):
-            # Don't stop early - collect from all filters to maximize diversity
-            # Will truncate to max_users at the end
-                
-            print(f"   [{idx}/{len(repo_ranges)}] Searching: location:seattle {repo_filter}")
-            
+            cursor = None
             page = 1
-            per_page = 100
-            query_users = 0
+            filter_users = 0
             
-            while True:  # Collect all users from this filter (up to 1000)
-                # Get fresh token for each request
+            while len(usernames_set) < max_users:
+                # Get fresh token with smart selection
                 if use_token_manager:
                     current_token = tm.get_token()
                 else:
                     current_token = token
                 
                 headers = {
-                    "Authorization": f"token {current_token}",
-                    "Accept": "application/vnd.github.v3+json"
+                    "Authorization": f"bearer {current_token}",
+                    "Content-Type": "application/json",
                 }
                 
-                url = f"https://api.github.com/search/users"
-                params = {
-                    "q": f"location:seattle {repo_filter}",
-                    "per_page": per_page,
-                    "page": page,
-                    "sort": "repositories",
-                    "order": "desc"
+                variables = {
+                    "searchQuery": search_query,
+                    "cursor": cursor
                 }
                 
-                response = requests.get(url, headers=headers, params=params, timeout=10)
+                response = requests.post(
+                    'https://api.github.com/graphql',
+                    json={'query': query_template, 'variables': variables},
+                    headers=headers,
+                    timeout=10
+                )
+                
+                # Check rate limit from response headers
+                remaining = int(response.headers.get('X-RateLimit-Remaining', 999))
+                
+                # Proactive rate limit handling - check before hitting limit
+                if remaining < 100:
+                    if use_token_manager:
+                        # Check all tokens to find the best one
+                        best_token = None
+                        best_remaining = 0
+                        min_reset_time = float('inf')
+                        token_status = []
+                        
+                        for i in range(tm.get_token_count()):
+                            check_token = tm._tokens[i]
+                            check_headers = {'Authorization': f'bearer {check_token}'}
+                            check_query = '{ rateLimit { remaining limit resetAt } }'
+                            
+                            try:
+                                check_response = requests.post(
+                                    'https://api.github.com/graphql',
+                                    json={'query': check_query},
+                                    headers=check_headers,
+                                    timeout=5
+                                )
+                                if check_response.status_code == 200:
+                                    data = check_response.json()
+                                    if 'data' in data and 'rateLimit' in data['data']:
+                                        rate_limit = data['data']['rateLimit']
+                                        token_remaining = rate_limit['remaining']
+                                        token_status.append(f"Token{i+1}:{token_remaining}/{rate_limit['limit']}")
+                                        
+                                        # Find token with most remaining quota
+                                        if token_remaining > best_remaining:
+                                            best_remaining = token_remaining
+                                            best_token = check_token
+                                        
+                                        # Track reset time if needed
+                                        if token_remaining < 100:
+                                            from dateutil import parser
+                                            reset_at = parser.parse(rate_limit['resetAt'])
+                                            reset_timestamp = reset_at.timestamp()
+                                            if reset_timestamp < min_reset_time:
+                                                min_reset_time = reset_timestamp
+                            except Exception as e:
+                                print(f"      ⚠️ Failed to check token {i+1}: {e}")
+                        
+                        if best_remaining > 100:
+                            # Found a token with good quota
+                            print(f"      ✅ Switched to better token ({', '.join(token_status)})")
+                            current_token = best_token
+                            headers["Authorization"] = f"bearer {current_token}"
+                            # Force update TokenManager to use this token next
+                            tm._current_index = tm._tokens.index(best_token)
+                        elif min_reset_time != float('inf'):
+                            # All tokens exhausted, wait for earliest recovery
+                            wait_time = max(min_reset_time - time.time(), 0) + 60
+                            print(f"      ⏳ All tokens low, waiting {wait_time:.0f}s for earliest recovery...")
+                            print(f"         Status: {', '.join(token_status)}")
+                            time.sleep(wait_time)
+                            current_token = tm.get_token(force_check=True)
+                            headers["Authorization"] = f"bearer {current_token}"
+                        else:
+                            # Fallback: wait 60s
+                            print(f"      ⏳ Rate limit low ({remaining}), waiting 60s...")
+                            time.sleep(60)
+                    else:
+                        # Single token mode - just wait
+                        reset_at = response.headers.get('X-RateLimit-Reset')
+                        if reset_at:
+                            wait_time = max(int(reset_at) - time.time(), 0) + 60
+                        else:
+                            wait_time = 60
+                        print(f"      ⏳ Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
+                        time.sleep(wait_time)
+                    continue
                 
                 if response.status_code != 200:
-                    print(f"      ⚠️ API returned status {response.status_code}, moving to next filter")
-                    break
+                    if response.status_code == 403:
+                        # Secondary rate limit or token issue
+                        if use_token_manager:
+                            # Try to find another token
+                            print(f"      ⚠️ 403 error, checking other tokens...")
+                            current_token = tm.get_token(force_check=True)
+                            headers["Authorization"] = f"bearer {current_token}"
+                            time.sleep(10)  # Brief wait
+                            continue
+                        else:
+                            wait_time = 60
+                            print(f"      ⚠️ Rate limit (403) - waiting {wait_time}s...")
+                            time.sleep(wait_time)
+                            continue
+                    else:
+                        print(f"      ⚠️ API returned status {response.status_code}, moving to next filter")
+                        break
                 
                 data = response.json()
-                users = data.get("items", [])
+                
+                if 'errors' in data:
+                    print(f"      ⚠️ GraphQL errors: {data['errors'][0]['message']}")
+                    break
+                
+                search_result = data.get('data', {}).get('search', {})
+                users = search_result.get('nodes', [])
+                page_info = search_result.get('pageInfo', {})
                 
                 if not users:
                     break
                 
                 for user in users:
-                    usernames_set.add(user["login"])
-                    query_users += 1
+                    if user and 'login' in user:
+                        usernames_set.add(user['login'])
+                        filter_users += 1
                 
-                print(f"      Page {page}: +{len(users)} users (total in this query: {query_users}, overall: {len(usernames_set)})", end="\r", flush=True)
+                print(f"      Page {page}: +{len(users)} users (filter: {filter_users}, total: {len(usernames_set)})", end="\r", flush=True)
                 
-                # Stop if we've hit the 1000 result limit for this query
-                if page * per_page >= 1000:
-                    print(f"\n      Reached 1000 limit for this filter")
+                # Check if there are more pages
+                if not page_info.get('hasNextPage') or len(usernames_set) >= max_users:
+                    print()  # New line
                     break
                 
+                cursor = page_info.get('endCursor')
                 page += 1
-                time.sleep(0.5)  # Rate limit prevention
+                time.sleep(1.0)  # Rate limit prevention
             
-            print()  # New line after query complete
+            print()  # New line after filter complete
+            time.sleep(2.0)  # Wait between filters
         
-        # Convert set to list and truncate to max_users
+        # Convert set to list and truncate
         usernames = list(usernames_set)[:max_users]
         
         print(f"✅ Found {len(usernames)} unique developers (requested: {max_users})")
         
-        # Save usernames list to file in parent data/ directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Save to file
+        timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         usernames_file = os.path.join(project_root, "data", f"seattle_users_{timestamp}.json")
         os.makedirs(os.path.dirname(usernames_file), exist_ok=True)
@@ -553,9 +608,9 @@ class DistributedCollector:
         with open(usernames_file, "w", encoding="utf-8") as f:
             json.dump({
                 "total_users": len(usernames),
-                "collected_at": datetime.utcnow().isoformat(),
-                "query_strategy": "multi-filter with repo counts",
-                "filters_used": len(repo_ranges),
+                "collected_at": datetime.now(SEATTLE_TZ).isoformat(),
+                "query_strategy": "graphql multi-filter",
+                "filters_used": len(repo_filters),
                 "usernames": usernames
             }, f, indent=2, ensure_ascii=False)
         
@@ -773,13 +828,12 @@ class DistributedCollector:
         
         return result
     
-    def aggregate_results(self, result: GroupResult, target_projects: int, checkpoint_file: str = None) -> Dict[str, Any]:
+    def aggregate_results(self, result: GroupResult, checkpoint_file: str = None) -> Dict[str, Any]:
         """
         Aggregate results from all workers with checkpoint saving
         
         Args:
             result: Celery GroupResult
-            target_projects: Target number of projects
             checkpoint_file: Optional checkpoint file path for incremental saves
             
         Returns:
@@ -790,21 +844,26 @@ class DistributedCollector:
         batch_results = result.get(timeout=3600)  # 60 minutes timeout (increased for large collections)
         
         all_projects = []
+        total_users_checked = 0
         total_users_successful = 0
         total_users_failed = 0
+        total_users_filtered = 0
         
         # Aggregate failure reasons
         aggregated_failures = {
             "user_not_found": 0,
             "rate_limit": 0,
             "api_error": 0,
-            "exception": 0
+            "exception": 0,
+            "filtered_criteria": 0
         }
         
         for batch_result in batch_results:
             all_projects.extend(batch_result["repos"])
+            total_users_checked += batch_result.get("checked_users", batch_result.get("batch_size", 0))
             total_users_successful += batch_result["successful_users"]
             total_users_failed += batch_result["failed_users"]
+            total_users_filtered += batch_result.get("filtered_users", 0)
             
             # Aggregate failure reasons if available
             if "failure_reasons" in batch_result:
@@ -812,8 +871,14 @@ class DistributedCollector:
                     aggregated_failures[reason] += count
         
         print(f"   Raw projects collected: {len(all_projects)}")
+        print(f"   Users checked: {total_users_checked}")
         print(f"   Successful users: {total_users_successful}")
+        print(f"   Filtered users: {total_users_filtered}")
         print(f"   Failed users: {total_users_failed}")
+        
+        if total_users_filtered > 0:
+            print(f"\n   📊 Filtered Analysis:")
+            print(f"      Doesn't meet criteria (repos/followers): {aggregated_failures.get('filtered_criteria', 0)}")
         
         if total_users_failed > 0:
             print(f"\n   📊 Failure Analysis:")
@@ -822,27 +887,28 @@ class DistributedCollector:
             print(f"      API errors: {aggregated_failures['api_error']} ({aggregated_failures['api_error']/total_users_failed*100:.1f}%)")
             print(f"      Exceptions: {aggregated_failures['exception']} ({aggregated_failures['exception']/total_users_failed*100:.1f}%)")
         
-        # Sort by stars and limit
+        # Sort by stars
         all_projects.sort(key=lambda x: x["stars"], reverse=True)
-        top_projects = all_projects[:target_projects]
         
-        total_stars = sum(p["stars"] for p in top_projects)
+        total_stars = sum(p["stars"] for p in all_projects)
         
-        print(f"\n   Top {len(top_projects)} projects selected")
+        print(f"\n   Total {len(all_projects)} projects collected")
         print(f"   Total stars: {total_stars:,}")
         
-        if top_projects:
-            top_project = top_projects[0]
+        if all_projects:
+            top_project = all_projects[0]
             print(f"   #1 project: {top_project['name_with_owner']} ({top_project['stars']:,} stars)")
         
         return {
-            "total_projects": len(top_projects),
+            "total_projects": len(all_projects),
             "total_stars": total_stars,
+            "checked_users": total_users_checked,
             "successful_users": total_users_successful,
+            "filtered_users": total_users_filtered,
             "failed_users": total_users_failed,
             "failure_reasons": aggregated_failures,
-            "projects": top_projects,
-            "collected_at": datetime.utcnow().isoformat()
+            "projects": all_projects,
+            "collected_at": datetime.now(SEATTLE_TZ).isoformat()
         }
     
     def save_results(self, results: Dict[str, Any], output_file: str):
@@ -864,7 +930,6 @@ class DistributedCollector:
     
     def collect(
         self,
-        target_projects: int = 10000,
         max_users: int = 1000,
         start_user: int = 0,
         output_file: str = None
@@ -873,7 +938,6 @@ class DistributedCollector:
         Main collection workflow with support for segmented collection
         
         Args:
-            target_projects: Target number of projects
             max_users: Maximum users to search
             start_user: Starting user index (for segmented collection)
             output_file: Output file path (optional)
@@ -883,7 +947,6 @@ class DistributedCollector:
         """
         print(f"🚀 Starting Distributed Collection with Multi-Token Support")
         print(f"=" * 60)
-        print(f"Target Projects: {target_projects}")
         print(f"Max Users: {max_users}")
         print(f"Start User: {start_user}")
         print(f"Batch Size: {self.batch_size}")
@@ -923,7 +986,7 @@ class DistributedCollector:
             result = self.retry_failed_tasks(result, batches)
             
             # Step 5: Aggregate results
-            aggregated = self.aggregate_results(result, target_projects)
+            aggregated = self.aggregate_results(result)
             
             # Step 6: Save results
             if output_file:
@@ -938,6 +1001,7 @@ class DistributedCollector:
             print(f"Projects: {aggregated['total_projects']}")
             print(f"Stars: {aggregated['total_stars']:,}")
             print(f"Users: {aggregated['successful_users']} successful, "
+                  f"{aggregated['filtered_users']} filtered, "
                   f"{aggregated['failed_users']} failed")
             print(f"=" * 60)
             
@@ -952,12 +1016,6 @@ def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
         description="Distributed Seattle project collector using Celery workers with multi-token support"
-    )
-    parser.add_argument(
-        "--target",
-        type=int,
-        default=10000,
-        help="Target number of projects to collect (default: 10000)"
     )
     parser.add_argument(
         "--max-users",
@@ -981,13 +1039,19 @@ def main():
         "--output",
         type=str,
         default=None,
-        help="Output JSON file path (default: data/seattle_projects_distributed_<timestamp>.json)"
+        help="Output JSON file path (default: data/seattle_projects_<timestamp>.json)"
     )
     parser.add_argument(
         "--workers",
         type=int,
         default=8,
         help="Number of Celery workers to start (default: 8)"
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=2,
+        help="Number of concurrent tasks per worker (default: 2)"
     )
     parser.add_argument(
         "--no-auto-workers",
@@ -999,8 +1063,8 @@ def main():
     
     # Default output file
     if not args.output:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        args.output = f"data/seattle_projects_distributed_{timestamp}.json"
+        timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
+        args.output = f"data/seattle_projects_{timestamp}.json"
     
     # Check environment
     if not os.getenv("GITHUB_TOKEN"):
@@ -1024,12 +1088,12 @@ def main():
     collector = DistributedCollector(
         batch_size=args.batch_size,
         auto_manage_workers=auto_manage,
-        num_workers=args.workers
+        num_workers=args.workers,
+        concurrency=args.concurrency
     )
     
     try:
         results = collector.collect(
-            target_projects=args.target,
             max_users=args.max_users,
             start_user=args.start_user,
             output_file=args.output

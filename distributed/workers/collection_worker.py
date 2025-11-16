@@ -20,8 +20,6 @@ from utils.celery_config import celery_app
     bind=True,
     name="workers.collection_worker.fetch_users_batch",
     max_retries=3,
-    time_limit=1800,  # 30 minutes hard limit
-    soft_time_limit=1500,  # 25 minutes soft limit
 )
 def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
     """
@@ -68,13 +66,20 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
         "user_not_found": 0,
         "rate_limit": 0,
         "api_error": 0,
-        "exception": 0
+        "exception": 0,
+        "filtered_criteria": 0  # Doesn't meet repos/followers criteria
     }
+    
+    successful = 0
+    failed = 0
+    filtered = 0  # Users filtered out due to criteria
+    checked = 0  # Total users checked (for statistics)
     
     print(f"🔄 Processing batch of {len(usernames)} users...")
     
     # Process each user in this batch sequentially using REST API
     for idx, username in enumerate(usernames, 1):
+        checked += 1  # Count all users we attempt to check
         try:
             print(f"📦 [{idx}/{len(usernames)}] Fetching repos for: {username}", flush=True)
             
@@ -223,7 +228,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                         "forks": repo["forks_count"],
                         "watchers": repo["watchers_count"],
                         "language": repo.get("language"),
-                        "topics": [],  # Will be populated later with individual repo API calls
+                        "topics": repo.get("topics", []),  # Topics are already in the response
                         "created_at": repo["created_at"],
                         "updated_at": repo["updated_at"],
                         "pushed_at": repo.get("pushed_at"),
@@ -241,40 +246,53 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                 
                 page += 1
             
-            # Fetch topics for each repo (batch enrichment)
-            if user_repos and not user_fetch_failed:
-                print(f"   📚 Fetching topics for {len(user_repos)} repos...", flush=True)
-                for repo_idx, repo_data in enumerate(user_repos):
-                    try:
-                        # Get fresh token for each request
-                        if use_token_manager:
-                            token = tm.get_token()
-                        else:
-                            token = fallback_token
-                        
-                        headers = {
-                            "Authorization": f"token {token}",
-                        }
-                        
-                        # Small delay to avoid rate limiting
-                        time.sleep(0.05)
-                        
-                        # Fetch individual repo to get topics
-                        repo_url = f"https://api.github.com/repos/{repo_data['name_with_owner']}"
-                        response = requests.get(repo_url, headers=headers, timeout=10)
-                        
-                        if response.status_code == 200:
-                            full_repo = response.json()
-                            repo_data["topics"] = full_repo.get("topics", [])
-                        else:
-                            repo_data["topics"] = []
-                        
-                    except Exception as e:
-                        print(f"      ⚠️  Failed to get topics for {repo_data['name']}: {e}")
-                        repo_data["topics"] = []
-            
-            # Mark as successful if we got repos and didn't fail
+            # Validate user meets criteria: repos >= 10 OR (repos 1-9 AND followers >= 5)
             if not user_fetch_failed:
+                non_fork_repos_count = len(user_repos)
+                
+                # If user has < 10 non-fork repos, check followers requirement
+                if non_fork_repos_count < 10:
+                    # Get user info to check followers
+                    try:
+                        user_url = f"https://api.github.com/users/{username}"
+                        user_response = requests.get(user_url, headers=headers, timeout=10)
+                        
+                        if user_response.status_code == 200:
+                            user_info = user_response.json()
+                            followers_count = user_info.get("followers", 0)
+                            
+                            # Criteria: 1-9 repos need followers >= 5
+                            if non_fork_repos_count > 0 and followers_count < 5:
+                                print(f"   ⏭️  Filtered {username}: {non_fork_repos_count} repos but only {followers_count} followers (need >= 5)", flush=True)
+                                filtered += 1
+                                failure_reasons["filtered_criteria"] += 1
+                                continue
+                            elif non_fork_repos_count == 0:
+                                # No valid repos at all (all were forks/archived)
+                                print(f"   ⏭️  Filtered {username}: no non-fork repos (followers: {followers_count})", flush=True)
+                                filtered += 1
+                                failure_reasons["filtered_criteria"] += 1
+                                continue
+                        else:
+                            # Can't verify followers, but already have repos, so accept
+                            if non_fork_repos_count > 0:
+                                print(f"   ⚠️  Couldn't verify followers for {username}, accepting anyway ({non_fork_repos_count} repos)", flush=True)
+                            else:
+                                # No repos and can't verify
+                                print(f"   ⏭️  Filtered {username}: no repos and couldn't verify followers", flush=True)
+                                filtered += 1
+                                failure_reasons["filtered_criteria"] += 1
+                                continue
+                    except Exception as e:
+                        if non_fork_repos_count > 0:
+                            print(f"   ⚠️  Error checking followers for {username}: {e}, accepting anyway ({non_fork_repos_count} repos)", flush=True)
+                        else:
+                            print(f"   ⏭️  Filtered {username}: no repos and error checking followers: {e}", flush=True)
+                            filtered += 1
+                            failure_reasons["filtered_criteria"] += 1
+                            continue
+                
+                # User meets criteria
                 all_repos.extend(user_repos)
                 successful += 1
                 print(f"   ✅ Got {len(user_repos)} repos from {username}", flush=True)
@@ -285,18 +303,25 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
             failure_reasons["exception"] += 1
             continue
     
-    # Print failure summary for this batch
-    if failed > 0:
-        print(f"\n📊 Batch Failure Summary:")
-        print(f"   User not found/inaccessible: {failure_reasons['user_not_found']}")
-        print(f"   Rate limit hits: {failure_reasons['rate_limit']}")
-        print(f"   API errors: {failure_reasons['api_error']}")
-        print(f"   Exceptions: {failure_reasons['exception']}")
+    # Print summary for this batch
+    if failed > 0 or filtered > 0:
+        print(f"\n📊 Batch Summary:")
+        print(f"   Checked: {checked}, Successful: {successful}, Filtered: {filtered}, Failed: {failed}")
+        if failed > 0:
+            print(f"   Failed (errors):")
+            print(f"      User not found/inaccessible: {failure_reasons['user_not_found']}")
+            print(f"      Rate limit hits: {failure_reasons['rate_limit']}")
+            print(f"      API errors: {failure_reasons['api_error']}")
+            print(f"      Exceptions: {failure_reasons['exception']}")
+        if filtered > 0:
+            print(f"   Filtered (doesn't meet criteria): {failure_reasons['filtered_criteria']}")
     
     return {
         "batch_size": len(usernames),
+        "checked_users": checked,
         "successful_users": successful,
         "failed_users": failed,
+        "filtered_users": filtered,
         "total_repos": len(all_repos),
         "repos": all_repos,
         "failure_reasons": failure_reasons,
@@ -420,7 +445,7 @@ def collect_seattle_projects_task(
     print(f"   Waiting for workers to complete...")
     
     # Step 4: Wait and aggregate results
-    batch_results = result.get(timeout=1800)  # 30 minutes timeout
+    batch_results = result.get(timeout=None)  # No timeout - wait until all tasks complete
     
     all_projects = []
     for batch_result in batch_results:

@@ -1,11 +1,12 @@
 #!/bin/bash
 # Safe collection script with checkpoint and background execution
-# Usage: ./start_collection_safe.sh
+# Usage: ./start_collection.sh
 
 set -e  # Exit on error
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+cd "$PROJECT_ROOT"
 
 echo "=========================================="
 echo "🚀 Safe Distributed Collection Starter"
@@ -16,6 +17,14 @@ echo "📦 Activating conda environment..."
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate ssr
 
+# Get date and timestamp
+DATE=$(date +%Y%m%d)
+TIMESTAMP=$(date +%H%M%S)
+
+# Create logs directory with date
+LOG_DIR="logs/${DATE}"
+mkdir -p "${LOG_DIR}"
+
 # Step 1: Clean up old data
 echo ""
 echo "🧹 Step 1: Cleaning up old data..."
@@ -23,14 +32,7 @@ echo "   Clearing Redis..."
 redis-cli FLUSHDB
 echo "   ✅ Redis cleared"
 
-echo "   Archiving old logs..."
-if [ -d "distributed/logs" ]; then
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    ARCHIVE_DIR="distributed/logs_archive_${TIMESTAMP}"
-    mkdir -p "$ARCHIVE_DIR"
-    mv distributed/logs/worker_*.log "$ARCHIVE_DIR/" 2>/dev/null || true
-    echo "   ✅ Logs archived to: $ARCHIVE_DIR"
-fi
+echo "   Note: Old logs are kept in logs/<date> directories"
 
 # Step 2: Stop any running workers
 echo ""
@@ -47,26 +49,26 @@ fi
 # Step 3: Start collection in background with nohup
 echo ""
 echo "🚀 Step 3: Starting collection in background..."
-echo "   Using user file: data/seattle_users_20251106_020713.json"
 echo "   Parameters:"
-echo "      - Target: 1000000 projects (no limit)"
+echo "      - Max users: 30000"
 echo "      - Batch size: 50"
-echo "      - Workers: 8"
-echo "      - Max users: 28126 (from file)"
+echo "      - Workers: 8 (auto-managed)"
 echo ""
 
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="distributed/logs/collection_${TIMESTAMP}.log"
-mkdir -p distributed/logs
+LOG_FILE="${LOG_DIR}/collection_${TIMESTAMP}.log"
+
+# Record start time
+echo "Start time: $(date '+%Y-%m-%d %H:%M:%S')" | tee collection_time.log
+date +%s > collection_start.txt
 
 nohup python3 -u distributed/distributed_collector.py \
-    --target 1000000 \
+    --max-users 30000 \
     --batch-size 50 \
     --workers 8 \
-    --max-users 28126 \
     > "$LOG_FILE" 2>&1 &
 
 COLLECTOR_PID=$!
+echo "$COLLECTOR_PID" > collection.pid
 
 echo "   ✅ Collection started!"
 echo "   PID: $COLLECTOR_PID"
