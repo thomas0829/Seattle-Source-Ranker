@@ -224,79 +224,20 @@ jobs:
         PYTHON_EOF
       timeout-minutes: 180  # 3小時超時
     
-    - name: Verify or prepare data
+    - name: Verify collection results
       run: |
-        if [ "${{ steps.check_collection.outputs.needs_collection }}" == "true" ]; then
-          # 驗證新收集的數據
-          if [ ! -f "data/.collection_success" ]; then
-            echo "❌ Collection failed - success marker not found"
-            exit 1
-          fi
-          
-          if [ ! -f "data/ranked_project_local_seattle.json" ]; then
-            echo "❌ Collection failed - ranked data not found"
-            exit 1
-          fi
-          
-          echo "✅ New collection verification passed"
-        else
-          # 使用現有數據，需要重新生成 ranked 文件
-          echo "📂 Using existing data, regenerating ranked files..."
-          python3 << 'PYTHON_EOF'
-        import json
-        import glob
-        from datetime import datetime
-        from zoneinfo import ZoneInfo
-        
-        SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
-        
-        # 查找最新的項目數據文件
-        project_files = glob.glob('data/seattle_projects_*.json')
-        latest_file = max(project_files)
-        
-        print(f"📂 Loading data from {latest_file}")
-        with open(latest_file, 'r') as f:
-            data = json.load(f)
-        
-        projects = data.get('projects', [])
-        
-        # 按 SSR score 排序
-        projects_sorted = sorted(projects, 
-                                key=lambda x: x.get('ssr_score', 0), 
-                                reverse=True)
-        
-        # Save ranked project list
-        ranked_output = {
-            'total_projects': data.get('total_projects', 0),
-            'total_stars': data.get('total_stars', 0),
-            'successful_users': data.get('successful_users', 0),
-            'filtered_users': data.get('filtered_users', 0),
-            'failed_users': data.get('failed_users', 0),
-            'collected_at': data.get('collected_at', ''),
-            'projects': projects_sorted
-        }
-        
-        with open('data/ranked_project_local_seattle.json', 'w') as f:
-            json.dump(ranked_output, f, indent=2)
-        
-        # Create language-based ranking
-        language_groups = {}
-        for proj in projects_sorted:
-            lang = proj.get('language') or 'Unknown'
-            if lang not in language_groups:
-                language_groups[lang] = []
-            language_groups[lang].append(proj)
-        
-        # Save by language
-        with open('data/ranked_by_language_seattle.json', 'w') as f:
-            json.dump(language_groups, f, indent=2)
-        
-        print(f"✅ Regenerated ranked_project_local_seattle.json ({len(projects_sorted)} projects)")
-        print(f"✅ Regenerated ranked_by_language_seattle.json ({len(language_groups)} languages)")
-        PYTHON_EOF
-          
-          echo "✅ Data preparation completed"
+        # 驗證收集的數據
+        if [ ! -f "data/.collection_success" ]; then
+          echo "❌ Collection failed - success marker not found"
+          exit 1
         fi
+        
+        if [ ! -f "data/ranked_project_local_seattle.json" ]; then
+          echo "❌ Collection failed - ranked data not found"
+          exit 1
+        fi
+        
+        echo "✅ Collection verification passed"
     
     - name: Clean old data files
       run: |
