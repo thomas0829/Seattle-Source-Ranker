@@ -10,12 +10,15 @@ from pathlib import Path
 
 def load_latest_data():
     """Load the latest collection data"""
+    import glob
     data_dir = Path(__file__).parent.parent / "data"
     
-    # Try ranked_project_local_seattle.json first
-    main_file = data_dir / "ranked_project_local_seattle.json"
-    if main_file.exists():
-        with open(main_file, 'r') as f:
+    # Find latest seattle_projects_*.json file
+    project_files = list(data_dir.glob('seattle_projects_*.json'))
+    if project_files:
+        latest_file = max(project_files)
+        print(f"📂 Loading data from {latest_file.name}")
+        with open(latest_file, 'r') as f:
             return json.load(f)
     
     return None
