@@ -10,7 +10,6 @@ from pathlib import Path
 
 def load_latest_data():
     """Load the latest collection data"""
-    import glob
     data_dir = Path(__file__).parent.parent / "data"
     
     # Find latest seattle_projects_*.json file
@@ -18,7 +17,14 @@ def load_latest_data():
     if project_files:
         latest_file = max(project_files)
         print(f"📂 Loading data from {latest_file.name}")
+        
+        # Check if it's a Git LFS pointer
         with open(latest_file, 'r') as f:
+            first_line = f.readline()
+            if first_line.startswith('version https://git-lfs.github.com'):
+                print(f"⚠️  Warning: {latest_file.name} is a Git LFS pointer, not actual data")
+                return None
+            f.seek(0)
             return json.load(f)
     
     return None

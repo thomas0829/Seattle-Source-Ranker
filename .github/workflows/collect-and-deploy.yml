@@ -179,54 +179,11 @@ jobs:
         # The collector will automatically skip GraphQL if user file < 24h exists
         collector.collect(max_users=30000, output_file=output_file)
         
-        # Load the collected data
-        with open(output_file, 'r') as f:
-            data = json.load(f)
-        
-        # Create ranked_project_local_seattle.json (sorted by score)
-        projects = data.get('projects', [])
-        
-        # Sort by score (stars * 0.6 + forks * 0.3 + watchers * 0.1)
-        for proj in projects:
-            proj['score'] = (proj.get('stargazers_count', 0) * 0.6 + 
-                           proj.get('forks_count', 0) * 0.3 + 
-                           proj.get('watchers_count', 0) * 0.1)
-        
-        projects.sort(key=lambda x: x['score'], reverse=True)
-        
-        # Save ranked project list
-        ranked_output = {
-            'total_projects': data.get('total_projects', 0),
-            'total_stars': data.get('total_stars', 0),
-            'successful_users': data.get('successful_users', 0),
-            'filtered_users': data.get('filtered_users', 0),
-            'failed_users': data.get('failed_users', 0),
-            'collected_at': data.get('collected_at', ''),
-            'projects': projects
-        }
-        
-        with open('data/ranked_project_local_seattle.json', 'w') as f:
-            json.dump(ranked_output, f, indent=2)
-        
-        # Create language-based ranking
-        language_groups = {}
-        for proj in projects:
-            lang = proj.get('language') or 'Unknown'
-            if lang not in language_groups:
-                language_groups[lang] = []
-            language_groups[lang].append(proj)
-        
-        # Save by language
-        with open('data/ranked_by_language_seattle.json', 'w') as f:
-            json.dump(language_groups, f, indent=2)
-        
-        print(f"\n✅ Created ranked_project_local_seattle.json ({len(projects)} projects)")
-        print(f"✅ Created ranked_by_language_seattle.json ({len(language_groups)} languages)")
+        print(f"✅ Collection completed: {output_file}")
         
         # Create success marker
         with open('data/.collection_success', 'w') as f:
             f.write(datetime.now(SEATTLE_TZ).isoformat())
-        print("✅ Collection completed successfully")
         PYTHON_EOF
       timeout-minutes: 180  # 3 hour timeout
     
@@ -238,8 +195,8 @@ jobs:
           exit 1
         fi
         
-        if [ ! -f "data/ranked_project_local_seattle.json" ]; then
-          echo "❌ Collection failed - ranked data not found"
+        if [ ! -f "data/seattle_projects_"*.json ]; then
+          echo "❌ Collection failed - projects data not found"
           exit 1
         fi
         
