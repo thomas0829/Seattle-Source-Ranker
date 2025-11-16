@@ -1,6 +1,6 @@
 {
   "total_users": 27462,
-  "collected_at": "2025-11-16T05:06:33.468978",
+  "collected_at": "2025-11-15T21:06:33-08:00",
   "query_strategy": "graphql multi-filter",
   "filters_used": 76,
   "usernames": [
