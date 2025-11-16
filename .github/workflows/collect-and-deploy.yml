@@ -21,7 +21,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # 完整歷史記錄
-        lfs: true  # 下載 Git LFS 文件
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -74,77 +73,77 @@ jobs:
         
         SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
         
-        # 查找最新的項目數據文件
-        project_files = glob.glob('data/seattle_projects_*.json')
+        # 檢查 1: USERS 數據文件（較小，提交到 Git）
+        user_files = glob.glob('data/seattle_users_*.json')
         
-        if not project_files:
-            print("📭 No existing data found")
-            print("needs_collection=true")
+        if not user_files:
+            print("📭 No user data found → Need full collection")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('needs_collection=true\n')
             exit(0)
         
-        # 獲取最新的文件
-        latest_file = max(project_files)
-        print(f"📂 Found latest data: {latest_file}")
+        # 檢查 2: PROJECTS 數據文件（大，本地有但 Git 沒有）
+        project_files = glob.glob('data/seattle_projects_*.json')
+        
+        if not project_files:
+            print("📭 No project data found → Need collection")
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('needs_collection=true\n')
+            exit(0)
+        
+        # 兩個文件都存在，檢查 user 時間戳
+        latest_user_file = max(user_files)
+        print(f"📂 Found user data: {latest_user_file}")
+        print(f"📂 Found project data: {max(project_files)}")
         
         try:
-            # 檢查文件大小（Git LFS 指針文件很小）
-            file_size = os.path.getsize(latest_file)
-            if file_size < 1000:  # Git LFS 指針文件通常小於 1KB
-                print(f"⚠️  File appears to be Git LFS pointer ({file_size} bytes)")
-                print("needs_collection=true")
+            # 檢查 user 文件大小（Git LFS 指針很小）
+            file_size = os.path.getsize(latest_user_file)
+            if file_size < 1000:
+                print(f"⚠️  User file is LFS pointer ({file_size} bytes) → Need collection")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('needs_collection=true\n')
                 exit(0)
             
-            with open(latest_file, 'r') as f:
+            with open(latest_user_file, 'r') as f:
                 data = json.load(f)
             
-            # 檢查收集時間
             collected_at = data.get('collected_at')
             if not collected_at:
-                print("⚠️  No collection timestamp found")
-                print("needs_collection=true")
+                print("⚠️  No timestamp in user data → Need collection")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('needs_collection=true\n')
                 exit(0)
             
-            # 解析時間 (處理各種格式)
+            # 解析時間
             if collected_at.endswith('Z'):
                 collected_time = datetime.fromisoformat(collected_at.replace('Z', '+00:00'))
             elif '+' in collected_at or collected_at.count('-') > 2:
                 collected_time = datetime.fromisoformat(collected_at)
             else:
-                # 假設是 naive datetime，當作 Seattle 時間
                 collected_time = datetime.fromisoformat(collected_at).replace(tzinfo=SEATTLE_TZ)
             
             now = datetime.now(SEATTLE_TZ)
-            time_diff = now - collected_time
-            
-            hours_since_collection = time_diff.total_seconds() / 3600
+            hours_since = (now - collected_time).total_seconds() / 3600
             
             print(f"⏰ Last collection: {collected_at}")
-            print(f"⏱️  Time since collection: {hours_since_collection:.1f} hours")
+            print(f"⏱️  Hours since: {hours_since:.1f}")
             
-            # 處理異常情況：負數表示時間戳在未來（時區錯誤）
-            if hours_since_collection < 0:
-                print(f"⚠️  Warning: timestamp is in the future (timezone issue)")
-                print(f"🔄 Treating as old data, collection needed")
+            if hours_since < 0:
+                print(f"⚠️  Timestamp in future → Need collection")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('needs_collection=true\n')
-            elif hours_since_collection < 24:
-                print(f"✅ Data is fresh (< 24 hours), skipping collection")
+            elif hours_since < 24:
+                print(f"✅ Both files exist & user data < 24h → Skip collection")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('needs_collection=false\n')
             else:
-                print(f"🔄 Data is old (>= 24 hours), collection needed")
+                print(f"🔄 User data >= 24h → Need collection")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('needs_collection=true\n')
         
         except Exception as e:
-            print(f"⚠️  Error checking data: {e}")
-            print("needs_collection=true")
+            print(f"⚠️  Error: {e} → Need collection")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('needs_collection=true\n')
         PYTHON_EOF
@@ -359,20 +358,22 @@ jobs:
         user_email: 'github-actions[bot]@users.noreply.github.com'
         commit_message: 'Deploy: Update with latest data'
     
-    - name: Commit updated data
+    - name: Commit user data (not projects - too large)
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Add all changes in data directory (including deletions)
-        git add -A data/
-        git add README.md
+        # Only add user files (small enough for Git)
+        # Projects files are too large (252MB) and exceed Git LFS quota
+        git add data/seattle_users_*.json
+        git add data/owner_location_cache.json
         
         # Check if there are changes
         if git diff --staged --quiet; then
-          echo "No changes to commit"
+          echo "✅ No changes to user data"
         else
-          git commit -m "chore: Update data - $(date +'%Y-%m-%d')"
+          echo "📤 Committing updated user data"
+          git commit -m "chore: Update user data - $(date +'%Y-%m-%d')"
           git push
         fi
     
