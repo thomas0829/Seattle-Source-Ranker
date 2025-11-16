@@ -40,27 +40,23 @@ jobs:
         sudo systemctl start redis-server
         sudo systemctl status redis-server
     
-    - name: Setup GitHub tokens
+    - name: Configure GitHub tokens
       run: |
-        # Create .env.tokens file for TokenManager
         cat > .env.tokens << EOF
-        GITHUB_TOKEN_1=${{ secrets.GITHUB_TOKEN_1 }}
-        GITHUB_TOKEN_2=${{ secrets.GITHUB_TOKEN_2 }}
-        GITHUB_TOKEN_3=${{ secrets.GITHUB_TOKEN_3 }}
-        GITHUB_TOKEN_4=${{ secrets.GITHUB_TOKEN_4 }}
-        GITHUB_TOKEN_5=${{ secrets.GITHUB_TOKEN_5 }}
-        GITHUB_TOKEN_6=${{ secrets.GITHUB_TOKEN_6 }}
+        GITHUB_TOKEN_1=${{ secrets.GH_TOKEN_1 }}
+        GITHUB_TOKEN_2=${{ secrets.GH_TOKEN_2 }}
+        GITHUB_TOKEN_3=${{ secrets.GH_TOKEN_3 }}
+        GITHUB_TOKEN_4=${{ secrets.GH_TOKEN_4 }}
+        GITHUB_TOKEN_5=${{ secrets.GH_TOKEN_5 }}
+        GITHUB_TOKEN_6=${{ secrets.GH_TOKEN_6 }}
         EOF
         
-        # Also set as environment variables (backup method)
-        echo "GITHUB_TOKEN_1=${{ secrets.GITHUB_TOKEN_1 }}" >> $GITHUB_ENV
-        echo "GITHUB_TOKEN_2=${{ secrets.GITHUB_TOKEN_2 }}" >> $GITHUB_ENV
-        echo "GITHUB_TOKEN_3=${{ secrets.GITHUB_TOKEN_3 }}" >> $GITHUB_ENV
-        echo "GITHUB_TOKEN_4=${{ secrets.GITHUB_TOKEN_4 }}" >> $GITHUB_ENV
-        echo "GITHUB_TOKEN_5=${{ secrets.GITHUB_TOKEN_5 }}" >> $GITHUB_ENV
-        echo "GITHUB_TOKEN_6=${{ secrets.GITHUB_TOKEN_6 }}" >> $GITHUB_ENV
-        
-        echo "✅ Tokens configured (6 tokens)"
+        echo "GITHUB_TOKEN_1=${{ secrets.GH_TOKEN_1 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_2=${{ secrets.GH_TOKEN_2 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_3=${{ secrets.GH_TOKEN_3 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_4=${{ secrets.GH_TOKEN_4 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_5=${{ secrets.GH_TOKEN_5 }}" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN_6=${{ secrets.GH_TOKEN_6 }}" >> $GITHUB_ENV
     
     - name: Run distributed collection
       run: |
