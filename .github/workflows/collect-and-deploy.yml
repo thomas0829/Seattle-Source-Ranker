@@ -64,6 +64,13 @@ jobs:
     - name: Check if collection is needed
       id: check_collection
       run: |
+        # In GitHub Actions, always collect (projects file is LFS pointer)
+        # This check is only useful for local runs
+        echo "🤖 GitHub Actions: Always collect fresh data"
+        echo "needs_collection=true" >> $GITHUB_OUTPUT
+        exit 0
+        
+        # Below code is kept for reference (useful for local manual runs)
         python3 << 'PYTHON_EOF'
         import os
         import json
