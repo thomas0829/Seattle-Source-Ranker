@@ -17,8 +17,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 - **447,533 projects** tracked across Seattle's developer community
 - **2,166,692 total stars** accumulated by Seattle projects
-- **23,371 verified users** in the Seattle area
-- **99.996% success rate** in data collection (1 failure out of 27,462 users)
+- **23,371 users** collected in latest run
 - Last updated: 2025-11-15 21:06:33 PST
 
 ---
