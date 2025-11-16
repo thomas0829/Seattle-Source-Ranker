@@ -214,9 +214,13 @@ def main():
     os.makedirs(pages_build_dir, exist_ok=True)
     
     # Generate metadata file (total counts per language)
+    from zoneinfo import ZoneInfo
+    SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
+    
     metadata = {
         'languages': {},
-        'page_size': PAGE_SIZE
+        'page_size': PAGE_SIZE,
+        'last_updated': datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S %Z")
     }
     
     print(f"\n📊 Generating paginated data:")
