@@ -341,6 +341,9 @@ export default function App() {
       <header>
         <h1>Seattle-Source-Ranker</h1>
         <p className="subtitle">Top Open-Source Projects by Seattle-Area Developers</p>
+        {metadata && metadata.last_updated && (
+          <p className="last-updated">Last updated: {metadata.last_updated}</p>
+        )}
       </header>
 
       {/* Search Bar */}
