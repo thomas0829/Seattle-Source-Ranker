@@ -225,6 +225,7 @@ jobs:
       timeout-minutes: 180  # 3小時超時
     
     - name: Verify collection results
+      if: steps.check_collection.outputs.needs_collection == 'true'
       run: |
         # 驗證收集的數據
         if [ ! -f "data/.collection_success" ]; then
@@ -268,13 +269,6 @@ jobs:
         echo "📊 Generating frontend data with topics..."
         python3 scripts/generate_frontend_data.py
         echo "✅ Frontend data generated with topics support"
-    
-    - name: Copy data to frontend
-      run: |
-        # 複製最新的數據到 frontend/public
-        cp data/ranked_by_language_seattle.json frontend/public/
-        cp data/ranked_project_local_seattle.json frontend/public/
-        echo "✅ Data copied to frontend/public"
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
