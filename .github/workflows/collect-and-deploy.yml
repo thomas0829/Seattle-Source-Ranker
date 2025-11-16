@@ -80,7 +80,7 @@ jobs:
         # Collect data for 30,000 users
         timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
         output_file = f"data/seattle_projects_{timestamp}.json"
-        collector.collect_projects(max_users=30000, output_file=output_file)
+        collector.collect(max_users=30000, output_file=output_file)
         
         # Load the collected data
         with open(output_file, 'r') as f:
