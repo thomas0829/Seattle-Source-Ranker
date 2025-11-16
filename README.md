@@ -43,10 +43,10 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 | Team Member | Role | Contributions |
 |------------|------|---------------|
-| **Thomas (thomas0829)** | Project Lead & Backend Engineer | • System architecture design<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• GitHub Actions automation |
-| **Frontend Developer** | UI/UX Engineer | • React frontend development<br>• Lazy loading pagination system<br>• Multi-select language filtering<br>• Glass morphism design implementation<br>• Real-time search with debounce |
-| **Data Scientist** | Algorithm Engineer | • SSR scoring algorithm design<br>• Multi-factor ranking system<br>• Language classification logic<br>• Data quality analysis<br>• Statistical validation |
-| **DevOps Engineer** | Infrastructure & Automation | • GitHub Actions workflow setup<br>• Docker container configuration<br>• Deployment pipeline<br>• Monitoring & error recovery<br>• Documentation management |
+| **thomas0829** | Project Architecture & System Design Lead | • System architecture design<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• GitHub Actions automation |
+| **Wenshu0206** | Frontend Developer & UI/UX Designer | • React frontend development<br>• Lazy loading pagination system<br>• Multi-select language filtering<br>• Glass morphism design implementation<br>• Real-time search with debounce |
+| **Chen Muwen** | Scoring Algorithm & Interpretability Specialist | • SSR scoring algorithm design<br>• Multi-factor ranking system<br>• Language classification logic<br>• Algorithm documentation<br>• Transparent scoring methodology |
+| **Qianshi Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing<br>• GitHub Actions workflow setup |
 
 ---
 
