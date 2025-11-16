@@ -98,22 +98,24 @@ python main.py --max-users 30000 --workers 8
 
 ---
 
-## 🤖 GitHub Actions Automation
+## 🤖 Automated Daily Updates
 
-The project runs **daily automated updates** at **midnight Seattle time** (08:00 UTC):
+✨ **Runs automatically at midnight Seattle time (08:00 UTC)**
 
-1. **User Discovery** - GraphQL Search API with 76 pre-optimized location filters
-2. **Data Collection** - Parallel processing of user repositories with full metadata
-3. **Ranking** - SSR algorithm generates multi-factor scores and language classifications
-4. **Verification** - Quality checks and success validation
-5. **Cleanup** - Removes old data files, keeps latest only
-6. **Website Deployment** - Builds React app and deploys to GitHub Pages
-7. **Stats Update** - Auto-updates README with latest collection statistics
+The GitHub Actions workflow handles everything:
+- 🔍 Discovers Seattle developers (76 location filters)
+- 📦 Collects up to 30,000 user repositories in parallel
+- 📊 Ranks projects using SSR algorithm
+- 🌐 Builds and deploys website to GitHub Pages
+- 📝 Updates statistics in README
 
-**Setup Instructions:**
-1. Add GitHub Secrets: `GITHUB_TOKEN_1` through `GITHUB_TOKEN_6`
-2. Enable GitHub Pages: Settings → Pages → Deploy from `gh-pages` branch
-3. Workflow runs automatically, or trigger manually from Actions tab
+**Want to run it yourself?**
+1. Fork this repository
+2. Add 6 GitHub Personal Access Tokens as Secrets (`GH_TOKEN_1` - `GH_TOKEN_6`)
+3. Enable GitHub Pages (Settings → Pages → `gh-pages` branch)
+4. Workflow runs daily or trigger manually from Actions tab
+
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 
 ---
 
@@ -168,20 +170,45 @@ The project runs **daily automated updates** at **midnight Seattle time** (08:00
 
 ---
 
-## 🧮 Scoring Algorithm
+## 🧮 Enhanced SSR Scoring Algorithm
 
-The **SSR (Seattle Source Ranker)** algorithm uses a weighted formula:
+Projects are ranked using a comprehensive multi-factor scoring system:
 
+### Base Popularity Metrics (70%)
 ```
-Score = Stars × 0.6 + Forks × 0.3 + Watchers × 0.1
+Stars    × 40%  - Primary popularity indicator
+Forks    × 20%  - Engagement and derivative work
+Watchers × 10%  - Ongoing interest and monitoring
 ```
 
-**Why these weights?**
-- **Stars (60%)**: Primary indicator of project popularity and community appreciation
-- **Forks (30%)**: Shows active development and code reuse
-- **Watchers (10%)**: Indicates ongoing interest and monitoring
+### Quality Factors (30%)
+```
+Age      × 10%  - Project maturity (peak at 3-5 years)
+Activity × 10%  - Recent maintenance (last push time)
+Health   × 10%  - Issue management (issues relative to popularity)
+```
+
+### Scoring Formula
+```
+Score = (
+    log₁₀(stars + 1) / log₁₀(100000) × 0.40 +
+    log₁₀(forks + 1) / log₁₀(10000) × 0.20 +
+    log₁₀(watchers + 1) / log₁₀(10000) × 0.10 +
+    age_factor() × 0.10 +
+    activity_factor() × 0.10 +
+    health_factor() × 0.10
+) × 10000
+```
+
+**Why this approach?**
+- **Logarithmic Scaling** - Better distribution across projects of different sizes
+- **Age Maturity** - Rewards established projects (2-8 years), penalizes too new/old
+- **Recent Activity** - Prefers actively maintained projects
+- **Health Metrics** - Considers issue management quality relative to popularity
 
 Projects are ranked both **overall** and **by programming language** (11 categories).
+
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed factor calculations.
 
 ---
 
