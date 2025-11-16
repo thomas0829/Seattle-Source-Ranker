@@ -1,3 +1,2 @@
 data/seattle_projects_unlimited_*.json filter=lfs diff=lfs merge=lfs -text
-data/seattle_users_*.json filter=lfs diff=lfs merge=lfs -text
 data/seattle_projects_*.json filter=lfs diff=lfs merge=lfs -text
