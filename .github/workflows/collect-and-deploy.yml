@@ -61,8 +61,8 @@ jobs:
         echo "GITHUB_TOKEN_5=${{ secrets.GH_TOKEN_5 }}" >> $GITHUB_ENV
         echo "GITHUB_TOKEN_6=${{ secrets.GH_TOKEN_6 }}" >> $GITHUB_ENV
     
-    - name: Check if collection is needed
-      id: check_collection
+    - name: Check user data age
+      id: check_user_data
       run: |
         python3 << 'PYTHON_EOF'
         import os
@@ -77,13 +77,14 @@ jobs:
         user_files = glob.glob('data/seattle_users_*.json')
         
         if not user_files:
-            print("No user data found - Need collection")
+            print("❌ No user data found")
+            print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                f.write('needs_collection=true\n')
+                f.write('skip_graphql=false\n')
             exit(0)
         
         latest_user_file = max(user_files)
-        print(f"Found user data: {latest_user_file}")
+        print(f"📁 Found user data: {latest_user_file}")
         
         try:
             with open(latest_user_file, 'r') as f:
@@ -91,9 +92,10 @@ jobs:
             
             collected_at = data.get('collected_at')
             if not collected_at:
-                print("No timestamp in user data - Need collection")
+                print("⚠️  No timestamp in user data")
+                print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                    f.write('needs_collection=true\n')
+                    f.write('skip_graphql=false\n')
                 exit(0)
             
             # Parse timestamp
@@ -107,40 +109,61 @@ jobs:
             now = datetime.now(SEATTLE_TZ)
             hours_since = (now - collected_time).total_seconds() / 3600
             
-            print(f"Last collection: {collected_at}")
-            print(f"Hours since: {hours_since:.1f}")
+            print(f"📅 Last collection: {collected_at}")
+            print(f"⏱️  Hours since: {hours_since:.1f}")
             
             if hours_since < 0:
-                print("Timestamp in future - Need collection")
+                print("⚠️  Timestamp in future")
+                print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                    f.write('needs_collection=true\n')
+                    f.write('skip_graphql=false\n')
             elif hours_since < 24:
-                print(f"User data is fresh (< 24h) - Skip collection")
+                print(f"✅ User data is fresh (< 24 hours)")
+                print("   → Skip GraphQL (reuse existing users)")
+                print("   → Only run REST API to collect projects")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                    f.write('needs_collection=false\n')
+                    f.write('skip_graphql=true\n')
             else:
-                print(f"User data is old (>= 24h) - Need collection")
+                print(f"⏰ User data is old (≥ 24 hours)")
+                print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                    f.write('needs_collection=true\n')
+                    f.write('skip_graphql=false\n')
         
         except Exception as e:
-            print(f"Error: {e} - Need collection")
+            print(f"❌ Error: {e}")
+            print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                f.write('needs_collection=true\n')
+                f.write('skip_graphql=false\n')
         PYTHON_EOF
     
     - name: Run distributed collection
-      if: steps.check_collection.outputs.needs_collection == 'true'
       run: |
         echo "🚀 Starting distributed collection..."
         python3 << 'PYTHON_EOF'
         from distributed.distributed_collector import DistributedCollector
         import json
         import os
+        import sys
         from datetime import datetime
         from zoneinfo import ZoneInfo
         
         SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
+        
+        # Check if we should skip GraphQL
+        skip_graphql = '${{ steps.check_user_data.outputs.skip_graphql }}' == 'true'
+        
+        if skip_graphql:
+            print("=" * 60)
+            print("⚡ FAST MODE: Skipping GraphQL user search")
+            print("   Using existing user data from repository")
+            print("   Only collecting projects via REST API")
+            print("=" * 60)
+        else:
+            print("=" * 60)
+            print("🔄 FULL MODE: Running complete collection")
+            print("   Step 1: GraphQL user search")
+            print("   Step 2: REST API project collection")
+            print("=" * 60)
         
         collector = DistributedCollector(
             batch_size=50,
@@ -152,6 +175,8 @@ jobs:
         # Collect data for 30,000 users
         timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
         output_file = f"data/seattle_projects_{timestamp}.json"
+        
+        # The collector will automatically skip GraphQL if user file < 24h exists
         collector.collect(max_users=30000, output_file=output_file)
         
         # Load the collected data
@@ -206,7 +231,6 @@ jobs:
       timeout-minutes: 180  # 3 hour timeout
     
     - name: Verify collection results
-      if: steps.check_collection.outputs.needs_collection == 'true'
       run: |
         # Verify collected data
         if [ ! -f "data/.collection_success" ]; then
