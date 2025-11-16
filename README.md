@@ -1,6 +1,6 @@
 # Seattle Source Ranker
 
-[![Beta Version](https://img.shields.io/badge/version-Beta-orange)](https://github.com/thomas0829/Seattle-Source-Ranker)
+[![Beta Version](https://img.shields.io/badge/version-Beta--v3.1-orange)](https://github.com/thomas0829/Seattle-Source-Ranker/releases/tag/Beta-v3.1)
 [![Last Updated](https://img.shields.io/badge/auto--update-daily-brightgreen.svg)](https://github.com/thomas0829/Seattle-Source-Ranker/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -215,7 +215,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <div align="center">
 
-**Seattle Source Ranker** is in Beta. Previous versions tagged as `Beta-v1.0` through `Beta-v3.0`.
+**Seattle Source Ranker Beta v3.1** - Current version with GitHub Actions automation.
+
+Previous versions: `Beta-v1.0` | `Beta-v2.0` | `Beta-v2.1` | `Beta-v3.0`
 
 *Statistics automatically updated by GitHub Actions.*
 
