@@ -88,6 +88,15 @@ jobs:
         print(f"📂 Found latest data: {latest_file}")
         
         try:
+            # 檢查文件大小（Git LFS 指針文件很小）
+            file_size = os.path.getsize(latest_file)
+            if file_size < 1000:  # Git LFS 指針文件通常小於 1KB
+                print(f"⚠️  File appears to be Git LFS pointer ({file_size} bytes)")
+                print("needs_collection=true")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=true\n')
+                exit(0)
+            
             with open(latest_file, 'r') as f:
                 data = json.load(f)
             
