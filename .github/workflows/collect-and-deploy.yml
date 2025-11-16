@@ -64,9 +64,70 @@ jobs:
     - name: Check if collection is needed
       id: check_collection
       run: |
-        # In GitHub Actions, always collect (projects file is LFS pointer)
-        echo "GitHub Actions: Always collect fresh data"
-        echo "needs_collection=true" >> $GITHUB_OUTPUT
+        python3 << 'PYTHON_EOF'
+        import os
+        import json
+        import glob
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        
+        SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
+        
+        # Check user data file (small, committed to Git)
+        user_files = glob.glob('data/seattle_users_*.json')
+        
+        if not user_files:
+            print("No user data found - Need collection")
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('needs_collection=true\n')
+            exit(0)
+        
+        latest_user_file = max(user_files)
+        print(f"Found user data: {latest_user_file}")
+        
+        try:
+            with open(latest_user_file, 'r') as f:
+                data = json.load(f)
+            
+            collected_at = data.get('collected_at')
+            if not collected_at:
+                print("No timestamp in user data - Need collection")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=true\n')
+                exit(0)
+            
+            # Parse timestamp
+            if collected_at.endswith('Z'):
+                collected_time = datetime.fromisoformat(collected_at.replace('Z', '+00:00'))
+            elif '+' in collected_at or collected_at.count('-') > 2:
+                collected_time = datetime.fromisoformat(collected_at)
+            else:
+                collected_time = datetime.fromisoformat(collected_at).replace(tzinfo=SEATTLE_TZ)
+            
+            now = datetime.now(SEATTLE_TZ)
+            hours_since = (now - collected_time).total_seconds() / 3600
+            
+            print(f"Last collection: {collected_at}")
+            print(f"Hours since: {hours_since:.1f}")
+            
+            if hours_since < 0:
+                print("Timestamp in future - Need collection")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=true\n')
+            elif hours_since < 24:
+                print(f"User data is fresh (< 24h) - Skip collection")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=false\n')
+            else:
+                print(f"User data is old (>= 24h) - Need collection")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=true\n')
+        
+        except Exception as e:
+            print(f"Error: {e} - Need collection")
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('needs_collection=true\n')
+        PYTHON_EOF
     
     - name: Run distributed collection
       if: steps.check_collection.outputs.needs_collection == 'true'
