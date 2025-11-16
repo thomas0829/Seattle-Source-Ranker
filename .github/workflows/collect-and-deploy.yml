@@ -58,7 +58,86 @@ jobs:
         echo "GITHUB_TOKEN_5=${{ secrets.GH_TOKEN_5 }}" >> $GITHUB_ENV
         echo "GITHUB_TOKEN_6=${{ secrets.GH_TOKEN_6 }}" >> $GITHUB_ENV
     
+    - name: Check if collection is needed
+      id: check_collection
+      run: |
+        python3 << 'PYTHON_EOF'
+        import os
+        import json
+        import glob
+        from datetime import datetime, timedelta
+        from zoneinfo import ZoneInfo
+        
+        SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
+        
+        # 查找最新的項目數據文件
+        project_files = glob.glob('data/seattle_projects_*.json')
+        
+        if not project_files:
+            print("📭 No existing data found")
+            print("needs_collection=true")
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('needs_collection=true\n')
+            exit(0)
+        
+        # 獲取最新的文件
+        latest_file = max(project_files)
+        print(f"📂 Found latest data: {latest_file}")
+        
+        try:
+            with open(latest_file, 'r') as f:
+                data = json.load(f)
+            
+            # 檢查收集時間
+            collected_at = data.get('collected_at')
+            if not collected_at:
+                print("⚠️  No collection timestamp found")
+                print("needs_collection=true")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=true\n')
+                exit(0)
+            
+            # 解析時間 (處理各種格式)
+            if collected_at.endswith('Z'):
+                collected_time = datetime.fromisoformat(collected_at.replace('Z', '+00:00'))
+            elif '+' in collected_at or collected_at.count('-') > 2:
+                collected_time = datetime.fromisoformat(collected_at)
+            else:
+                # 假設是 naive datetime，當作 Seattle 時間
+                collected_time = datetime.fromisoformat(collected_at).replace(tzinfo=SEATTLE_TZ)
+            
+            now = datetime.now(SEATTLE_TZ)
+            time_diff = now - collected_time
+            
+            hours_since_collection = time_diff.total_seconds() / 3600
+            
+            print(f"⏰ Last collection: {collected_at}")
+            print(f"⏱️  Time since collection: {hours_since_collection:.1f} hours")
+            
+            # 處理異常情況：負數表示時間戳在未來（時區錯誤）
+            if hours_since_collection < 0:
+                print(f"⚠️  Warning: timestamp is in the future (timezone issue)")
+                print(f"🔄 Treating as old data, collection needed")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=true\n')
+            elif hours_since_collection < 24:
+                print(f"✅ Data is fresh (< 24 hours), skipping collection")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=false\n')
+            else:
+                print(f"🔄 Data is old (>= 24 hours), collection needed")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('needs_collection=true\n')
+        
+        except Exception as e:
+            print(f"⚠️  Error checking data: {e}")
+            print("needs_collection=true")
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write('needs_collection=true\n')
+        PYTHON_EOF
+    
     - name: Run distributed collection
+      if: steps.check_collection.outputs.needs_collection == 'true'
       run: |
         echo "🚀 Starting distributed collection..."
         python3 << 'PYTHON_EOF'
@@ -133,19 +212,79 @@ jobs:
         PYTHON_EOF
       timeout-minutes: 180  # 3小時超時
     
-    - name: Verify collection success
+    - name: Verify or prepare data
       run: |
-        if [ ! -f "data/.collection_success" ]; then
-          echo "❌ Collection failed - success marker not found"
-          exit 1
-        fi
+        if [ "${{ steps.check_collection.outputs.needs_collection }}" == "true" ]; then
+          # 驗證新收集的數據
+          if [ ! -f "data/.collection_success" ]; then
+            echo "❌ Collection failed - success marker not found"
+            exit 1
+          fi
+          
+          if [ ! -f "data/ranked_project_local_seattle.json" ]; then
+            echo "❌ Collection failed - ranked data not found"
+            exit 1
+          fi
+          
+          echo "✅ New collection verification passed"
+        else
+          # 使用現有數據，需要重新生成 ranked 文件
+          echo "📂 Using existing data, regenerating ranked files..."
+          python3 << 'PYTHON_EOF'
+        import json
+        import glob
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
         
-        if [ ! -f "data/ranked_project_local_seattle.json" ]; then
-          echo "❌ Collection failed - ranked data not found"
-          exit 1
-        fi
+        SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
         
-        echo "✅ Collection verification passed"
+        # 查找最新的項目數據文件
+        project_files = glob.glob('data/seattle_projects_*.json')
+        latest_file = max(project_files)
+        
+        print(f"📂 Loading data from {latest_file}")
+        with open(latest_file, 'r') as f:
+            data = json.load(f)
+        
+        projects = data.get('projects', [])
+        
+        # 按 SSR score 排序
+        projects_sorted = sorted(projects, 
+                                key=lambda x: x.get('ssr_score', 0), 
+                                reverse=True)
+        
+        # Save ranked project list
+        ranked_output = {
+            'total_projects': data.get('total_projects', 0),
+            'total_stars': data.get('total_stars', 0),
+            'successful_users': data.get('successful_users', 0),
+            'filtered_users': data.get('filtered_users', 0),
+            'failed_users': data.get('failed_users', 0),
+            'collected_at': data.get('collected_at', ''),
+            'projects': projects_sorted
+        }
+        
+        with open('data/ranked_project_local_seattle.json', 'w') as f:
+            json.dump(ranked_output, f, indent=2)
+        
+        # Create language-based ranking
+        language_groups = {}
+        for proj in projects_sorted:
+            lang = proj.get('language') or 'Unknown'
+            if lang not in language_groups:
+                language_groups[lang] = []
+            language_groups[lang].append(proj)
+        
+        # Save by language
+        with open('data/ranked_by_language_seattle.json', 'w') as f:
+            json.dump(language_groups, f, indent=2)
+        
+        print(f"✅ Regenerated ranked_project_local_seattle.json ({len(projects_sorted)} projects)")
+        print(f"✅ Regenerated ranked_by_language_seattle.json ({len(language_groups)} languages)")
+        PYTHON_EOF
+          
+          echo "✅ Data preparation completed"
+        fi
     
     - name: Clean old data files
       run: |
@@ -170,6 +309,12 @@ jobs:
     - name: Update README with latest stats
       run: |
         python3 scripts/update_readme.py
+    
+    - name: Generate frontend paginated data
+      run: |
+        echo "📊 Generating frontend data with topics..."
+        python3 scripts/generate_frontend_data.py
+        echo "✅ Frontend data generated with topics support"
     
     - name: Copy data to frontend
       run: |

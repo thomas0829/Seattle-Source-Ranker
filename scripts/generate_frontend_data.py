@@ -173,14 +173,28 @@ def format_project(project, score):
         'issues': project.get('open_issues', 0),
         'language': project.get('language', 'Unknown'),
         'description': project.get('description', ''),
+        'topics': project.get('topics', []),
         'score': score
     }
 
 def main():
+    import sys
     PAGE_SIZE = 50  # 50 projects per page
     
-    print("📂 Loading unlimited collection data...")
-    with open('data/seattle_projects_unlimited_20251106_160531.json', 'r') as f:
+    # Accept filename from command line or use default
+    if len(sys.argv) > 1:
+        data_file = sys.argv[1]
+    else:
+        # Find the latest projects file
+        import glob
+        files = glob.glob('data/seattle_projects_*.json')
+        if not files:
+            print("❌ No project data files found in data/")
+            return
+        data_file = max(files)  # Get the latest file
+    
+    print(f"📂 Loading data from {data_file}...")
+    with open(data_file, 'r') as f:
         data = json.load(f)
     
     projects = data.get('projects', [])
