@@ -120,27 +120,50 @@ The project runs **daily automated updates** at **midnight Seattle time** (08:00
 ## 📁 Project Structure
 
 ```
-Seattle-Source-Ranker/
-├── distributed/              # Distributed collection system
-│   ├── distributed_collector.py  # Main coordinator (1114 lines)
-│   ├── collection_worker.py      # Celery worker tasks
-│   └── token_manager.py          # Multi-token rotation
-├── main.py                   # Entry point for local collection
-├── ranker.py                 # SSR scoring algorithm
-├── analyzer.py              # Statistical analysis tools
-├── frontend/                # React web application
-│   ├── src/                # React components
-│   ├── public/             # Static assets
-│   └── build/              # Production build
-├── data/                   # Collection output (JSON files)
-├── scripts/                # Automation scripts
-│   ├── update_readme.py   # Auto-update README stats
-│   └── test_workflow.sh   # Local workflow testing
-├── .github/workflows/      # GitHub Actions
-│   └── collect-and-deploy.yml  # Daily automation workflow
-└── docs/                   # Extended documentation
-    ├── ARCHITECTURE.md     # Detailed system architecture
-    └── VERSION_HISTORY.md  # Complete version changelog
+.
+├── .github/
+│   └── workflows/
+│       └── collect-and-deploy.yml    # Daily automation (midnight PST)
+├── data/                              # Collection output
+│   ├── seattle_projects_*.json       # Raw project data (~260MB)
+│   └── seattle_users_*.json          # User metadata
+├── distributed/                       # Distributed collection system
+│   ├── distributed_collector.py      # Main coordinator (1114 lines)
+│   ├── workers/
+│   │   └── collection_worker.py      # Celery worker tasks
+│   └── __init__.py
+├── docs/                              # Extended documentation
+│   ├── ARCHITECTURE.md               # System architecture details
+│   ├── VERSION_HISTORY.md            # Complete changelog
+│   ├── MULTI_TOKEN_GUIDE.md          # Token setup guide
+│   └── USER_STORIES.md               # Use cases
+├── frontend/                          # React web application
+│   ├── src/
+│   │   ├── App.js                    # Main component (579 lines)
+│   │   ├── App.css                   # Glass morphism styling
+│   │   └── index.js
+│   ├── public/
+│   │   ├── pages/                    # Paginated JSON files
+│   │   └── metadata.json             # Stats & last updated
+│   ├── build/                        # Production build
+│   └── package.json
+├── logs/                              # Celery logs
+├── scripts/                           # Automation scripts
+│   ├── generate_frontend_data.py     # Generate paginated data
+│   ├── update_readme.py              # Auto-update README stats
+│   ├── start_workers.sh              # Start Celery workers
+│   ├── stop_workers.sh               # Stop workers
+│   └── test_workflow.sh              # Local testing
+├── utils/                             # Utility modules
+│   ├── token_manager.py              # Multi-token rotation
+│   ├── classify_languages.py         # Language classification
+│   ├── celery_config.py              # Celery configuration
+│   └── pypi_client.py                # PyPI package info
+├── .gitattributes                     # Git LFS configuration
+├── .gitignore
+├── LICENSE
+├── README.md
+└── requirements.txt                   # Python dependencies
 ```
 
 ---
