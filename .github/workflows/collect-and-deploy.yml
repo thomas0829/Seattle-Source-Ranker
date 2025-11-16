@@ -202,21 +202,16 @@ jobs:
         
         echo "✅ Collection verification passed"
     
-    - name: Clean old data files
+    - name: Clean temporary files
       run: |
-        echo "🧹 Cleaning old data files..."
-        # Keep latest files, delete old ones
+        echo "🧹 Cleaning temporary files..."
         cd data
         
-        # Keep ranked_* files (just generated)
-        # Delete old seattle_projects_*.json (keep latest)
-        ls -t seattle_projects_*.json | tail -n +2 | xargs -r rm -v
-        
-        # Delete old seattle_users_*.json (keep latest)
-        ls -t seattle_users_*.json | tail -n +2 | xargs -r rm -v
-        
-        # Delete success marker (no need to commit)
+        # Only delete success marker (temporary file)
         rm -f .collection_success
+        
+        # Note: Keep all seattle_projects_*.json and seattle_users_*.json files
+        # They are not pushed to Git anyway (projects too large, users already in repo)
         
         echo "✅ Old data files cleaned"
         echo "📁 Remaining files:"
