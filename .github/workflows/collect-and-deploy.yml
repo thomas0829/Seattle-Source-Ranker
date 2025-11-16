@@ -10,6 +10,9 @@ jobs:
   collect-and-deploy:
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: write  # 允許推送到 gh-pages 分支
+    
     env:
       TZ: America/Los_Angeles  # 西雅圖時區 (PST/PDT)
     
