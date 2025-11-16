@@ -21,6 +21,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # 完整歷史記錄
+        lfs: true  # 下載 Git LFS 文件
     
     - name: Set up Python
       uses: actions/setup-python@v5
