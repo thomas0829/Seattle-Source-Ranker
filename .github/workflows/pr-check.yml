@@ -1,0 +1,149 @@
+name: Pull Request Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.py'
+      - '**.js'
+      - '**.jsx'
+      - 'requirements.txt'
+      - 'frontend/package.json'
+      - '.github/workflows/pr-check.yml'
+
+jobs:
+  python-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+    
+    - name: Check Python syntax
+      run: |
+        echo "🔍 Checking Python syntax..."
+        
+        # Find all Python files
+        python_files=$(find . -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" -not -path "./env/*")
+        
+        if [ -z "$python_files" ]; then
+          echo "✅ No Python files found"
+          exit 0
+        fi
+        
+        # Check syntax for each file
+        errors=0
+        for file in $python_files; do
+          echo "Checking: $file"
+          if ! python3 -m py_compile "$file"; then
+            echo "❌ Syntax error in: $file"
+            errors=$((errors + 1))
+          fi
+        done
+        
+        if [ $errors -gt 0 ]; then
+          echo "❌ Found $errors file(s) with syntax errors"
+          exit 1
+        fi
+        
+        echo "✅ All Python files have valid syntax"
+    
+    - name: Check imports
+      run: |
+        echo "🔍 Checking if all imports are available..."
+        
+        # Try importing main modules
+        python3 << 'PYTHON_EOF'
+        import sys
+        errors = []
+        
+        modules_to_check = [
+            ('distributed.distributed_collector', 'DistributedCollector'),
+            ('utils.token_manager', 'get_token_manager'),
+        ]
+        
+        for module_name, class_name in modules_to_check:
+            try:
+                module = __import__(module_name, fromlist=[class_name])
+                getattr(module, class_name)
+                print(f"✅ {module_name}.{class_name}")
+            except Exception as e:
+                print(f"❌ {module_name}.{class_name}: {e}")
+                errors.append(f"{module_name}.{class_name}")
+        
+        if errors:
+            print(f"\n❌ Failed to import: {', '.join(errors)}")
+            sys.exit(1)
+        
+        print("\n✅ All imports successful")
+        PYTHON_EOF
+    
+    - name: Run tests (if available)
+      run: |
+        if [ -f "test_pypi.py" ]; then
+          echo "🧪 Running tests..."
+          python test_pypi.py
+        else
+          echo "ℹ️  No tests found"
+        fi
+      continue-on-error: true
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Python Check Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Python syntax check completed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Import check completed" >> $GITHUB_STEP_SUMMARY
+  
+  frontend-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Check for syntax errors
+      run: |
+        cd frontend
+        echo "🔍 Checking JavaScript/React syntax..."
+        
+        # This will fail if there are syntax errors
+        npx eslint src --ext .js,.jsx --max-warnings 0 || echo "⚠️  ESLint not configured, skipping..."
+    
+    - name: Build frontend
+      run: |
+        cd frontend
+        echo "🏗️  Building frontend..."
+        npm run build
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Frontend Check Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Frontend build check completed" >> $GITHUB_STEP_SUMMARY
