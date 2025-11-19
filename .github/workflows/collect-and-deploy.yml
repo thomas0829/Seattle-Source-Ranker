@@ -86,30 +86,28 @@ jobs:
         latest_user_file = max(user_files)
         print(f"📁 Found user data: {latest_user_file}")
         
+        # Parse timestamp from filename (format: seattle_users_YYYYMMDD_HHMMSS.json)
+        import os
+        filename = os.path.basename(latest_user_file)
+        
         try:
-            with open(latest_user_file, 'r') as f:
-                data = json.load(f)
+            timestamp_str = filename.replace('seattle_users_', '').replace('.json', '')
+            date_part, time_part = timestamp_str.split('_')
             
-            collected_at = data.get('collected_at')
-            if not collected_at:
-                print("⚠️  No timestamp in user data")
-                print("   → Need full collection (GraphQL + REST API)")
-                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                    f.write('skip_graphql=false\n')
-                exit(0)
+            # Parse date and time from filename
+            year = int(date_part[0:4])
+            month = int(date_part[4:6])
+            day = int(date_part[6:8])
+            hour = int(time_part[0:2])
+            minute = int(time_part[2:4])
+            second = int(time_part[4:6])
             
-            # Parse timestamp
-            if collected_at.endswith('Z'):
-                collected_time = datetime.fromisoformat(collected_at.replace('Z', '+00:00'))
-            elif '+' in collected_at or collected_at.count('-') > 2:
-                collected_time = datetime.fromisoformat(collected_at)
-            else:
-                collected_time = datetime.fromisoformat(collected_at).replace(tzinfo=SEATTLE_TZ)
-            
+            # Create datetime with Seattle timezone
+            file_time = datetime(year, month, day, hour, minute, second, tzinfo=SEATTLE_TZ)
             now = datetime.now(SEATTLE_TZ)
-            hours_since = (now - collected_time).total_seconds() / 3600
+            hours_since = (now - file_time).total_seconds() / 3600
             
-            print(f"📅 Last collection: {collected_at}")
+            print(f"📅 File timestamp: {file_time.isoformat()}")
             print(f"⏱️  Hours since: {hours_since:.1f}")
             
             if hours_since < 0:
@@ -130,7 +128,7 @@ jobs:
                     f.write('skip_graphql=false\n')
         
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error parsing filename: {e}")
             print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('skip_graphql=false\n')
