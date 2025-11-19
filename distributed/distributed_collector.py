@@ -338,9 +338,28 @@ class DistributedCollector:
             filepath, user_count = result
             filename = os.path.basename(filepath)
             
-            # Check if file is less than 1 day old
-            file_mtime = os.path.getmtime(filepath)
-            age_hours = (time.time() - file_mtime) / 3600
+            # Parse timestamp from filename (format: seattle_users_YYYYMMDD_HHMMSS.json)
+            # This is more reliable than file mtime in CI environments
+            try:
+                timestamp_str = filename.replace('seattle_users_', '').replace('.json', '')
+                date_part, time_part = timestamp_str.split('_')
+                
+                # Parse date and time
+                year = int(date_part[0:4])
+                month = int(date_part[4:6])
+                day = int(date_part[6:8])
+                hour = int(time_part[0:2])
+                minute = int(time_part[2:4])
+                second = int(time_part[4:6])
+                
+                # Create datetime with Seattle timezone
+                file_time = datetime(year, month, day, hour, minute, second, tzinfo=SEATTLE_TZ)
+                now = datetime.now(SEATTLE_TZ)
+                age_hours = (now - file_time).total_seconds() / 3600
+            except Exception as e:
+                print(f"   ⚠️  Failed to parse timestamp from filename: {e}")
+                print(f"   Falling back to user search...")
+                return self.search_users(max_users, start_user)
             
             if age_hours < 24:  # Less than 1 day
                 print(f"🔍 Step 1: Loading existing user data...")
