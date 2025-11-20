@@ -254,16 +254,42 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
+        # Verify the new user file is valid
+        echo "🔍 Verifying new user file..."
+        LATEST_FILE=$(ls -t data/seattle_users_*.json | head -1)
+        echo "Latest file: $LATEST_FILE"
+        
+        # Check if file exists and is valid JSON
+        if [ ! -f "$LATEST_FILE" ]; then
+          echo "❌ Error: Latest user file not found"
+          exit 1
+        fi
+        
+        # Check if it contains important organizations (allenai, awslabs)
+        if ! grep -q '"allenai"' "$LATEST_FILE"; then
+          echo "⚠️  Warning: allenai not found in new file"
+          echo "Skipping old file removal for safety"
+        else
+          echo "✅ Verification passed: allenai found"
+          
+          # Remove old user files (keep only the latest one)
+          echo "🧹 Cleaning up old user files..."
+          cd data
+          ls -t seattle_users_*.json | tail -n +2 | xargs -r rm -v
+          cd ..
+        fi
+        
         # Only add user files (small enough for Git)
         # Projects files are too large (252MB) and exceed Git LFS quota
-        git add data/seattle_users_*.json
+        # Also add README.md with updated stats
+        git add data/seattle_users_*.json README.md
         
         # Check if there are changes
         if git diff --staged --quiet; then
-          echo "✅ No changes to user data"
+          echo "✅ No changes to user data or README"
         else
-          echo "📤 Committing updated user data"
-          git commit -m "chore: Update user data - $(date +'%Y-%m-%d')"
+          echo "📤 Committing updated user data and README"
+          git commit -m "chore: Update user data and README - $(date +'%Y-%m-%d')"
           git push
         fi
     
