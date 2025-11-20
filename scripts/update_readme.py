@@ -9,25 +9,41 @@ from datetime import datetime
 from pathlib import Path
 
 def load_latest_data():
-    """Load the latest collection data"""
+    """Load the latest collection data from user and project files"""
     data_dir = Path(__file__).parent.parent / "data"
     
-    # Find latest seattle_projects_*.json file
-    project_files = list(data_dir.glob('seattle_projects_*.json'))
-    if project_files:
-        latest_file = max(project_files)
-        print(f"📂 Loading data from {latest_file.name}")
+    # Find latest seattle_users_*.json file (this is what we commit to Git)
+    user_files = list(data_dir.glob('seattle_users_*.json'))
+    if not user_files:
+        return None
         
-        # Check if it's a Git LFS pointer
-        with open(latest_file, 'r') as f:
-            first_line = f.readline()
-            if first_line.startswith('version https://git-lfs.github.com'):
-                print(f"⚠️  Warning: {latest_file.name} is a Git LFS pointer, not actual data")
-                return None
-            f.seek(0)
-            return json.load(f)
+    latest_user_file = max(user_files)
+    print(f"📂 Loading user data from {latest_user_file.name}")
     
-    return None
+    with open(latest_user_file, 'r') as f:
+        user_data = json.load(f)
+    
+    # Try to find latest project file (will exist during workflow run)
+    project_files = list(data_dir.glob('seattle_projects_*.json'))
+    project_data = None
+    
+    if project_files:
+        latest_project_file = max(project_files)
+        print(f"📂 Loading project data from {latest_project_file.name}")
+        
+        try:
+            with open(latest_project_file, 'r') as f:
+                project_data = json.load(f)
+            print(f"✅ Successfully loaded project data")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load project data: {e}")
+    else:
+        print(f"⚠️  No project data found (will use user data only)")
+    
+    return {
+        'user_data': user_data,
+        'project_data': project_data
+    }
 
 def update_readme(stats):
     """Update README.md with latest statistics"""
@@ -37,58 +53,58 @@ def update_readme(stats):
         content = f.read()
     
     # Extract statistics
-    total_projects = stats.get('total_projects', 0)
-    total_stars = stats.get('total_stars', 0)
-    successful_users = stats.get('successful_users', 0)
-    failed_users = stats.get('failed_users', 0)
-    filtered_users = stats.get('filtered_users', 0)
+    total_users = stats.get('total_users', 0)
+    total_projects = stats.get('total_projects')
+    total_stars = stats.get('total_stars')
     collected_at = stats.get('collected_at', '')
     
     # Format date
     if collected_at:
         try:
             dt = datetime.fromisoformat(collected_at.replace('Z', '+00:00'))
-            date_str = dt.strftime('%b %d, %Y')
+            date_str = dt.strftime('%Y-%m-%d %H:%M:%S PST')
         except:
-            date_str = datetime.now().strftime('%b %d, %Y')
+            date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S PST')
     else:
-        date_str = datetime.now().strftime('%b %d, %Y')
+        date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S PST')
     
-    # Calculate success rate
-    total_checked = successful_users + failed_users + filtered_users
-    if total_checked > 0:
-        success_rate = (successful_users / (successful_users + failed_users)) * 100
-    else:
-        success_rate = 0
+    new_content = content
     
-    # Update statistics section
-    stats_pattern = r'\*\*Latest Collection Stats \([^)]+\):\*\*\n- Total Projects: \*\*[0-9,]+\*\*\n- Total Stars: \*\*[0-9,]+\*\*\n- Users Searched: \*\*[0-9,]+\*\*\n- Users with Valid Projects: \*\*[0-9,]+\*\* \([0-9.]+%\)\n- Success Rate: \*\*[0-9.]+%\*\*'
+    # Update project count if available
+    if total_projects is not None:
+        project_pattern = r'- \*\*[0-9,]+ projects\*\* tracked across Seattle.s developer community'
+        project_text = f"- **{total_projects:,} projects** tracked across Seattle's developer community"
+        new_content = re.sub(project_pattern, project_text, new_content)
     
-    stats_text = f"""**Latest Collection Stats ({date_str}):**
-- Total Projects: **{total_projects:,}**
-- Total Stars: **{total_stars:,}**
-- Users Searched: **{total_checked:,}**
-- Users with Valid Projects: **{successful_users:,}** ({(successful_users/total_checked*100):.1f}%)
-- Success Rate: **{success_rate:.2f}%**"""
+    # Update stars count if available
+    if total_stars is not None:
+        stars_pattern = r'- \*\*[0-9,]+ total stars\*\* accumulated by Seattle projects'
+        stars_text = f"- **{total_stars:,} total stars** accumulated by Seattle projects"
+        new_content = re.sub(stars_pattern, stars_text, new_content)
     
-    # Replace statistics
-    new_content = re.sub(stats_pattern, stats_text, content)
+    # Update user count (always available)
+    user_pattern = r'- \*\*[0-9,]+ users\*\* collected in latest run'
+    user_text = f"- **{total_users:,} users** collected in latest run"
+    new_content = re.sub(user_pattern, user_text, new_content)
     
-    # If pattern not found, try to find the section and update it
-    if new_content == content:
-        # Try simpler pattern
-        stats_pattern2 = r'\*\*Latest Collection Stats.*?\n- Success Rate: \*\*[0-9.]+%\*\*'
-        new_content = re.sub(stats_pattern2, stats_text, content, flags=re.DOTALL)
+    # Update the date line
+    # Pattern: - Last updated: 2025-11-15 21:06:33 PST
+    date_pattern = r'- Last updated: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} PST'
+    date_text = f"- Last updated: {date_str}"
+    
+    new_content = re.sub(date_pattern, date_text, new_content)
     
     # Write back
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
     
     print(f"✅ README.md updated successfully!")
-    print(f"   Projects: {total_projects:,}")
-    print(f"   Stars: {total_stars:,}")
-    print(f"   Users: {successful_users:,}/{total_checked:,}")
-    print(f"   Success Rate: {success_rate:.2f}%")
+    if total_projects is not None:
+        print(f"   Total Projects: {total_projects:,}")
+    if total_stars is not None:
+        print(f"   Total Stars: {total_stars:,}")
+    print(f"   Total Users: {total_users:,}")
+    print(f"   Last Updated: {date_str}")
 
 def main():
     print("📝 Updating README.md with latest statistics...")
@@ -100,8 +116,35 @@ def main():
         print("❌ No data file found!")
         return
     
+    user_data = data['user_data']
+    project_data = data['project_data']
+    
+    # Build statistics from user data
+    # Check if it's the new format (with total_users field) or old format (dict of users)
+    if isinstance(user_data, dict) and 'total_users' in user_data:
+        # New format: has metadata
+        total_users = user_data.get('total_users', 0)
+        collected_at = user_data.get('collected_at', datetime.now().isoformat())
+    else:
+        # Old format: dict of users
+        total_users = len(user_data)
+        collected_at = datetime.now().isoformat()
+    
+    stats = {
+        'total_users': total_users,
+        'collected_at': collected_at
+    }
+    
+    # Add project statistics if available
+    if project_data:
+        stats['total_projects'] = project_data.get('total_projects')
+        stats['total_stars'] = project_data.get('total_stars')
+        print(f"✅ Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
+    
+    print(f"✅ Found {stats['total_users']:,} users in latest data")
+    
     # Update README
-    update_readme(data)
+    update_readme(stats)
 
 if __name__ == "__main__":
     main()
