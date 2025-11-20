@@ -427,7 +427,7 @@ class DistributedCollector:
         
         usernames_set = set()
         
-        # GraphQL search query
+        # GraphQL search query (includes both User and Organization)
         query_template = """
         query($searchQuery: String!, $cursor: String) {
           search(query: $searchQuery, type: USER, first: 100, after: $cursor) {
@@ -438,6 +438,9 @@ class DistributedCollector:
             }
             nodes {
               ... on User {
+                login
+              }
+              ... on Organization {
                 login
               }
             }
