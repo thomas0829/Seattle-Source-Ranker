@@ -299,14 +299,26 @@ jobs:
         echo "## Collection Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        if [ -f data/ranked_project_local_seattle.json ]; then
-          USERS=$(jq '.successful_users // 0' data/ranked_project_local_seattle.json)
-          PROJECTS=$(jq '.total_projects // 0' data/ranked_project_local_seattle.json)
-          STARS=$(jq '.total_stars // 0' data/ranked_project_local_seattle.json)
+        # Find the latest projects file
+        LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json 2>/dev/null | head -1)
+        
+        if [ -f "$LATEST_PROJECTS" ]; then
+          USERS=$(jq '.successful_users // 0' "$LATEST_PROJECTS")
+          PROJECTS=$(jq '.total_projects // 0' "$LATEST_PROJECTS")
+          STARS=$(jq '.total_stars // 0' "$LATEST_PROJECTS")
           
           echo "- 👥 Users: **$USERS**" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
           echo "- ⭐ Stars: **$STARS**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 File: \`$(basename $LATEST_PROJECTS)\`" >> $GITHUB_STEP_SUMMARY
         else
-          echo "⚠️ Data file not found" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Projects data file not found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Also show user data info
+        LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
+        if [ -f "$LATEST_USERS" ]; then
+          USER_COUNT=$(jq '.total_users // 0' "$LATEST_USERS")
+          echo "- 📋 User accounts collected: **$USER_COUNT**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📄 User file: \`$(basename $LATEST_USERS)\`" >> $GITHUB_STEP_SUMMARY
         fi
