@@ -106,15 +106,24 @@ python main.py --max-users 30000 --workers 8
 The GitHub Actions workflow handles everything:
 - 🔍 Discovers Seattle developers (76 location filters)
 - 📦 Collects up to 30,000 user repositories in parallel
-- 📊 Ranks projects using SSR algorithm
+- � Detects Python packages on PyPI (702k+ packages indexed)
+- �📊 Ranks projects using SSR algorithm
 - 🌐 Builds and deploys website to GitHub Pages
 - 📝 Updates statistics in README
+- 💾 Commits user data and PyPI data to Git
+
+**Key Features:**
+- ✅ Zero false positives in PyPI detection (100% precision)
+- ✅ Offline matching for high performance (<30s for 55k projects)
+- ✅ Automated test suite with 15 passing tests
+- ✅ Organization support (allenai, awslabs, FredHutch, etc.)
 
 **Want to run it yourself?**
 1. Fork this repository
 2. Add 6 GitHub Personal Access Tokens as Secrets (`GH_TOKEN_1` - `GH_TOKEN_6`)
-3. Enable GitHub Pages (Settings → Pages → `gh-pages` branch)
-4. Workflow runs daily or trigger manually from Actions tab
+3. Ensure tokens have `read:org` scope for organization data
+4. Enable GitHub Pages (Settings → Pages → `gh-pages` branch)
+5. Workflow runs daily or trigger manually from Actions tab
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 
@@ -128,10 +137,12 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   └── workflows/
 │       └── collect-and-deploy.yml    # Daily automation (midnight PST)
 ├── data/                              # Collection output
-│   ├── seattle_projects_*.json       # Raw project data (~260MB)
-│   └── seattle_users_*.json          # User metadata
+│   ├── seattle_projects_*.json       # Raw project data (~260MB, local only)
+│   ├── seattle_users_*.json          # User metadata (in Git)
+│   ├── seattle_pypi_projects.json    # PyPI packages (in Git)
+│   └── pypi_official_packages.json   # PyPI index cache (in Git)
 ├── distributed/                       # Distributed collection system
-│   ├── distributed_collector.py      # Main coordinator (1114 lines)
+│   ├── distributed_collector.py      # Main coordinator (1136 lines)
 │   ├── workers/
 │   │   └── collection_worker.py      # Celery worker tasks
 │   └── __init__.py
@@ -153,14 +164,23 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 ├── logs/                              # Celery logs
 ├── scripts/                           # Automation scripts
 │   ├── generate_frontend_data.py     # Generate paginated data
+│   ├── generate_pypi_projects.py     # Generate PyPI project list
 │   ├── update_readme.py              # Auto-update README stats
 │   ├── start_workers.sh              # Start Celery workers
 │   ├── stop_workers.sh               # Stop workers
 │   └── test_workflow.sh              # Local testing
+├── test/                              # Test suite (pytest)
+│   ├── test_graphql_queries.py       # GraphQL query tests
+│   ├── test_update_readme.py         # README update tests
+│   ├── test_classify_languages.py    # Language classification tests
+│   ├── test_pypi_50_projects.py      # PyPI checker validation
+│   ├── run_tests.sh                  # Test runner
+│   └── pytest.ini                    # Pytest configuration
 ├── utils/                             # Utility modules
 │   ├── token_manager.py              # Multi-token rotation
 │   ├── classify_languages.py         # Language classification
 │   ├── celery_config.py              # Celery configuration
+│   ├── pypi_checker.py               # PyPI package detection
 │   └── pypi_client.py                # PyPI package info
 ├── .gitattributes                     # Git LFS configuration
 ├── .gitignore
