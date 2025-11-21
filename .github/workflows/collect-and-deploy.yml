@@ -220,6 +220,12 @@ jobs:
       run: |
         python3 scripts/update_readme.py
     
+    - name: Generate PyPI projects list
+      run: |
+        echo "📦 Checking Python projects on PyPI..."
+        python3 scripts/generate_pypi_projects.py
+        echo "✅ PyPI projects list generated"
+    
     - name: Generate frontend paginated data
       run: |
         echo "📊 Generating frontend data with topics..."
@@ -282,14 +288,15 @@ jobs:
         # Only add user files (small enough for Git)
         # Projects files are too large (252MB) and exceed Git LFS quota
         # Also add README.md with updated stats
-        git add data/seattle_users_*.json README.md
+        # Add PyPI data files: seattle_pypi_projects.json and pypi_official_packages.json
+        git add data/seattle_users_*.json data/seattle_pypi_projects.json data/pypi_official_packages.json README.md
         
         # Check if there are changes
         if git diff --staged --quiet; then
-          echo "✅ No changes to user data or README"
+          echo "✅ No changes to user data, PyPI data, or README"
         else
-          echo "📤 Committing updated user data and README"
-          git commit -m "chore: Update user data and README - $(date +'%Y-%m-%d')"
+          echo "📤 Committing updated user data, PyPI data, and README"
+          git commit -m "chore: Update user data, PyPI data, and README - $(date +'%Y-%m-%d')"
           git push
         fi
     
@@ -321,4 +328,15 @@ jobs:
           USER_COUNT=$(jq '.total_users // 0' "$LATEST_USERS")
           echo "- 📋 User accounts collected: **$USER_COUNT**" >> $GITHUB_STEP_SUMMARY
           echo "- 📄 User file: \`$(basename $LATEST_USERS)\`" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Show PyPI data info
+        if [ -f "data/seattle_pypi_projects.json" ]; then
+          PYPI_COUNT=$(jq '.projects_on_pypi // 0' "data/seattle_pypi_projects.json")
+          TOTAL_PYTHON=$(jq '.total_python_projects // 0' "data/seattle_pypi_projects.json")
+          DETECTION_RATE=$(jq -r '.detection_rate // "0%"' "data/seattle_pypi_projects.json")
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 PyPI Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐍 Total Python projects: **$TOTAL_PYTHON**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 On PyPI: **$PYPI_COUNT** ($DETECTION_RATE)" >> $GITHUB_STEP_SUMMARY
         fi
