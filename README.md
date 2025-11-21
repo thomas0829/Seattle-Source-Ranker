@@ -15,11 +15,12 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 ## 📊 Latest Statistics
 
-- **464,157 projects** tracked across Seattle's developer community
-- **2,817,819 total stars** accumulated by Seattle projects
+- **464,174 projects** tracked across Seattle's developer community
+- **2,817,967 total stars** accumulated by Seattle projects
 - **28,203 users** collected in latest run
+- **9,962 Python projects** published on PyPI (18.10% of Python projects)
 - **9,962 Python projects** published on PyPI (18.10% of 55,034 Python projects)
-- Last updated: 2025-11-20 19:30:00 PST
+- Last updated: 2025-11-20 00:51:35 PST
 
 ---
 
