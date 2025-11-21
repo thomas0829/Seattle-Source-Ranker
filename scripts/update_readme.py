@@ -40,9 +40,25 @@ def load_latest_data():
     else:
         print(f"⚠️  No project data found (will use user data only)")
     
+    # Try to find PyPI data
+    pypi_file = data_dir / 'seattle_pypi_projects.json'
+    pypi_data = None
+    
+    if pypi_file.exists():
+        print(f"📂 Loading PyPI data from {pypi_file.name}")
+        try:
+            with open(pypi_file, 'r') as f:
+                pypi_data = json.load(f)
+            print(f"✅ Successfully loaded PyPI data")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load PyPI data: {e}")
+    else:
+        print(f"⚠️  No PyPI data found (will skip PyPI statistics)")
+    
     return {
         'user_data': user_data,
-        'project_data': project_data
+        'project_data': project_data,
+        'pypi_data': pypi_data
     }
 
 def update_readme(stats):
@@ -56,6 +72,9 @@ def update_readme(stats):
     total_users = stats.get('total_users', 0)
     total_projects = stats.get('total_projects')
     total_stars = stats.get('total_stars')
+    pypi_projects = stats.get('pypi_projects')
+    pypi_total_python = stats.get('pypi_total_python')
+    pypi_rate = stats.get('pypi_detection_rate')
     collected_at = stats.get('collected_at', '')
     
     # Format date
@@ -86,6 +105,25 @@ def update_readme(stats):
     user_pattern = r'- \*\*[0-9,]+ users\*\* collected in latest run'
     user_text = f"- **{total_users:,} users** collected in latest run"
     new_content = re.sub(user_pattern, user_text, new_content)
+    
+    # Update PyPI statistics if available
+    if pypi_projects is not None and pypi_total_python is not None:
+        pypi_pattern = r'- \*\*[0-9,]+ Python projects\*\* published on PyPI \([0-9.]+% of Python projects\)'
+        if pypi_rate:
+            pypi_text = f"- **{pypi_projects:,} Python projects** published on PyPI ({pypi_rate} of Python projects)"
+        else:
+            pypi_text = f"- **{pypi_projects:,} Python projects** published on PyPI"
+        
+        # If pattern exists, replace it
+        if re.search(pypi_pattern, new_content):
+            new_content = re.sub(pypi_pattern, pypi_text, new_content)
+        else:
+            # If pattern doesn't exist, add it after the users line
+            new_content = re.sub(
+                r'(- \*\*[0-9,]+ users\*\* collected in latest run)',
+                r'\1\n' + pypi_text,
+                new_content
+            )
     
     # Update the date line
     # Pattern: - Last updated: 2025-11-15 21:06:33 PST
@@ -118,6 +156,7 @@ def main():
     
     user_data = data['user_data']
     project_data = data['project_data']
+    pypi_data = data['pypi_data']
     
     # Build statistics from user data
     # Check if it's the new format (with total_users field) or old format (dict of users)
@@ -140,6 +179,13 @@ def main():
         stats['total_projects'] = project_data.get('total_projects')
         stats['total_stars'] = project_data.get('total_stars')
         print(f"✅ Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
+    
+    # Add PyPI statistics if available
+    if pypi_data:
+        stats['pypi_projects'] = pypi_data.get('projects_on_pypi', 0)
+        stats['pypi_total_python'] = pypi_data.get('total_python_projects', 0)
+        stats['pypi_detection_rate'] = pypi_data.get('detection_rate', '0%')
+        print(f"✅ Found PyPI data with {stats['pypi_projects']:,} projects on PyPI")
     
     print(f"✅ Found {stats['total_users']:,} users in latest data")
     
