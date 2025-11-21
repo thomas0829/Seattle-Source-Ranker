@@ -18,7 +18,8 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 - **464,157 projects** tracked across Seattle's developer community
 - **2,817,819 total stars** accumulated by Seattle projects
 - **28,203 users** collected in latest run
-- Last updated: 2025-11-20 00:51:35 PST
+- **9,962 Python projects** published on PyPI (18.10% of 55,034 Python projects)
+- Last updated: 2025-11-20 19:30:00 PST
 
 ---
 
@@ -265,8 +266,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 <div align="center">
 
 **Seattle Source Ranker Beta v3.1** - Current version with GitHub Actions automation.
-
-Previous versions: `Beta-v1.0` | `Beta-v2.0` | `Beta-v2.1` | `Beta-v3.0`
 
 *Statistics automatically updated by GitHub Actions.*
 
