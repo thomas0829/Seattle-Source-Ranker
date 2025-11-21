@@ -1,20 +1,20 @@
 {
-  "generated_at": "2025-11-20T20:16:40.692661-08:00",
-  "total_python_projects": 55034,
-  "projects_on_pypi": 9962,
+  "generated_at": "2025-11-21T01:32:29.412272-08:00",
+  "total_python_projects": 55039,
+  "projects_on_pypi": 9961,
   "detection_rate": "18.10%",
   "statistics": {
-    "total_checked": 55034,
-    "on_pypi": 9962,
-    "not_on_pypi": 45072,
+    "total_checked": 55039,
+    "on_pypi": 9961,
+    "not_on_pypi": 45078,
     "by_confidence": {
       "very_high": 30,
-      "high": 9932,
+      "high": 9931,
       "medium": 0,
       "low": 0
     },
     "by_method": {
-      "direct_match": 8979,
+      "direct_match": 8978,
       "underscore_to_dash": 805,
       "direct_match_verified": 15,
       "dash_to_underscore": 148,
@@ -26,7 +26,7 @@
       "name": "Gooey",
       "full_name": null,
       "owner": "chriskiehl",
-      "stars": 21885,
+      "stars": 21888,
       "description": "Turn (almost) any Python command line program into a full GUI application with one line",
       "url": "https://github.com/chriskiehl/Gooey",
       "topics": [],
@@ -37,7 +37,7 @@
       "name": "olmocr",
       "full_name": null,
       "owner": "allenai",
-      "stars": 16009,
+      "stars": 16014,
       "description": "Toolkit for linearizing PDFs for LLM datasets/training",
       "url": "https://github.com/allenai/olmocr",
       "topics": [],
@@ -59,7 +59,7 @@
       "name": "moondream",
       "full_name": null,
       "owner": "vikhyat",
-      "stars": 8933,
+      "stars": 8932,
       "description": "tiny vision language model",
       "url": "https://github.com/vikhyat/moondream",
       "topics": [],
@@ -70,7 +70,7 @@
       "name": "visidata",
       "full_name": null,
       "owner": "saulpw",
-      "stars": 8598,
+      "stars": 8599,
       "description": "A terminal spreadsheet multitool for discovering and arranging data",
       "url": "https://github.com/saulpw/visidata",
       "topics": [
@@ -100,7 +100,7 @@
       "name": "mcp",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7433,
+      "stars": 7436,
       "description": "AWS MCP Servers \u2014 helping you get the most out of AWS, wherever you use MCP.",
       "url": "https://github.com/awslabs/mcp",
       "topics": [
@@ -196,7 +196,7 @@
       "name": "hug",
       "full_name": null,
       "owner": "hugapi",
-      "stars": 6904,
+      "stars": 6903,
       "description": "Embrace the APIs of the future. Hug aims to make developing APIs as simple as possible, but no simpler.",
       "url": "https://github.com/hugapi/hug",
       "topics": [
@@ -400,7 +400,7 @@
       "name": "eg",
       "full_name": null,
       "owner": "srsudar",
-      "stars": 1962,
+      "stars": 1963,
       "description": "Useful examples at the command line.",
       "url": "https://github.com/srsudar/eg",
       "topics": [],
@@ -558,7 +558,7 @@
       "name": "objaverse-xl",
       "full_name": null,
       "owner": "allenai",
-      "stars": 1132,
+      "stars": 1133,
       "description": "\ud83e\ude90 Objaverse-XL is a Universe of 10M+ 3D Objects. Contains API Scripts for Downloading and Processing!",
       "url": "https://github.com/allenai/objaverse-xl",
       "topics": [
@@ -612,7 +612,7 @@
       "name": "ahk",
       "full_name": null,
       "owner": "spyoungtech",
-      "stars": 1006,
+      "stars": 1007,
       "description": "Python wrapper for AutoHotkey with full type support. Harness the automation power of AutoHotkey with the beauty of Python.",
       "url": "https://github.com/spyoungtech/ahk",
       "topics": [
@@ -969,7 +969,7 @@
       "name": "python-package-template",
       "full_name": null,
       "owner": "allenai",
-      "stars": 528,
+      "stars": 529,
       "description": "A template repo for Python packages",
       "url": "https://github.com/allenai/python-package-template",
       "topics": [
@@ -1202,7 +1202,7 @@
       "name": "chatterbox-tts-api",
       "full_name": null,
       "owner": "travisvn",
-      "stars": 388,
+      "stars": 389,
       "description": "Local, OpenAI-compatible text-to-speech (TTS) API using Chatterbox, enabling users to generate voice cloned speech anywhere the OpenAI API is used (e.g. Open WebUI, AnythingLLM, etc.)",
       "url": "https://github.com/travisvn/chatterbox-tts-api",
       "topics": [
@@ -9377,6 +9377,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "decapitate-the-spire",
+      "full_name": null,
+      "owner": "jahabrewer",
+      "stars": 16,
+      "description": "A headless clone of Mega Crit's Slay the Spire",
+      "url": "https://github.com/jahabrewer/decapitate-the-spire",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "kamae",
       "full_name": null,
       "owner": "ExpediaGroup",
@@ -9686,17 +9697,6 @@
       "match_method": "direct_match"
     },
     {
-      "name": "decapitate-the-spire",
-      "full_name": null,
-      "owner": "jahabrewer",
-      "stars": 15,
-      "description": "A headless clone of Mega Crit's Slay the Spire",
-      "url": "https://github.com/jahabrewer/decapitate-the-spire",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
       "name": "fastdict",
       "full_name": null,
       "owner": "viirya",
@@ -9884,6 +9884,17 @@
       "stars": 14,
       "description": "On-the-fly Definition Augmentation of LLMs for Biomedical NER",
       "url": "https://github.com/allenai/beacon",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "PlaSma",
+      "full_name": null,
+      "owner": "allenai",
+      "stars": 14,
+      "description": "This is a repository for paper titled, PlaSma: Making Small Language Models Better Procedural Knowledge Models for (Counterfactual) Planning",
+      "url": "https://github.com/allenai/PlaSma",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -10177,17 +10188,6 @@
       "stars": 13,
       "description": "A XML-RPC service used for examining web pages accessibility",
       "url": "https://github.com/eeejay/specular",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "PlaSma",
-      "full_name": null,
-      "owner": "allenai",
-      "stars": 13,
-      "description": "This is a repository for paper titled, PlaSma: Making Small Language Models Better Procedural Knowledge Models for (Counterfactual) Planning",
-      "url": "https://github.com/allenai/PlaSma",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -14374,6 +14374,21 @@
       "match_method": "direct_match"
     },
     {
+      "name": "content-accessibility-utility-on-aws",
+      "full_name": null,
+      "owner": "awslabs",
+      "stars": 6,
+      "description": "A comprehensive solution for converting PDF documents to accessible HTML and remediating accessibility issues in web content",
+      "url": "https://github.com/awslabs/content-accessibility-utility-on-aws",
+      "topics": [
+        "accessibility",
+        "generative-ai",
+        "wcag"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "pysnooapi",
       "full_name": null,
       "owner": "sanghviharshit",
@@ -15654,21 +15669,6 @@
       "description": "A professional cloud provider integration plugin for IBM Spectrum Symphony Host Factory, enabling dynamic provisioning of compute resources with a REST API interface and clean architecture implementation.",
       "url": "https://github.com/awslabs/open-hostfactory-plugin",
       "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "content-accessibility-utility-on-aws",
-      "full_name": null,
-      "owner": "awslabs",
-      "stars": 5,
-      "description": "A comprehensive solution for converting PDF documents to accessible HTML and remediating accessibility issues in web content",
-      "url": "https://github.com/awslabs/content-accessibility-utility-on-aws",
-      "topics": [
-        "accessibility",
-        "generative-ai",
-        "wcag"
-      ],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -92889,17 +92889,6 @@
       "stars": 0,
       "description": null,
       "url": "https://github.com/simarjeetss/computer-use-agent",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "memorable",
-      "full_name": null,
-      "owner": "0sparsh2",
-      "stars": 0,
-      "description": null,
-      "url": "https://github.com/0sparsh2/memorable",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
