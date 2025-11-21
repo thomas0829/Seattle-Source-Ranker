@@ -179,7 +179,10 @@ export default function App() {
   const loadSearchResults = async () => {
     setIsLoading(true);
     const allMatchingRepos = [];
-    const langsToSearch = showAll ? languages : selectedLanguages;
+    
+    // Determine which languages to search
+    // If showAll is true OR selectedLanguages is empty, search all languages
+    const langsToSearch = (showAll || selectedLanguages.length === 0) ? languages : selectedLanguages;
     
     // Limit search to prevent loading too many pages
     const maxPagesToLoad = 20; // Limit for performance
