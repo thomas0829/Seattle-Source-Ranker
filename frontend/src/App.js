@@ -185,6 +185,11 @@ export default function App() {
     const allMatchingRepos = [];
     const matchCounts = {}; // Track matches per language
     
+    // Initialize all languages to 0 matches
+    languages.forEach(lang => {
+      matchCounts[lang] = 0;
+    });
+    
     // Determine which languages to search
     // If showAll is true OR selectedLanguages is empty, search all languages
     const langsToSearch = (showAll || selectedLanguages.length === 0) ? languages : selectedLanguages;
@@ -421,8 +426,11 @@ export default function App() {
                 {lang}
                 {metadata && metadata.languages[lang] && (
                   <span className="lang-count">
-                    {debouncedSearchQuery.trim() && searchMatchCounts[lang] !== undefined ? (
-                      `(${searchMatchCounts[lang].toLocaleString()} matches)`
+                    {debouncedSearchQuery.trim() ? (
+                      // During search, show match count if available, otherwise show original count
+                      searchMatchCounts[lang] !== undefined ? 
+                        `(${searchMatchCounts[lang].toLocaleString()} ${searchMatchCounts[lang] === 1 ? 'match' : 'matches'})` : 
+                        `(${metadata.languages[lang].total.toLocaleString()})`
                     ) : (
                       `(${metadata.languages[lang].total.toLocaleString()})`
                     )}
@@ -444,9 +452,13 @@ export default function App() {
           <>
             Showing {((currentPage - 1) * 50) + 1}-{Math.min(currentPage * 50, selectedLanguages.reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0))} of {selectedLanguages.reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()} projects
           </>
+        ) : debouncedSearchQuery.trim() && Object.keys(searchMatchCounts).length > 0 ? (
+          <>
+            Showing {repos.length > 0 ? ((currentPage - 1) * 50) + 1 : 0}-{repos.length > 0 ? ((currentPage - 1) * 50) + repos.length : 0} of {Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0).toLocaleString()} matches
+          </>
         ) : (
           <>
-            Showing {repos.length > 0 ? ((currentPage - 1) * 50) + 1 : 0}-{repos.length > 0 ? ((currentPage - 1) * 50) + repos.length : 0} (search results)
+            Showing {repos.length > 0 ? ((currentPage - 1) * 50) + 1 : 0}-{repos.length > 0 ? ((currentPage - 1) * 50) + repos.length : 0} (searching...)
           </>
         )}
         {isLoading && <span> ⏳</span>}
