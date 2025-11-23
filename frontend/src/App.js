@@ -493,7 +493,19 @@ export default function App() {
               return (
                 <tr key={repo.name}>
                   <td className="rank-col">#{globalRank}</td>
-                  <td className="owner-col">{repo.owner}</td>
+                  <td className="owner-col">
+                    <span 
+                      className="owner-link" 
+                      onClick={() => {
+                        setSearchQuery(repo.owner);
+                        setCurrentPage(1);
+                      }}
+                      style={{ cursor: 'pointer', color: '#0066cc', textDecoration: 'underline' }}
+                      title={`Search for ${repo.owner}`}
+                    >
+                      {repo.owner}
+                    </span>
+                  </td>
                   <td className="chart-col">
                     <div 
                       className="bar-container"
