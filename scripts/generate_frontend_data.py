@@ -229,12 +229,24 @@ def main():
     
     # Generate metadata file (total counts per language)
     from zoneinfo import ZoneInfo
+    import re
     SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
+    
+    # Extract date from filename (e.g., seattle_projects_20251120_220648.json)
+    filename_match = re.search(r'(\d{8})_(\d{6})', data_file)
+    if filename_match:
+        date_str = filename_match.group(1)  # YYYYMMDD
+        time_str = filename_match.group(2)  # HHMMSS
+        data_datetime = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
+        data_datetime = data_datetime.replace(tzinfo=ZoneInfo("UTC")).astimezone(SEATTLE_TZ)
+        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S %Z")
+    else:
+        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S %Z")
     
     metadata = {
         'languages': {},
         'page_size': PAGE_SIZE,
-        'last_updated': datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S %Z")
+        'last_updated': last_updated
     }
     
     print(f"\n📊 Generating paginated data:")
