@@ -1,3 +1,7 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /static/
+
+# Sitemap
+Sitemap: https://thomas0829.github.io/Seattle-Source-Ranker/sitemap.xml
