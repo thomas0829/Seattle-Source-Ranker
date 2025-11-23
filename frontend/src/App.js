@@ -18,6 +18,7 @@ export default function App() {
   const timeoutRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const [pageInput, setPageInput] = useState("");
+  const [searchMatchCounts, setSearchMatchCounts] = useState({});
 
   // Load metadata
   useEffect(() => {
@@ -42,6 +43,9 @@ export default function App() {
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setCurrentPage(1); // Reset to page 1 when search changes
+      if (!searchQuery.trim()) {
+        setSearchMatchCounts({}); // Clear match counts when search is cleared
+      }
     }, 500); // Wait 500ms after user stops typing
 
     return () => {
@@ -179,16 +183,21 @@ export default function App() {
   const loadSearchResults = async () => {
     setIsLoading(true);
     const allMatchingRepos = [];
+    const matchCounts = {}; // Track matches per language
     
     // Determine which languages to search
     // If showAll is true OR selectedLanguages is empty, search all languages
     const langsToSearch = (showAll || selectedLanguages.length === 0) ? languages : selectedLanguages;
     
-    // Limit search to prevent loading too many pages
-    const maxPagesToLoad = 20; // Limit for performance
+    // Reduced limit for better performance - only search first 10 pages per language
+    const maxPagesToLoad = 10; // Reduced from 20 for better performance
     
-    for (const lang of langsToSearch) {
+    const query = debouncedSearchQuery.toLowerCase();
+    
+    // Load pages in parallel for better performance
+    const loadPromises = langsToSearch.map(async (lang) => {
       const totalPages = Math.min(metadata.languages[lang].pages, maxPagesToLoad);
+      const langMatches = [];
       
       for (let page = 1; page <= totalPages; page++) {
         try {
@@ -197,21 +206,28 @@ export default function App() {
           const response = await fetch(pageUrl);
           const pageData = await response.json();
           
-          let filtered = pageData.map(repo => ({ ...repo, language: lang }));
-          
-          // Apply search filter
-          const query = debouncedSearchQuery.toLowerCase();
-          filtered = filtered.filter(repo => 
+          // Apply search filter immediately
+          const filtered = pageData.filter(repo => 
             repo.name.toLowerCase().includes(query) ||
             repo.owner.toLowerCase().includes(query)
-          );
+          ).map(repo => ({ ...repo, language: lang }));
           
-          allMatchingRepos.push(...filtered);
+          langMatches.push(...filtered);
         } catch (err) {
           console.error(`Failed to load ${lang} page ${page}:`, err);
         }
       }
-    }
+      
+      matchCounts[lang] = langMatches.length;
+      return langMatches;
+    });
+    
+    // Wait for all languages to finish loading
+    const results = await Promise.all(loadPromises);
+    results.forEach(langRepos => allMatchingRepos.push(...langRepos));
+    
+    // Update match counts for display
+    setSearchMatchCounts(matchCounts);
     
     // Sort by score and paginate
     allMatchingRepos.sort((a, b) => b.score - a.score);
@@ -363,7 +379,7 @@ export default function App() {
         )}
         {debouncedSearchQuery && (
           <div className="search-hint">
-            Searching in top {showAll ? languages.length * 20 : selectedLanguages.length * 20} pages (top ~{showAll ? languages.length * 1000 : selectedLanguages.length * 1000} projects)
+            Searching in top 10 pages per language (top ~{showAll ? languages.length * 500 : selectedLanguages.length * 500} projects)
           </div>
         )}
       </div>
@@ -383,7 +399,11 @@ export default function App() {
               <strong>All</strong>
               {metadata && (
                 <span className="lang-count">
-                  ({Object.keys(metadata.languages).reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})
+                  {debouncedSearchQuery.trim() && Object.keys(searchMatchCounts).length > 0 ? (
+                    `(${Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0).toLocaleString()} matches)`
+                  ) : (
+                    `(${Object.keys(metadata.languages).reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
+                  )}
                 </span>
               )}
             </span>
@@ -401,7 +421,11 @@ export default function App() {
                 {lang}
                 {metadata && metadata.languages[lang] && (
                   <span className="lang-count">
-                    ({metadata.languages[lang].total.toLocaleString()})
+                    {debouncedSearchQuery.trim() && searchMatchCounts[lang] !== undefined ? (
+                      `(${searchMatchCounts[lang].toLocaleString()} matches)`
+                    ) : (
+                      `(${metadata.languages[lang].total.toLocaleString()})`
+                    )}
                   </span>
                 )}
               </span>
