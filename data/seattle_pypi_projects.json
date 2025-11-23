@@ -1,20 +1,20 @@
 {
-  "generated_at": "2025-11-22T01:38:44.856320-08:00",
+  "generated_at": "2025-11-23T01:27:00.301494-08:00",
   "total_python_projects": 55062,
-  "projects_on_pypi": 9959,
+  "projects_on_pypi": 9960,
   "detection_rate": "18.09%",
   "statistics": {
     "total_checked": 55062,
-    "on_pypi": 9959,
-    "not_on_pypi": 45103,
+    "on_pypi": 9960,
+    "not_on_pypi": 45102,
     "by_confidence": {
       "very_high": 30,
-      "high": 9929,
+      "high": 9930,
       "medium": 0,
       "low": 0
     },
     "by_method": {
-      "direct_match": 8975,
+      "direct_match": 8976,
       "underscore_to_dash": 806,
       "direct_match_verified": 15,
       "dash_to_underscore": 148,
@@ -26,7 +26,7 @@
       "name": "Gooey",
       "full_name": null,
       "owner": "chriskiehl",
-      "stars": 21917,
+      "stars": 21941,
       "description": "Turn (almost) any Python command line program into a full GUI application with one line",
       "url": "https://github.com/chriskiehl/Gooey",
       "topics": [],
@@ -37,7 +37,7 @@
       "name": "olmocr",
       "full_name": null,
       "owner": "allenai",
-      "stars": 16030,
+      "stars": 16037,
       "description": "Toolkit for linearizing PDFs for LLM datasets/training",
       "url": "https://github.com/allenai/olmocr",
       "topics": [],
@@ -59,7 +59,7 @@
       "name": "moondream",
       "full_name": null,
       "owner": "vikhyat",
-      "stars": 8932,
+      "stars": 8936,
       "description": "tiny vision language model",
       "url": "https://github.com/vikhyat/moondream",
       "topics": [],
@@ -70,7 +70,7 @@
       "name": "visidata",
       "full_name": null,
       "owner": "saulpw",
-      "stars": 8600,
+      "stars": 8604,
       "description": "A terminal spreadsheet multitool for discovering and arranging data",
       "url": "https://github.com/saulpw/visidata",
       "topics": [
@@ -100,7 +100,7 @@
       "name": "mcp",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7447,
+      "stars": 7450,
       "description": "AWS MCP Servers \u2014 helping you get the most out of AWS, wherever you use MCP.",
       "url": "https://github.com/awslabs/mcp",
       "topics": [
@@ -137,7 +137,7 @@
       "name": "agent-squad",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7090,
+      "stars": 7092,
       "description": "Flexible and powerful framework for managing multiple AI agents and handling complex conversations",
       "url": "https://github.com/awslabs/agent-squad",
       "topics": [
@@ -169,7 +169,7 @@
       "name": "howmanypeoplearearound",
       "full_name": null,
       "owner": "schollz",
-      "stars": 7044,
+      "stars": 7045,
       "description": "Count the number of people around you :family_man_man_boy: by monitoring wifi signals :satellite:",
       "url": "https://github.com/schollz/howmanypeoplearearound",
       "topics": [
@@ -216,7 +216,7 @@
       "name": "gluonts",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 5062,
+      "stars": 5063,
       "description": "Probabilistic time series modeling in Python",
       "url": "https://github.com/awslabs/gluonts",
       "topics": [
@@ -541,24 +541,10 @@
       "match_method": "direct_match"
     },
     {
-      "name": "toml",
-      "full_name": null,
-      "owner": "uiri",
-      "stars": 1135,
-      "description": "Python lib for TOML",
-      "url": "https://github.com/uiri/toml",
-      "topics": [
-        "hacktoberfest",
-        "hacktoberfest2020"
-      ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
       "name": "objaverse-xl",
       "full_name": null,
       "owner": "allenai",
-      "stars": 1134,
+      "stars": 1135,
       "description": "\ud83e\ude90 Objaverse-XL is a Universe of 10M+ 3D Objects. Contains API Scripts for Downloading and Processing!",
       "url": "https://github.com/allenai/objaverse-xl",
       "topics": [
@@ -569,6 +555,20 @@
         "objaverse",
         "python",
         "text-to-3d"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "toml",
+      "full_name": null,
+      "owner": "uiri",
+      "stars": 1135,
+      "description": "Python lib for TOML",
+      "url": "https://github.com/uiri/toml",
+      "topics": [
+        "hacktoberfest",
+        "hacktoberfest2020"
       ],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -612,7 +612,7 @@
       "name": "ahk",
       "full_name": null,
       "owner": "spyoungtech",
-      "stars": 1007,
+      "stars": 1006,
       "description": "Python wrapper for AutoHotkey with full type support. Harness the automation power of AutoHotkey with the beauty of Python.",
       "url": "https://github.com/spyoungtech/ahk",
       "topics": [
@@ -685,7 +685,7 @@
       "name": "espn-api",
       "full_name": null,
       "owner": "cwendt94",
-      "stars": 844,
+      "stars": 845,
       "description": "ESPN Fantasy API! (Football, Basketball)",
       "url": "https://github.com/cwendt94/espn-api",
       "topics": [
@@ -748,7 +748,7 @@
       "name": "FreeSimpleGUI",
       "full_name": null,
       "owner": "spyoungtech",
-      "stars": 768,
+      "stars": 769,
       "description": "The free-forever GUI library",
       "url": "https://github.com/spyoungtech/FreeSimpleGUI",
       "topics": [
@@ -772,10 +772,28 @@
       "name": "git-remote-s3",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 683,
+      "stars": 682,
       "description": null,
       "url": "https://github.com/awslabs/git-remote-s3",
       "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "OneDiffusion",
+      "full_name": null,
+      "owner": "lehduong",
+      "stars": 658,
+      "description": "Official implementation of OneDiffusion paper (CVPR 2025)",
+      "url": "https://github.com/lehduong/OneDiffusion",
+      "topics": [
+        "diffusion-models",
+        "image-translation",
+        "novel-view-synthesis",
+        "single-view-reconstruction",
+        "stable-diffusion",
+        "text-to-image"
+      ],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -791,28 +809,10 @@
       "match_method": "direct_match"
     },
     {
-      "name": "OneDiffusion",
-      "full_name": null,
-      "owner": "lehduong",
-      "stars": 657,
-      "description": "Official implementation of OneDiffusion paper (CVPR 2025)",
-      "url": "https://github.com/lehduong/OneDiffusion",
-      "topics": [
-        "diffusion-models",
-        "image-translation",
-        "novel-view-synthesis",
-        "single-view-reconstruction",
-        "stable-diffusion",
-        "text-to-image"
-      ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
       "name": "ODIN",
       "full_name": null,
       "owner": "chrismaddalena",
-      "stars": 654,
+      "stars": 653,
       "description": "Automated network asset, email, and social media profile discovery and cataloguing.",
       "url": "https://github.com/chrismaddalena/ODIN",
       "topics": [
@@ -958,7 +958,7 @@
       "name": "GCPBucketBrute",
       "full_name": null,
       "owner": "RhinoSecurityLabs",
-      "stars": 541,
+      "stars": 542,
       "description": "A script to enumerate Google Storage buckets, determine what access you have to them, and determine if they can be privilege escalated.",
       "url": "https://github.com/RhinoSecurityLabs/GCPBucketBrute",
       "topics": [],
@@ -994,7 +994,7 @@
       "name": "Holodeck",
       "full_name": null,
       "owner": "allenai",
-      "stars": 498,
+      "stars": 499,
       "description": "CVPR 2024: Language Guided Generation of 3D Embodied AI Environments.",
       "url": "https://github.com/allenai/Holodeck",
       "topics": [
@@ -1046,7 +1046,7 @@
       "name": "LigandMPNN",
       "full_name": null,
       "owner": "dauparas",
-      "stars": 479,
+      "stars": 480,
       "description": null,
       "url": "https://github.com/dauparas/LigandMPNN",
       "topics": [],
@@ -1202,7 +1202,7 @@
       "name": "chatterbox-tts-api",
       "full_name": null,
       "owner": "travisvn",
-      "stars": 389,
+      "stars": 391,
       "description": "Local, OpenAI-compatible text-to-speech (TTS) API using Chatterbox, enabling users to generate voice cloned speech anywhere the OpenAI API is used (e.g. Open WebUI, AnythingLLM, etc.)",
       "url": "https://github.com/travisvn/chatterbox-tts-api",
       "topics": [
@@ -1464,6 +1464,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "agent-evaluation",
+      "full_name": null,
+      "owner": "awslabs",
+      "stars": 316,
+      "description": "A generative AI-powered framework for testing virtual agents.",
+      "url": "https://github.com/awslabs/agent-evaluation",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "Waveformer",
       "full_name": null,
       "owner": "vb000",
@@ -1474,17 +1485,6 @@
         "audio",
         "deep-learning"
       ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "agent-evaluation",
-      "full_name": null,
-      "owner": "awslabs",
-      "stars": 314,
-      "description": "A generative AI-powered framework for testing virtual agents.",
-      "url": "https://github.com/awslabs/agent-evaluation",
-      "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -1623,7 +1623,7 @@
       "name": "gptree",
       "full_name": null,
       "owner": "travisvn",
-      "stars": 280,
+      "stars": 281,
       "description": "A CLI tool to provide LLM context for coding projects by combining project files into a single text file (or clipboard text) with directory tree structure.",
       "url": "https://github.com/travisvn/gptree",
       "topics": [
@@ -1962,23 +1962,23 @@
       "match_method": "direct_match"
     },
     {
+      "name": "dotbins",
+      "full_name": null,
+      "owner": "basnijholt",
+      "stars": 218,
+      "description": "Keep updated binaries in your dotfiles \ud83e\uddf0",
+      "url": "https://github.com/basnijholt/dotbins",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "LightSeq",
       "full_name": null,
       "owner": "RulinShao",
       "stars": 218,
       "description": "Official repository for DistFlashAttn: Distributed Memory-efficient Attention for Long-context LLMs Training",
       "url": "https://github.com/RulinShao/LightSeq",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "dotbins",
-      "full_name": null,
-      "owner": "basnijholt",
-      "stars": 217,
-      "description": "Keep updated binaries in your dotfiles \ud83e\uddf0",
-      "url": "https://github.com/basnijholt/dotbins",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -3079,6 +3079,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "olmoearth_pretrain",
+      "full_name": null,
+      "owner": "allenai",
+      "stars": 101,
+      "description": "Earth system foundation model data, training, and eval",
+      "url": "https://github.com/allenai/olmoearth_pretrain",
+      "topics": [],
+      "confidence": 0.85,
+      "match_method": "underscore_to_dash"
+    },
+    {
       "name": "fbmessenger",
       "full_name": null,
       "owner": "oconnor663",
@@ -3121,17 +3132,6 @@
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
-    },
-    {
-      "name": "olmoearth_pretrain",
-      "full_name": null,
-      "owner": "allenai",
-      "stars": 100,
-      "description": "Earth system foundation model data, training, and eval",
-      "url": "https://github.com/allenai/olmoearth_pretrain",
-      "topics": [],
-      "confidence": 0.85,
-      "match_method": "underscore_to_dash"
     },
     {
       "name": "S2AND",
@@ -3387,6 +3387,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "DecomP",
+      "full_name": null,
+      "owner": "allenai",
+      "stars": 95,
+      "description": "Repository for Decomposed Prompting",
+      "url": "https://github.com/allenai/DecomP",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "Hexy",
       "full_name": null,
       "owner": "RedFT",
@@ -3404,17 +3415,6 @@
       "stars": 94,
       "description": "Open One-Stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs",
       "url": "https://github.com/allenai/wildguard",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "DecomP",
-      "full_name": null,
-      "owner": "allenai",
-      "stars": 94,
-      "description": "Repository for Decomposed Prompting",
-      "url": "https://github.com/allenai/DecomP",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -5788,6 +5788,24 @@
       "match_method": "direct_match"
     },
     {
+      "name": "Muse-Analysis-Tools",
+      "full_name": null,
+      "owner": "digital-cinema-arts",
+      "stars": 40,
+      "description": "A set of tools to analyze and create charts from Muse EEG devices.",
+      "url": "https://github.com/digital-cinema-arts/Muse-Analysis-Tools",
+      "topics": [
+        "eeg",
+        "eeg-analysis",
+        "eeg-classification",
+        "eeg-headband",
+        "eeg-signals-processing",
+        "muse-headband"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "gotenberg-client",
       "full_name": null,
       "owner": "stumpylog",
@@ -5897,24 +5915,6 @@
       "description": null,
       "url": "https://github.com/awslabs/aws-healthomics-tools",
       "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "Muse-Analysis-Tools",
-      "full_name": null,
-      "owner": "digital-cinema-arts",
-      "stars": 39,
-      "description": "A set of tools to analyze and create charts from Muse EEG devices.",
-      "url": "https://github.com/digital-cinema-arts/Muse-Analysis-Tools",
-      "topics": [
-        "eeg",
-        "eeg-analysis",
-        "eeg-classification",
-        "eeg-headband",
-        "eeg-signals-processing",
-        "muse-headband"
-      ],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -8365,6 +8365,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "legato",
+      "full_name": null,
+      "owner": "guang-yng",
+      "stars": 20,
+      "description": "Official codebase for paper \"LEGATO: Large-Scale End-to-End Generalizable Approach to Typeset OMR\".",
+      "url": "https://github.com/guang-yng/legato",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "doc2graph",
       "full_name": null,
       "owner": "JieyuZ2",
@@ -8597,17 +8608,6 @@
       "stars": 19,
       "description": "Is a mkdocs plugin to make reproducible documentation with quarto",
       "url": "https://github.com/jspaezp/mkquartodocs",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "legato",
-      "full_name": null,
-      "owner": "guang-yng",
-      "stars": 19,
-      "description": "Official codebase for paper \"LEGATO: Large-Scale End-to-End Generalizable Approach to Typeset OMR\".",
-      "url": "https://github.com/guang-yng/legato",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -16503,6 +16503,21 @@
       "match_method": "direct_match"
     },
     {
+      "name": "summit",
+      "full_name": null,
+      "owner": "gartician",
+      "stars": 4,
+      "description": "Ultralight and fast implementation of GoPeaks to call peaks in CUT&Tag/CUT&RUN data",
+      "url": "https://github.com/gartician/summit",
+      "topics": [
+        "bioinformatics",
+        "epigenetics",
+        "leukemia"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "skytap",
       "full_name": null,
       "owner": "mapledyne",
@@ -17292,6 +17307,17 @@
       "topics": [],
       "confidence": 0.85,
       "match_method": "underscore_to_dash"
+    },
+    {
+      "name": "ADAPT",
+      "full_name": null,
+      "owner": "phbradley",
+      "stars": 4,
+      "description": "Antigen-receptor Design Against Peptide-MHC Targets",
+      "url": "https://github.com/phbradley/ADAPT",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
     },
     {
       "name": "Document-classification",
@@ -18681,21 +18707,6 @@
       "match_method": "direct_match"
     },
     {
-      "name": "summit",
-      "full_name": null,
-      "owner": "gartician",
-      "stars": 3,
-      "description": "Ultralight and fast implementation of GoPeaks to call peaks in CUT&Tag/CUT&RUN data",
-      "url": "https://github.com/gartician/summit",
-      "topics": [
-        "bioinformatics",
-        "epigenetics",
-        "leukemia"
-      ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
       "name": "atomicl",
       "full_name": null,
       "owner": "akhomchenko",
@@ -19646,17 +19657,6 @@
       "stars": 3,
       "description": "Examples for the Python for Geoscientists class",
       "url": "https://github.com/hetland/geopython",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "ADAPT",
-      "full_name": null,
-      "owner": "phbradley",
-      "stars": 3,
-      "description": "Antigen-receptor Design Against Peptide-MHC Targets",
-      "url": "https://github.com/phbradley/ADAPT",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -33246,17 +33246,6 @@
       "match_method": "direct_match"
     },
     {
-      "name": "tamber",
-      "full_name": null,
-      "owner": "griffinryan",
-      "stars": 1,
-      "description": "Generative music CLI, with a focus on timbre and musicianship",
-      "url": "https://github.com/griffinryan/tamber",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
       "name": "ticktock",
       "full_name": null,
       "owner": "AlexanderOtavka",
@@ -43433,6 +43422,17 @@
       "topics": [],
       "confidence": 0.85,
       "match_method": "underscore_to_dash"
+    },
+    {
+      "name": "DNN",
+      "full_name": null,
+      "owner": "Zuriahn-Yun",
+      "stars": 0,
+      "description": "From Scratch",
+      "url": "https://github.com/Zuriahn-Yun/DNN",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
     },
     {
       "name": "SNAPPER",
@@ -96182,6 +96182,17 @@
       "stars": 0,
       "description": null,
       "url": "https://github.com/mknutsen/image-registration",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "simulators",
+      "full_name": null,
+      "owner": "bhatti",
+      "stars": 0,
+      "description": "Distributed Systems Failure & Consistency Simulators",
+      "url": "https://github.com/bhatti/simulators",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
