@@ -65,10 +65,15 @@ header h1 {
   gap: 8px;
 }
 
-.search-input {
+.search-wrapper {
+  position: relative;
   width: 100%;
   max-width: 600px;
-  padding: 12px 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 50px 12px 20px;
   font-size: 16px;
   border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: 25px;
@@ -87,6 +92,36 @@ header h1 {
 
 .search-input::placeholder {
   color: rgba(255, 255, 255, 0.4);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.2s ease;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.clear-search-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.clear-search-btn:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 .search-hint {
@@ -294,18 +329,31 @@ tbody td {
 }
 
 .owner-link {
-  color: #8b9dc3;
-  font-weight: 500;
+  color: #c5d1e0;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 2px 4px;
-  border-radius: 3px;
+  position: relative;
   display: inline-block;
+  transition: color 0.2s ease;
+}
+
+.owner-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
 }
 
 .owner-link:hover {
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  color: #8b9eff;
+}
+
+.owner-link:hover::after {
+  width: 100%;
 }
 
 .chart-col {

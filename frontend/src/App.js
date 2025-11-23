@@ -372,13 +372,27 @@ export default function App() {
 
       {/* Search Bar */}
       <div className="search-container">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="🔍 Search by project name or owner..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="search-wrapper">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="🔍 Search by project name or owner..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              className="clear-search-btn"
+              onClick={() => {
+                setSearchQuery('');
+                setCurrentPage(1);
+              }}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
         {searchQuery !== debouncedSearchQuery && (
           <div className="search-hint">Searching...</div>
         )}
