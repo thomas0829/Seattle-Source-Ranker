@@ -293,6 +293,21 @@ tbody td {
   letter-spacing: 0.3px;
 }
 
+.owner-link {
+  color: #8b9dc3;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.owner-link:hover {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
 .chart-col {
   position: relative;
   padding-right: 0;

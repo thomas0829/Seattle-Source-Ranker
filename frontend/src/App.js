@@ -500,7 +500,6 @@ export default function App() {
                         setSearchQuery(repo.owner);
                         setCurrentPage(1);
                       }}
-                      style={{ cursor: 'pointer', color: '#0066cc', textDecoration: 'underline' }}
                       title={`Search for ${repo.owner}`}
                     >
                       {repo.owner}
