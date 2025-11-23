@@ -90,10 +90,13 @@ export default function App() {
     const reposPerLoad = pageSize * currentPage;
     const allReposForLoad = [];
     
-    // Load pages from each language until we have enough repos
-    const maxPagesToLoadPerLang = Math.ceil(reposPerLoad / languages.length / pageSize) + 1;
+    // When "All" is selected, include "Other" even though it's not in the languages array
+    const langsToLoad = showAll ? [...languages, 'Other'] : languages;
     
-    for (const lang of languages) {
+    // Load pages from each language until we have enough repos
+    const maxPagesToLoadPerLang = Math.ceil(reposPerLoad / langsToLoad.length / pageSize) + 1;
+    
+    for (const lang of langsToLoad) {
       const totalPagesForLang = metadata.languages[lang].pages;
       const pagesToLoad = Math.min(maxPagesToLoadPerLang, totalPagesForLang);
       
@@ -191,8 +194,8 @@ export default function App() {
     });
     
     // Determine which languages to search
-    // If showAll is true OR selectedLanguages is empty, search all languages
-    const langsToSearch = (showAll || selectedLanguages.length === 0) ? languages : selectedLanguages;
+    // If showAll is true OR selectedLanguages is empty, search all languages (including Other)
+    const langsToSearch = (showAll || selectedLanguages.length === 0) ? [...languages, 'Other'] : selectedLanguages;
     
     // Reduced limit for better performance - only search first 10 pages per language
     const maxPagesToLoad = 10; // Reduced from 20 for better performance
