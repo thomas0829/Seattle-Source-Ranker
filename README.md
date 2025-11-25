@@ -92,8 +92,17 @@ pip install -e .    # editable install (recommended for development)
 # Or install from source (non-editable):
 pip install .
 
-# 3. Start Redis
-docker run -d --name ssr-redis -p 6379:6379 redis:7-alpine
+# 3. Start Redis (System Service)
+# Most Linux distributions come with Redis pre-installed
+sudo systemctl start redis-server
+sudo systemctl enable redis-server  # Auto-start on boot
+
+# Check Redis is running
+systemctl status redis-server
+redis-cli ping  # Should return PONG
+
+# Optional: If you prefer Docker instead
+# docker run -d --name ssr-redis -p 6379:6379 redis:7-alpine
 
 # 4. Configure tokens (create .env.tokens file)
 GITHUB_TOKEN_1=ghp_your_token_here
@@ -248,8 +257,16 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed factor calculations.
 
 **Redis Connection Error:**
 ```bash
-docker ps  # Check if ssr-redis is running
-docker start ssr-redis  # Start if stopped
+# Check if Redis system service is running
+systemctl status redis-server
+sudo systemctl start redis-server  # Start if stopped
+
+# Test Redis connection
+redis-cli ping  # Should return PONG
+
+# If using Docker instead:
+# docker ps  # Check if ssr-redis is running
+# docker start ssr-redis  # Start if stopped
 ```
 
 **Rate Limit Issues:**
