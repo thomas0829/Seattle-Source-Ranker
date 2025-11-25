@@ -1,9 +1,14 @@
 import React from "react";
 import "./App.css";
+import { Link } from "react-router-dom";
 
 export default function ValidationPage() {
     return (
         <div className="container">
+            <Link to="/" className="back-btn">
+                ← Back
+            </Link>
+
             <header>
                 <h1>Data Validation &amp; Reliability</h1>
                 <p className="subtitle">

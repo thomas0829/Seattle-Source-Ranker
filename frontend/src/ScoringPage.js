@@ -1,10 +1,15 @@
 // src/ScoringPage.js
 import React from "react";
 import "./App.css";
+import { Link } from "react-router-dom";
 
 export default function ScoringPage() {
     return (
         <div className="container">
+            <Link to="/" className="back-btn">
+                ← Back
+            </Link>
+
             <header>
                 <h1>SSR Scoring Methodology</h1>
                 <p className="subtitle">
