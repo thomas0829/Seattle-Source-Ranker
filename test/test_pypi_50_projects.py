@@ -11,11 +11,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.pypi_checker import PyPIChecker
 
+# Use project root data directory
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT / 'data'
+
 
 def load_real_projects(limit=50):
     """Load real Python projects from collected data"""
-    # Find latest project file
-    project_files = glob.glob('data/seattle_projects_*.json')
+    # Find latest project file (use relative path from test directory)
+    data_dir = Path(__file__).parent.parent / 'data'
+    project_files = glob.glob(str(data_dir / 'seattle_projects_*.json'))
     
     if not project_files:
         print("❌ No project data found. Using sample projects instead.")
@@ -106,8 +111,8 @@ def test_50_projects():
     projects = load_real_projects(50)
     print(f"\n📊 Testing {len(projects)} projects\n")
     
-    # Initialize checker
-    checker = PyPIChecker()
+    # Initialize checker with project data directory
+    checker = PyPIChecker(cache_dir=str(DATA_DIR))
     print()
     
     # Check each project
@@ -203,7 +208,8 @@ def test_50_projects():
         name = p.get('name', 'unknown')
         print(f"   • {name}")
     
-    return projects
+    # Don't return value - pytest expects None
+    assert len(projects) > 0, "Should have tested some projects"
 
 
 if __name__ == '__main__':

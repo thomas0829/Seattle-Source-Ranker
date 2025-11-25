@@ -90,15 +90,12 @@ jobs:
         print("\n✅ All imports successful")
         PYTHON_EOF
     
-    - name: Run tests (if available)
+    - name: Run test suite
       run: |
-        if [ -f "test_pypi.py" ]; then
-          echo "🧪 Running tests..."
-          python test_pypi.py
-        else
-          echo "ℹ️  No tests found"
-        fi
-      continue-on-error: true
+        echo "🧪 Running comprehensive test suite..."
+        cd test
+        # Skip tests that require large data files (90/91 tests will run)
+        pytest -v -k "not pypi_50_projects"
     
     - name: Summary
       if: always()
@@ -107,6 +104,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "✅ Python syntax check completed" >> $GITHUB_STEP_SUMMARY
         echo "✅ Import check completed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Test suite completed (90/91 tests)" >> $GITHUB_STEP_SUMMARY
   
   frontend-check:
     runs-on: ubuntu-latest
