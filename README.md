@@ -80,9 +80,13 @@ Simply visit our **[live website](https://thomas0829.github.io/Seattle-Source-Ra
 git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
 cd Seattle-Source-Ranker
 
-# 2. Create conda environment
-conda create -n ssr python=3.11
+# 2. Install dependencies (choose one method)
+
+## Option A: Using conda (recommended)
+conda env create -f environment.yml
 conda activate ssr
+
+## Option B: Using pip
 pip install -r requirements.txt
 
 # 3. Start Redis
