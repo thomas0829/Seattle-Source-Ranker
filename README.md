@@ -86,8 +86,12 @@ cd Seattle-Source-Ranker
 conda env create -f environment.yml
 conda activate ssr
 
-## Option B: Using pip
-pip install -r requirements.txt
+## Option B: Using pip (pyproject.toml / PEP 517)
+# Recommended for local development:
+pip install -e .    # editable install (recommended for development)
+
+# Or install from source (non-editable):
+pip install .
 
 # 3. Start Redis
 docker run -d --name ssr-redis -p 6379:6379 redis:7-alpine

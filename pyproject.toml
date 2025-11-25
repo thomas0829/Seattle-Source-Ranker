@@ -1,0 +1,28 @@
+[project]
+name = "seattle-source-ranker"
+version = "0.1.0"
+description = "Discover and rank open source projects from Seattle's tech community"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [ { name = "thomas0829" } ]
+
+dependencies = [
+  "requests>=2.31.0",
+  "tqdm>=4.66.0",
+  "celery[redis]>=5.3.4",
+  "flower>=2.0.1",
+  "redis>=5.0.1",
+  "psycopg2-binary>=2.9.9",
+  "sqlalchemy>=2.0.23",
+  "sqlmodel>=0.0.14",
+  "fastapi>=0.104.1",
+  "uvicorn[standard]>=0.24.0",
+  "pydantic>=2.5.0",
+  "pytest>=7.4.3",
+  "pytest-asyncio>=0.21.1",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
