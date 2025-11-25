@@ -160,14 +160,16 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   └── USER_STORIES.md               # Use cases
 ├── frontend/                          # React web application
 │   ├── src/
-│   │   ├── App.js                    # Main component (579 lines)
-│   │   ├── App.css                   # Glass morphism styling
+│   │   ├── App.js                    # Main component (647 lines)
+│   │   ├── App.css                   # Glass morphism styling (738 lines)
 │   │   └── index.js
 │   ├── public/
-│   │   ├── pages/                    # Paginated JSON files
+│   │   ├── pages/                    # Paginated JSON files (11 languages)
 │   │   └── metadata.json             # Stats & last updated
 │   ├── build/                        # Production build
-│   └── package.json
+│   ├── package.json
+│   ├── package-lock.json
+│   └── .npmrc                        # npm configuration
 ├── logs/                              # Celery logs
 ├── scripts/                           # Automation scripts
 │   ├── generate_frontend_data.py     # Generate paginated data
@@ -175,6 +177,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   ├── update_readme.py              # Auto-update README stats
 │   ├── start_workers.sh              # Start Celery workers
 │   ├── stop_workers.sh               # Stop workers
+│   ├── start_collection.sh           # Start collection process
 │   └── test_workflow.sh              # Local testing
 ├── test/                              # Test suite (pytest)
 │   ├── test_graphql_queries.py       # GraphQL query tests
@@ -191,9 +194,11 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   └── pypi_client.py                # PyPI package info
 ├── .gitattributes                     # Git LFS configuration
 ├── .gitignore
+├── environment.yml                    # Conda environment specification
+├── pyproject.toml                     # Python project metadata (PEP 621)
+├── pytest.ini                         # Pytest configuration
 ├── LICENSE
-├── README.md
-└── requirements.txt                   # Python dependencies
+└── README.md
 ```
 
 ---
