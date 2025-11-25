@@ -193,9 +193,9 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   └── pypi_client.py                # PyPI package info
 ├── .gitattributes                    # Git LFS configuration
 ├── .gitignore
-├── environment.yml                    # Conda environment specification
-├── pyproject.toml                     # Python project metadata
-├── pytest.ini                         # Pytest configuration
+├── environment.yml                   # Conda environment specification
+├── pyproject.toml                    # Python project metadata
+├── pytest.ini                        # Pytest configuration
 ├── LICENSE
 └── README.md
 ```
