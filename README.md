@@ -142,14 +142,14 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 .
 ├── .github/
 │   └── workflows/
-│       └── collect-and-deploy.yml    # Daily automation (midnight PST)
+│       └── collect-and-deploy.yml    # Daily automation
 ├── data/                              # Collection output
 │   ├── seattle_projects_*.json       # Raw project data (~260MB, local only)
 │   ├── seattle_users_*.json          # User metadata (in Git)
 │   ├── seattle_pypi_projects.json    # PyPI packages (in Git)
 │   └── pypi_official_packages.json   # PyPI index cache (in Git)
 ├── distributed/                       # Distributed collection system
-│   ├── distributed_collector.py      # Main coordinator (1136 lines)
+│   ├── distributed_collector.py      # Main coordinator
 │   ├── workers/
 │   │   └── collection_worker.py      # Celery worker tasks
 │   └── __init__.py
@@ -160,11 +160,11 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   └── USER_STORIES.md               # Use cases
 ├── frontend/                          # React web application
 │   ├── src/
-│   │   ├── App.js                    # Main component (647 lines)
-│   │   ├── App.css                   # Glass morphism styling (738 lines)
+│   │   ├── App.js                    # Main component
+│   │   ├── App.css                   # Glass morphism styling
 │   │   └── index.js
 │   ├── public/
-│   │   ├── pages/                    # Paginated JSON files (11 languages)
+│   │   ├── pages/                    # Paginated JSON files
 │   │   └── metadata.json             # Stats & last updated
 │   ├── build/                        # Production build
 │   ├── package.json
@@ -195,7 +195,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 ├── .gitattributes                     # Git LFS configuration
 ├── .gitignore
 ├── environment.yml                    # Conda environment specification
-├── pyproject.toml                     # Python project metadata (PEP 621)
+├── pyproject.toml                     # Python project metadata
 ├── pytest.ini                         # Pytest configuration
 ├── LICENSE
 └── README.md
