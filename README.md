@@ -82,14 +82,13 @@ cd Seattle-Source-Ranker
 
 # 2. Install dependencies (choose one method)
 
-## Option A: Using conda (recommended)
+## Option A: Using conda
 conda env create -f environment.yml
 conda activate ssr
 
-## Option B: Using pip (pyproject.toml / PEP 517)
+## Option B: Using pip
 # Recommended for local development:
 pip install -e .    # editable install (recommended for development)
-
 # Or install from source (non-editable):
 pip install .
 
