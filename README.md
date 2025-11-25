@@ -113,8 +113,8 @@ python main.py --max-users 30000 --workers 8
 The GitHub Actions workflow handles everything:
 - 🔍 Discovers Seattle developers (76 location filters)
 - 📦 Collects up to 30,000 user repositories in parallel
-- � Detects Python packages on PyPI (702k+ packages indexed)
-- �📊 Ranks projects using SSR algorithm
+- 🐍 Detects Python packages on PyPI (702k+ packages indexed)
+- 📊 Ranks projects using SSR algorithm
 - 🌐 Builds and deploys website to GitHub Pages
 - 📝 Updates statistics in README
 - 💾 Commits user data and PyPI data to Git
