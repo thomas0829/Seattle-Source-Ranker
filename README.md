@@ -108,7 +108,7 @@ python main.py --max-users 30000 --workers 8
 
 ## 🤖 Automated Daily Updates
 
-✨ **Runs automatically at midnight Seattle time (08:00 UTC)**
+✨ **Runs automatically at midnight Seattle time (00:00 UTC)**
 
 The GitHub Actions workflow handles everything:
 - 🔍 Discovers Seattle developers (76 location filters)
