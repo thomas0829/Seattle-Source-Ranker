@@ -143,22 +143,22 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 ├── .github/
 │   └── workflows/
 │       └── collect-and-deploy.yml    # Daily automation
-├── data/                              # Collection output
+├── data/                             # Collection output
 │   ├── seattle_projects_*.json       # Raw project data (~260MB, local only)
 │   ├── seattle_users_*.json          # User metadata (in Git)
 │   ├── seattle_pypi_projects.json    # PyPI packages (in Git)
 │   └── pypi_official_packages.json   # PyPI index cache (in Git)
-├── distributed/                       # Distributed collection system
+├── distributed/                      # Distributed collection system
 │   ├── distributed_collector.py      # Main coordinator
 │   ├── workers/
 │   │   └── collection_worker.py      # Celery worker tasks
 │   └── __init__.py
-├── docs/                              # Extended documentation
+├── docs/                             # Extended documentation
 │   ├── ARCHITECTURE.md               # System architecture details
 │   ├── VERSION_HISTORY.md            # Complete changelog
 │   ├── MULTI_TOKEN_GUIDE.md          # Token setup guide
 │   └── USER_STORIES.md               # Use cases
-├── frontend/                          # React web application
+├── frontend/                         # React web application
 │   ├── src/
 │   │   ├── App.js                    # Main component
 │   │   ├── App.css                   # Glass morphism styling
@@ -170,8 +170,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   ├── package.json
 │   ├── package-lock.json
 │   └── .npmrc                        # npm configuration
-├── logs/                              # Celery logs
-├── scripts/                           # Automation scripts
+├── scripts/                          # Automation scripts
 │   ├── generate_frontend_data.py     # Generate paginated data
 │   ├── generate_pypi_projects.py     # Generate PyPI project list
 │   ├── update_readme.py              # Auto-update README stats
@@ -179,20 +178,20 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   ├── stop_workers.sh               # Stop workers
 │   ├── start_collection.sh           # Start collection process
 │   └── test_workflow.sh              # Local testing
-├── test/                              # Test suite (pytest)
+├── test/                             # Test suite (pytest)
 │   ├── test_graphql_queries.py       # GraphQL query tests
 │   ├── test_update_readme.py         # README update tests
 │   ├── test_classify_languages.py    # Language classification tests
 │   ├── test_pypi_50_projects.py      # PyPI checker validation
 │   ├── run_tests.sh                  # Test runner
 │   └── pytest.ini                    # Pytest configuration
-├── utils/                             # Utility modules
+├── utils/                            # Utility modules
 │   ├── token_manager.py              # Multi-token rotation
 │   ├── classify_languages.py         # Language classification
 │   ├── celery_config.py              # Celery configuration
 │   ├── pypi_checker.py               # PyPI package detection
 │   └── pypi_client.py                # PyPI package info
-├── .gitattributes                     # Git LFS configuration
+├── .gitattributes                    # Git LFS configuration
 ├── .gitignore
 ├── environment.yml                    # Conda environment specification
 ├── pyproject.toml                     # Python project metadata
