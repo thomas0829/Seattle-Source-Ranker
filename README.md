@@ -59,6 +59,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 - **Daily Auto-Updates** - Automated collection and deployment at midnight Seattle time
 - **Interactive UI** - React-based web app with pagination, filtering, and real-time search
 - **Rate Limit Optimization** - 6 GitHub tokens with intelligent rotation
+- **Comprehensive Testing** - 91 tests covering all core functionality
 
 ---
 
@@ -131,7 +132,7 @@ The GitHub Actions workflow handles everything:
 **Key Features:**
 - ✅ Zero false positives in PyPI detection (100% precision)
 - ✅ Offline matching for high performance (<30s for 55k projects)
-- ✅ Automated test suite with 15 passing tests
+- ✅ Comprehensive test suite with 91 passing tests
 - ✅ Organization support (allenai, awslabs, FredHutch, etc.)
 
 **Want to run it yourself?**
@@ -140,6 +141,12 @@ The GitHub Actions workflow handles everything:
 3. Ensure tokens have `read:org` scope for organization data
 4. Enable GitHub Pages (Settings → Pages → `gh-pages` branch)
 5. Workflow runs daily or trigger manually from Actions tab
+
+**PR Checks:**
+- ✅ Python syntax validation
+- ✅ Import verification
+- ✅ **90/91 test suite** (skips data-heavy integration test)
+- ✅ Frontend build validation
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 
@@ -187,11 +194,15 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   ├── stop_workers.sh               # Stop workers
 │   ├── start_collection.sh           # Start collection process
 │   └── test_workflow.sh              # Local testing
-├── test/                             # Test suite (pytest)
-│   ├── test_graphql_queries.py       # GraphQL query tests
-│   ├── test_update_readme.py         # README update tests
-│   ├── test_classify_languages.py    # Language classification tests
-│   ├── test_pypi_50_projects.py      # PyPI checker validation
+├── test/                             # Test suite (91 tests)
+│   ├── test_token_manager.py         # Token rotation tests (21 tests)
+│   ├── test_scoring_algorithms.py    # SSR scoring tests (40 tests)
+│   ├── test_distributed_collector.py # Distributed system tests (12 tests)
+│   ├── test_pypi_checker_full.py     # PyPI detection tests (14 tests)
+│   ├── test_graphql_queries.py       # GraphQL query tests (4 tests)
+│   ├── test_update_readme.py         # README update tests (5 tests)
+│   ├── test_classify_languages.py    # Language classification tests (6 tests)
+│   ├── test_pypi_50_projects.py      # Integration test (1 test)
 │   ├── run_tests.sh                  # Test runner
 │   └── pytest.ini                    # Pytest configuration
 ├── utils/                            # Utility modules
