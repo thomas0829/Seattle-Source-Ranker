@@ -1,20 +1,20 @@
 {
-  "generated_at": "2025-11-29T02:33:15.923415-08:00",
-  "total_python_projects": 55302,
-  "projects_on_pypi": 9998,
+  "generated_at": "2025-11-29T09:20:39.867659-08:00",
+  "total_python_projects": 55304,
+  "projects_on_pypi": 9999,
   "detection_rate": "18.08%",
   "statistics": {
-    "total_checked": 55302,
-    "on_pypi": 9998,
-    "not_on_pypi": 45304,
+    "total_checked": 55304,
+    "on_pypi": 9999,
+    "not_on_pypi": 45305,
     "by_confidence": {
       "very_high": 29,
-      "high": 9969,
+      "high": 9970,
       "medium": 0,
       "low": 0
     },
     "by_method": {
-      "direct_match": 9014,
+      "direct_match": 9015,
       "underscore_to_dash": 807,
       "direct_match_verified": 15,
       "dash_to_underscore": 148,
@@ -26,7 +26,7 @@
       "name": "Gooey",
       "full_name": null,
       "owner": "chriskiehl",
-      "stars": 21968,
+      "stars": 21970,
       "description": "Turn (almost) any Python command line program into a full GUI application with one line",
       "url": "https://github.com/chriskiehl/Gooey",
       "topics": [],
@@ -37,7 +37,7 @@
       "name": "olmocr",
       "full_name": null,
       "owner": "allenai",
-      "stars": 16093,
+      "stars": 16098,
       "description": "Toolkit for linearizing PDFs for LLM datasets/training",
       "url": "https://github.com/allenai/olmocr",
       "topics": [],
@@ -48,7 +48,7 @@
       "name": "WizardLM",
       "full_name": null,
       "owner": "nlpxucan",
-      "stars": 9461,
+      "stars": 9462,
       "description": "LLMs build upon Evol Insturct: WizardLM, WizardCoder, WizardMath",
       "url": "https://github.com/nlpxucan/WizardLM",
       "topics": [],
@@ -59,7 +59,7 @@
       "name": "moondream",
       "full_name": null,
       "owner": "vikhyat",
-      "stars": 8951,
+      "stars": 8952,
       "description": "tiny vision language model",
       "url": "https://github.com/vikhyat/moondream",
       "topics": [],
@@ -100,7 +100,7 @@
       "name": "mcp",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7491,
+      "stars": 7492,
       "description": "AWS MCP Servers \u2014 helping you get the most out of AWS, wherever you use MCP.",
       "url": "https://github.com/awslabs/mcp",
       "topics": [
@@ -137,7 +137,7 @@
       "name": "agent-squad",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7098,
+      "stars": 7099,
       "description": "Flexible and powerful framework for managing multiple AI agents and handling complex conversations",
       "url": "https://github.com/awslabs/agent-squad",
       "topics": [
@@ -185,7 +185,7 @@
       "name": "samurai",
       "full_name": null,
       "owner": "yangchris11",
-      "stars": 7016,
+      "stars": 7017,
       "description": "Official repository of \"SAMURAI: Adapting Segment Anything Model for Zero-Shot Visual Tracking with Motion-Aware Memory\"",
       "url": "https://github.com/yangchris11/samurai",
       "topics": [],
@@ -265,7 +265,7 @@
       "name": "pacu",
       "full_name": null,
       "owner": "RhinoSecurityLabs",
-      "stars": 4984,
+      "stars": 4985,
       "description": "The AWS exploitation framework, designed for testing the security of Amazon Web Services environments.",
       "url": "https://github.com/RhinoSecurityLabs/pacu",
       "topics": [
@@ -340,7 +340,7 @@
       "name": "vigil",
       "full_name": null,
       "owner": "munificent",
-      "stars": 2998,
+      "stars": 2999,
       "description": "Vigil, the eternal morally vigilant programming language",
       "url": "https://github.com/munificent/vigil",
       "topics": [],
@@ -656,7 +656,7 @@
       "name": "opensearch",
       "full_name": null,
       "owner": "dewitt",
-      "stars": 956,
+      "stars": 957,
       "description": "OpenSearch is a collection of simple formats for the sharing of search results.",
       "url": "https://github.com/dewitt/opensearch",
       "topics": [],
@@ -787,7 +787,7 @@
       "name": "git-remote-s3",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 694,
+      "stars": 695,
       "description": null,
       "url": "https://github.com/awslabs/git-remote-s3",
       "topics": [],
@@ -1215,7 +1215,7 @@
       "name": "chatterbox-tts-api",
       "full_name": null,
       "owner": "travisvn",
-      "stars": 400,
+      "stars": 402,
       "description": "Local, OpenAI-compatible text-to-speech (TTS) API using Chatterbox, enabling users to generate voice cloned speech anywhere the OpenAI API is used (e.g. Open WebUI, AnythingLLM, etc.)",
       "url": "https://github.com/travisvn/chatterbox-tts-api",
       "topics": [
@@ -1397,7 +1397,7 @@
       "name": "rogue",
       "full_name": null,
       "owner": "faizann24",
-      "stars": 366,
+      "stars": 367,
       "description": "Automated web vulnerability scanning with LLM agents",
       "url": "https://github.com/faizann24/rogue",
       "topics": [
@@ -1984,7 +1984,7 @@
       "name": "dotbins",
       "full_name": null,
       "owner": "basnijholt",
-      "stars": 220,
+      "stars": 221,
       "description": "Keep updated binaries in your dotfiles \ud83e\uddf0",
       "url": "https://github.com/basnijholt/dotbins",
       "topics": [],
@@ -2790,7 +2790,7 @@
       "name": "GenAIBook",
       "full_name": null,
       "owner": "bahree",
-      "stars": 120,
+      "stars": 121,
       "description": "\"Generative AI in Action\" book's code repository",
       "url": "https://github.com/bahree/GenAIBook",
       "topics": [
@@ -4393,6 +4393,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "Fox",
+      "full_name": null,
+      "owner": "chrismaddalena",
+      "stars": 65,
+      "description": "A companion tool for BloodHound offering Active Directory statistics and number crunching",
+      "url": "https://github.com/chrismaddalena/Fox",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "codenav",
       "full_name": null,
       "owner": "allenai",
@@ -4415,17 +4426,6 @@
         "tcp",
         "wait-for-it"
       ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "Fox",
-      "full_name": null,
-      "owner": "chrismaddalena",
-      "stars": 64,
-      "description": "A companion tool for BloodHound offering Active Directory statistics and number crunching",
-      "url": "https://github.com/chrismaddalena/Fox",
-      "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -8033,6 +8033,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "legato",
+      "full_name": null,
+      "owner": "guang-yng",
+      "stars": 21,
+      "description": "Official codebase for paper \"LEGATO: Large-Scale End-to-End Generalizable Approach to Typeset OMR\".",
+      "url": "https://github.com/guang-yng/legato",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "doc2md",
       "full_name": null,
       "owner": "robert-mcdermott",
@@ -8156,17 +8167,6 @@
       "stars": 20,
       "description": "The unfriendliest urls in town! Django app that obfuscates urls and allows your application to natively execute the original view. If you're unsure why this is cool, you probably don't need it. :)",
       "url": "https://github.com/tomatohater/django-unfriendly",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "legato",
-      "full_name": null,
-      "owner": "guang-yng",
-      "stars": 20,
-      "description": "Official codebase for paper \"LEGATO: Large-Scale End-to-End Generalizable Approach to Typeset OMR\".",
-      "url": "https://github.com/guang-yng/legato",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -99279,6 +99279,17 @@
       "stars": 0,
       "description": "Battleship Game in Python a la codeacademy.com",
       "url": "https://github.com/miracode/Battleship-Python",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "deep-rl",
+      "full_name": null,
+      "owner": "durgaharish1993",
+      "stars": 0,
+      "description": null,
+      "url": "https://github.com/durgaharish1993/deep-rl",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
