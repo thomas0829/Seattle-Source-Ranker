@@ -218,13 +218,19 @@ export default function RankingsPage() {
         // Check if this is an exact owner search
         if (ownerIndexCache[firstChar] && ownerIndexCache[firstChar][query]) {
             console.log(`🚀 Using owner index for '${query}'`);
-            const ownerProjects = ownerIndexCache[firstChar][query];
+            let ownerProjects = ownerIndexCache[firstChar][query];
             const matchCounts = {};
             
-            // Count by language
-            languages.forEach(lang => {
+            // Count by language (include ALL languages including Other)
+            const allLangs = [...languages, 'Other'];
+            allLangs.forEach(lang => {
                 matchCounts[lang] = ownerProjects.filter(p => p.language === lang).length;
             });
+            
+            // Filter by selected languages if not showing all
+            if (!showAll && selectedLanguages.length > 0) {
+                ownerProjects = ownerProjects.filter(p => selectedLanguages.includes(p.language));
+            }
             
             setSearchMatchCounts(matchCounts);
             
