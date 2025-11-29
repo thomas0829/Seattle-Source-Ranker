@@ -20,6 +20,8 @@ export default function RankingsPage() {
     const timeoutRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const [pageInput, setPageInput] = useState("");
+    const [searchMatchCounts, setSearchMatchCounts] = useState({});
+    const [ownerIndexCache, setOwnerIndexCache] = useState({});
 
     // Load metadata
     useEffect(() => {
@@ -44,6 +46,10 @@ export default function RankingsPage() {
         searchTimeoutRef.current = setTimeout(() => {
             setDebouncedSearchQuery(searchQuery);
             setCurrentPage(1); // Reset to page 1 when search changes
+            if (!searchQuery.trim()) {
+                setSearchMatchCounts({}); // Clear match counts when search is cleared
+                setPageCache({}); // Clear page cache when search is cleared
+            }
         }, 500); // Wait 500ms after user stops typing
 
         return () => {
@@ -88,11 +94,14 @@ export default function RankingsPage() {
         const reposPerLoad = pageSize * currentPage;
         const allReposForLoad = [];
 
+        // When "All" is selected, include "Other" even though it's not in the languages array
+        const langsToLoad = showAll ? [...languages, 'Other'] : languages;
+
         // Load pages from each language until we have enough repos
         const maxPagesToLoadPerLang =
-            Math.ceil(reposPerLoad / languages.length / pageSize) + 1;
+            Math.ceil(reposPerLoad / langsToLoad.length / pageSize) + 1;
 
-        for (const lang of languages) {
+        for (const lang of langsToLoad) {
             const totalPagesForLang = metadata.languages[lang].pages;
             const pagesToLoad = Math.min(maxPagesToLoadPerLang, totalPagesForLang);
 
@@ -185,47 +194,121 @@ export default function RankingsPage() {
         setIsLoading(false);
     };
 
-    // Load search results (need to load all pages for accurate search)
+    // Load search results (use owner index for fast exact owner searches)
     const loadSearchResults = async () => {
         setIsLoading(true);
-        const allMatchingRepos = [];
-        const langsToSearch = showAll ? languages : selectedLanguages;
-
-        // Limit search to prevent loading too many pages
-        const maxPagesToLoad = 20; // Limit for performance
-
-        for (const lang of langsToSearch) {
-            const totalPages = Math.min(
-                metadata.languages[lang].pages,
-                maxPagesToLoad
-            );
-
-            for (let page = 1; page <= totalPages; page++) {
-                try {
-                    const langPath = lang.toLowerCase().replace(/\+/g, "plus");
-                    const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
-                    const response = await fetch(pageUrl);
-                    const pageData = await response.json();
-
-                    let filtered = pageData.map((repo) => ({
-                        ...repo,
-                        language: lang
-                    }));
-
-                    // Apply search filter
-                    const query = debouncedSearchQuery.toLowerCase();
-                    filtered = filtered.filter(
-                        (repo) =>
-                            repo.name.toLowerCase().includes(query) ||
-                            repo.owner.toLowerCase().includes(query)
-                    );
-
-                    allMatchingRepos.push(...filtered);
-                } catch (err) {
-                    console.error(`Failed to load ${lang} page ${page}:`, err);
+        const query = debouncedSearchQuery.toLowerCase().trim();
+        
+        // Try to load owner index for exact match
+        const firstChar = query[0] && query[0].match(/[a-z0-9]/) ? query[0] : 'other';
+        
+        // Check if we have this index cached
+        if (!ownerIndexCache[firstChar]) {
+            try {
+                const response = await fetch(`${process.env.PUBLIC_URL}/owner_index/${firstChar}.json`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setOwnerIndexCache(prev => ({ ...prev, [firstChar]: data }));
                 }
+            } catch (err) {
+                console.log(`No owner index for '${firstChar}'`);
             }
         }
+        
+        // Check if this is an exact owner search
+        if (ownerIndexCache[firstChar] && ownerIndexCache[firstChar][query]) {
+            console.log(`🚀 Using owner index for '${query}'`);
+            const ownerProjects = ownerIndexCache[firstChar][query];
+            const matchCounts = {};
+            
+            // Count by language
+            languages.forEach(lang => {
+                matchCounts[lang] = ownerProjects.filter(p => p.language === lang).length;
+            });
+            
+            setSearchMatchCounts(matchCounts);
+            
+            // Sort by score and paginate
+            const allMatchingRepos = [...ownerProjects];
+            allMatchingRepos.sort((a, b) => b.score - a.score);
+            const pageSize = 50;
+            const startIndex = (currentPage - 1) * pageSize;
+            const pageRepos = allMatchingRepos.slice(startIndex, startIndex + pageSize);
+            
+            setRepos(pageRepos);
+            
+            if (pageRepos.length > 0) {
+                const pageMax = Math.max(...pageRepos.map(r => r.score));
+                if (pageMax > maxScore) setMaxScore(pageMax);
+            }
+            
+            setIsLoading(false);
+            return;
+        }
+        
+        // Fall back to traditional search (for partial matches)
+        console.log(`🔍 Searching pages for '${query}'`);
+        const allMatchingRepos = [];
+        const matchCounts = {};
+
+        languages.forEach(lang => {
+            matchCounts[lang] = 0;
+        });
+
+        const langsToSearch = (showAll || selectedLanguages.length === 0) ? [...languages, 'Other'] : selectedLanguages;
+        
+        // Load in batches for better performance, but always load enough to get accurate count
+        const batchSize = 10; // Load 10 pages at a time per language
+        const maxBatches = 10; // Max 100 pages total
+
+        for (let currentBatch = 0; currentBatch < maxBatches; currentBatch++) {
+            const batchPromises = langsToSearch.map(async (lang) => {
+                const startPage = currentBatch * batchSize + 1;
+                const endPage = Math.min(
+                    (currentBatch + 1) * batchSize,
+                    metadata.languages[lang].pages
+                );
+                
+                if (startPage > metadata.languages[lang].pages) {
+                    return { lang, matches: [] };
+                }
+
+                const langMatches = [];
+
+                for (let page = startPage; page <= endPage; page++) {
+                    try {
+                        const langPath = lang.toLowerCase().replace(/\+/g, "plus");
+                        const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
+                        const response = await fetch(pageUrl);
+                        const pageData = await response.json();
+
+                        // Apply search filter immediately
+                        const filtered = pageData.filter(repo =>
+                            repo.name.toLowerCase().includes(query) ||
+                            repo.owner.toLowerCase().includes(query)
+                        ).map(repo => ({ ...repo, language: lang }));
+
+                        langMatches.push(...filtered);
+                    } catch (err) {
+                        console.error(`Failed to load ${lang} page ${page}:`, err);
+                    }
+                }
+
+                return { lang, matches: langMatches };
+            });
+
+            // Wait for current batch to complete
+            const batchResults = await Promise.all(batchPromises);
+            
+            // Add results and update counts
+            batchResults.forEach(({ lang, matches }) => {
+                allMatchingRepos.push(...matches);
+                matchCounts[lang] = (matchCounts[lang] || 0) + matches.length;
+            });
+        }
+
+        // Update match counts for display
+        setSearchMatchCounts(matchCounts);
 
         // Sort by score and paginate
         allMatchingRepos.sort((a, b) => b.score - a.score);
@@ -290,9 +373,16 @@ export default function RankingsPage() {
                 }
             });
             return Math.ceil(total / 50);
+        } else if (debouncedSearchQuery.trim()) {
+            // Search mode: calculate from actual search results
+            const totalMatches = Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0);
+            if (totalMatches === 0) {
+                // Still loading search results
+                return currentPage;
+            }
+            return Math.ceil(totalMatches / 50);
         } else {
-            // Search mode: we don't know exact total, show estimated
-            return repos.length === 50 ? currentPage + 1 : currentPage;
+            return 1;
         }
     };
 
@@ -374,25 +464,34 @@ export default function RankingsPage() {
 
             {/* Search Bar */}
             <div className="search-container">
-                <input
-                    type="text"
-                    className="search-input"
-                    placeholder="🔍 Search by project name or owner..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
+                <div className="search-wrapper">
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder="🔍 Search by project name or owner..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    {searchQuery && (
+                        <button
+                            className="clear-search-btn"
+                            onClick={() => {
+                                setSearchQuery('');
+                                setCurrentPage(1);
+                                setPageCache({}); // Clear cache when clearing search
+                            }}
+                            title="Clear search"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
                 {searchQuery !== debouncedSearchQuery && (
                     <div className="search-hint">Searching...</div>
                 )}
                 {debouncedSearchQuery && (
                     <div className="search-hint">
-                        Searching in top{" "}
-                        {showAll ? languages.length * 20 : selectedLanguages.length * 20}{" "}
-                        pages (top ~
-                        {showAll
-                            ? languages.length * 1000
-                            : selectedLanguages.length * 1000}{" "}
-                        projects)
+                        Searching top {showAll ? languages.length * 100 : selectedLanguages.length * 100} pages (~{showAll ? languages.length * 5000 : selectedLanguages.length * 5000} projects)
                     </div>
                 )}
             </div>
@@ -412,15 +511,11 @@ export default function RankingsPage() {
               <strong>All</strong>
                             {metadata && (
                                 <span className="lang-count">
-                  (
-                                    {Object.keys(metadata.languages)
-                                        .reduce(
-                                            (sum, lang) =>
-                                                sum + (metadata.languages[lang]?.total || 0),
-                                            0
-                                        )
-                                        .toLocaleString()}
-                                    )
+                                    {debouncedSearchQuery.trim() && Object.keys(searchMatchCounts).length > 0 ? (
+                                        `(${Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0).toLocaleString()} matches)`
+                                    ) : (
+                                        `(${Object.keys(metadata.languages).reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
+                                    )}
                 </span>
                             )}
             </span>
@@ -438,7 +533,14 @@ export default function RankingsPage() {
                 {lang}
                                 {metadata && metadata.languages[lang] && (
                                     <span className="lang-count">
-                    ({metadata.languages[lang].total.toLocaleString()})
+                                        {debouncedSearchQuery.trim() ? (
+                                            // During search, show match count if available, otherwise show original count
+                                            searchMatchCounts[lang] !== undefined ?
+                                                `(${searchMatchCounts[lang].toLocaleString()} ${searchMatchCounts[lang] === 1 ? 'match' : 'matches'})` :
+                                                `(${metadata.languages[lang].total.toLocaleString()})`
+                                        ) : (
+                                            `(${metadata.languages[lang].total.toLocaleString()})`
+                                        )}
                   </span>
                                 )}
               </span>
@@ -500,13 +602,21 @@ export default function RankingsPage() {
                             .toLocaleString()}{" "}
                         projects
                     </>
+                ) : debouncedSearchQuery.trim() && Object.keys(searchMatchCounts).length > 0 ? (
+                    <>
+                        Showing {repos.length > 0 ? (currentPage - 1) * 50 + 1 : 0}-
+                        {repos.length > 0
+                            ? (currentPage - 1) * 50 + repos.length
+                            : 0}{" "}
+                        of {Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0).toLocaleString()} matches
+                    </>
                 ) : (
                     <>
                         Showing {repos.length > 0 ? (currentPage - 1) * 50 + 1 : 0}-
                         {repos.length > 0
                             ? (currentPage - 1) * 50 + repos.length
                             : 0}{" "}
-                        (search results)
+                        (searching...)
                     </>
                 )}
                 {isLoading && <span> ⏳</span>}
@@ -543,7 +653,18 @@ export default function RankingsPage() {
                         return (
                             <tr key={repo.name}>
                                 <td className="rank-col">#{globalRank}</td>
-                                <td className="owner-col">{repo.owner}</td>
+                                <td className="owner-col">
+                                    <span
+                                        className="owner-link"
+                                        onClick={() => {
+                                            setSearchQuery(repo.owner);
+                                            setCurrentPage(1);
+                                        }}
+                                        title={`Search for ${repo.owner}`}
+                                    >
+                                        {repo.owner}
+                                    </span>
+                                </td>
                                 <td className="chart-col">
                                     <div
                                         className="bar-container"

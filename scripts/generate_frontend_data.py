@@ -295,6 +295,63 @@ def main():
         json.dump(metadata, f, indent=2)
     
     print(f"\n✅ Saved metadata to {metadata_file}")
+    
+    # Generate owner index for fast user searches (split into chunks)
+    print(f"\n📇 Generating owner index...")
+    owner_index = defaultdict(list)
+    
+    for language, lang_projects in by_language.items():
+        for project in lang_projects:
+            owner_index[project['owner']].append({
+                'name': project['name'],
+                'owner': project['owner'],
+                'html_url': project['html_url'],
+                'stars': project['stars'],
+                'forks': project['forks'],
+                'issues': project['issues'],
+                'language': language,
+                'description': project.get('description', ''),
+                'topics': project.get('topics', []),
+                'score': project['score']
+            })
+    
+    # Sort each owner's projects by score
+    for owner in owner_index:
+        owner_index[owner].sort(key=lambda x: x['score'], reverse=True)
+    
+    # Split index into multiple files to avoid GitHub size limits
+    # Group owners by first character for faster loading
+    owner_groups = defaultdict(dict)
+    for owner, projects in owner_index.items():
+        first_char = owner[0].lower() if owner else 'other'
+        if not first_char.isalnum():
+            first_char = 'other'
+        owner_groups[first_char][owner] = projects
+    
+    # Create owner_index directory
+    owner_index_dir = 'frontend/public/owner_index'
+    os.makedirs(owner_index_dir, exist_ok=True)
+    
+    owner_build_dir = 'frontend/build/owner_index'
+    os.makedirs(owner_build_dir, exist_ok=True)
+    
+    # Save each group
+    total_owners = 0
+    for char, owners in owner_groups.items():
+        index_file = os.path.join(owner_index_dir, f'{char}.json')
+        with open(index_file, 'w') as f:
+            json.dump(owners, f, separators=(',', ':'))
+        
+        # Copy to build
+        build_file = os.path.join(owner_build_dir, f'{char}.json')
+        with open(build_file, 'w') as f:
+            json.dump(owners, f, separators=(',', ':'))
+        
+        total_owners += len(owners)
+        print(f"  ✅ {char}.json: {len(owners):,} owners")
+    
+    print(f"✅ Generated split owner index with {total_owners:,} unique owners")
+    
     print(f"\n🎉 Done! Generated {sum(m['pages'] for m in metadata['languages'].values())} page files")
     print(f"   Each page contains up to {PAGE_SIZE} projects")
     print(f"   Total size: ~{sum(m['total'] for m in metadata['languages'].values()):,} projects")
