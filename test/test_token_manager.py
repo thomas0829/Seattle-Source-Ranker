@@ -266,9 +266,11 @@ class TestEdgeCases:
     
     def test_empty_token_string(self):
         """Test handling of empty token strings"""
-        # Empty list is now allowed, just uses fallback to env
-        tm = TokenManager([])
-        assert tm.get_token_count() >= 0
+        # Empty list should raise ValueError if no env tokens available
+        with patch.dict(os.environ, {}, clear=True):
+            with patch('os.path.exists', return_value=False):
+                with pytest.raises(ValueError, match="No GitHub tokens"):
+                    TokenManager([])
     
     def test_single_token_rotation(self):
         """Test rotation with only one token"""
