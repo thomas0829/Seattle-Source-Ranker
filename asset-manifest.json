@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/Seattle-Source-Ranker/static/css/main.12d0a600.css",
-    "main.js": "/Seattle-Source-Ranker/static/js/main.9e6d24ba.js",
+    "main.js": "/Seattle-Source-Ranker/static/js/main.fd3795a0.js",
     "index.html": "/Seattle-Source-Ranker/index.html",
     "main.12d0a600.css.map": "/Seattle-Source-Ranker/static/css/main.12d0a600.css.map",
-    "main.9e6d24ba.js.map": "/Seattle-Source-Ranker/static/js/main.9e6d24ba.js.map"
+    "main.fd3795a0.js.map": "/Seattle-Source-Ranker/static/js/main.fd3795a0.js.map"
   },
   "entrypoints": [
     "static/css/main.12d0a600.css",
-    "static/js/main.9e6d24ba.js"
+    "static/js/main.fd3795a0.js"
   ]
 }
