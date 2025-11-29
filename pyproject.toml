@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Discover and rank open source projects from Seattle's tech community"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
 authors = [ { name = "thomas0829" } ]
 
 dependencies = [
@@ -26,3 +26,6 @@ dependencies = [
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["distributed", "utils", "scripts"]
