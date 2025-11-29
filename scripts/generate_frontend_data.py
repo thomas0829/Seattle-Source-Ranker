@@ -247,9 +247,9 @@ def main():
         data_datetime = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
         # Filename timestamp is already in PST (local Seattle time)
         data_datetime = data_datetime.replace(tzinfo=SEATTLE_TZ)
-        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S %Z")
+        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S PST")
     else:
-        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S %Z")
+        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S PST")
     
     metadata = {
         'languages': {},

@@ -191,6 +191,26 @@ def main():
     
     # Update README
     update_readme(stats)
+    
+    # Cleanup old data files (keep only the latest)
+    cleanup_old_files()
+
+def cleanup_old_files():
+    """Remove old seattle_users_*.json and seattle_projects_*.json files, keeping only the latest"""
+    data_dir = Path(__file__).parent.parent / "data"
+    
+    for pattern in ['seattle_users_*.json', 'seattle_projects_*.json']:
+        files = sorted(data_dir.glob(pattern))
+        if len(files) > 1:
+            # Keep the latest, delete the rest
+            latest = files[-1]
+            old_files = files[:-1]
+            
+            print(f"\n🧹 Cleaning up old {pattern.replace('*.json', '')} files:")
+            for old_file in old_files:
+                print(f"   Deleting: {old_file.name}")
+                old_file.unlink()
+            print(f"   ✅ Kept latest: {latest.name}")
 
 if __name__ == "__main__":
     main()
