@@ -27,9 +27,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then
-          pip install -r requirements.txt
-        fi
+        # Install from pyproject.toml
+        pip install -e .
     
     - name: Check Python syntax
       run: |
