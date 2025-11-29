@@ -59,19 +59,16 @@ export default function HomePage() {
                         Python Rankings
                     </h2>
 
-                    <p className="home-card-subtitle" style={{color: "white"}}>
-                        Dedicated rankings for Seattle&apos;s Python ecosystem with PyPI integration.
-                        Projects receive bonus scores for being published on PyPI, rewarding real-world
-                        package distribution and community adoption.
-                    </p>
+                <p className="home-card-subtitle" style={{color: "white"}}>
+                    Dedicated rankings for Seattle&apos;s Python ecosystem with PyPI integration.
+                    Projects published on PyPI receive a 10% score multiplier, rewarding packages
+                    that contribute to Python&apos;s distribution ecosystem.
+                </p>
 
-                    <p className="home-card-body" style={{color: "white"}}>
-                        Final scores combine GitHub metrics (80%) with PyPI presence bonuses (20%).
-                        Projects published on PyPI receive +400 points, highlighting packages that
-                        contribute to Python&apos;s open source package ecosystem.
-                    </p>
-
-                    <div className="home-card-actions">
+                <p className="home-card-body" style={{color: "white"}}>
+                    The 1.1× multiplier recognizes the effort required to package and publish
+                    projects on PyPI, highlighting real-world packages available via pip install.
+                </p>                    <div className="home-card-actions">
                         <Link to="/python-projects" className="primary-btn secondary glass-btn">
                             View Python Projects
                         </Link>
