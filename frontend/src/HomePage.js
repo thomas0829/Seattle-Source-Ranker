@@ -16,60 +16,59 @@ export default function HomePage() {
                 }}
             >
                 <h1 className="home-title" style={{ color: "white" }}>
-                    Rankings
+                    Seattle Source Ranker
                 </h1>
             </header>
 
-            {/* 卡片 1：Seattle Source Ranker */}
+            {/* 卡片 1：總排行榜 */}
             <section className="home-card glass-card">
                 <div className="home-card-text">
                     <h2 className="home-card-title" style={{color: "white"}}>
-                        Seattle Source Ranker
+                        Overall Rankings
                     </h2>
 
                     <p className="home-card-subtitle" style={{color: "white"}}>
-                        A data-driven ranking of open source projects created by developers
-                        in the Seattle area. Discover influential repositories, explore
-                        tech stacks, and understand our multi-factor SSR scoring model.
+                        Top 10,000 open source projects from Seattle developers across all programming 
+                        languages. View the elite leaderboard ranked by our multi-factor SSR scoring 
+                        algorithm, with full search access to 400K+ repositories.
                     </p>
 
                     <p className="home-card-body" style={{color: "white"}}>
-                        Seattle Source Ranker aggregates 400K+ repositories and 20K+ users
-                        using a distributed Celery + Redis pipeline, GitHub GraphQL/REST
-                        APIs, and a transparent scoring algorithm that blends popularity,
-                        recency and project health.
+                        Rankings display the top 10,000 projects spanning JavaScript, Python, Java, Go, 
+                        C++, and more. Use the search function to discover any project from our complete 
+                        400K+ repository database. Our SSR algorithm combines GitHub stars, forks, 
+                        recency, and project health metrics.
                     </p>
 
                     <div className="home-card-actions">
                         <Link to="/rankings" className="primary-btn glass-btn">
-                            Explore Rankings
+                            View Overall Rankings
                         </Link>
                     </div>
                 </div>
 
                 <div className="home-card-image">
-                    <img src="/images/ssr.png" alt="Seattle OSS Landscape"/>
+                    <img src={`${process.env.PUBLIC_URL}/images/ssr.png`} alt="Seattle OSS Landscape"/>
                 </div>
             </section>
 
-            {/* 卡片 2：Python Projects */}
+            {/* 卡片 2：Python 專屬排行榜 */}
             <section className="home-card glass-card">
                 <div className="home-card-text">
                     <h2 className="home-card-title" style={{color: "white"}}>
-                        Python Projects
+                        Python Rankings
                     </h2>
 
                     <p className="home-card-subtitle" style={{color: "white"}}>
-                        A curated view of Python-heavy repositories in Seattle&apos;s
-                        developer community, focusing on data, ML, backend services, and
-                        developer tooling.
+                        Dedicated rankings for Seattle&apos;s Python ecosystem with PyPI integration.
+                        Projects receive bonus scores for being published on PyPI, rewarding real-world
+                        package distribution and community adoption.
                     </p>
 
                     <p className="home-card-body" style={{color: "white"}}>
-                        This section will highlight Python ecosystems across FastAPI,
-                        Django, data pipelines, ML experimentation, and infra tooling.
-                        You&apos;ll be able to filter by domain and quickly see which
-                        projects are the most active and impactful.
+                        Final scores combine GitHub metrics (80%) with PyPI presence bonuses (20%).
+                        Projects published on PyPI receive +400 points, highlighting packages that
+                        contribute to Python&apos;s open source package ecosystem.
                     </p>
 
                     <div className="home-card-actions">
@@ -80,23 +79,27 @@ export default function HomePage() {
                 </div>
 
                 <div className="home-card-image">
-                    <img src="/images/python.png" alt="Python Logo"/>
+                    <img src={`${process.env.PUBLIC_URL}/images/python.png`} alt="Python Logo"/>
                 </div>
             </section>
 
-            {/* 底部按钮 */}
-            <section className="home-bottom-links glass-soft">
-            <h3 className="home-bottom-title" style={{color: "white" }}>
-                    Learn more about SSR
-                </h3>
-                <div className="home-bottom-buttons">
-                    <Link to="/scoring" className="language-tab home-nav-tab glass-btn-mini">
-                        SSR Scoring Methodology
-                    </Link>
-                    <Link to="/validation" className="language-tab home-nav-tab glass-btn-mini">
-                        Data Validation & Reliability
-                    </Link>
-                </div>
+            {/* Bottom Info Links */}
+            <section className="home-info-links">
+                <Link to="/scoring" className="info-link">
+                    <div className="info-link-content">
+                        <h3 className="info-link-title">SSR Scoring Methodology</h3>
+                        <p className="info-link-desc">Learn how we combine popularity, quality, and activity metrics</p>
+                    </div>
+                    <span className="info-link-arrow">Learn More →</span>
+                </Link>
+
+                <Link to="/validation" className="info-link">
+                    <div className="info-link-content">
+                        <h3 className="info-link-title">Data Validation & Reliability</h3>
+                        <p className="info-link-desc">Discover our multi-stage validation process ensuring accuracy</p>
+                    </div>
+                    <span className="info-link-arrow">Learn More →</span>
+                </Link>
             </section>
         </div>
     );

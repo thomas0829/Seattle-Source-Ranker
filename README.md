@@ -43,7 +43,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 | Team Member | Role | Contributions |
 |------------|------|---------------|
-| **thomas0829** | Project Architecture & System Design Lead | • System architecture design<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• Lazy loading pagination system<br>• Multi-select language filtering<br>• Glass morphism design implementation<br>• Real-time search with debounce<br>• GitHub Actions automation |
+| **thomas0829** | Project Architecture & System Design Lead | • Frontend/Backend system architecture<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• Python rankings with PyPI integration<br>• Performance optimization<br>• GitHub Actions automation |
 | **Wenshu0206** | Frontend Developer & UI/UX Designer | • React frontend development<br>• Component design & implementation<br>• User experience optimization<br>• Responsive layout design<br>• UI/UX testing & refinement |
 | **Chen Muwen** | Scoring Algorithm & Interpretability Specialist | • SSR scoring algorithm design<br>• Multi-factor ranking system<br>• Language classification logic<br>• Algorithm documentation<br>• Transparent scoring methodology |
 | **Qianshi Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing<br>• Error handling & recovery |
@@ -52,14 +52,28 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 ## 🌟 Key Features
 
-- **Distributed Processing** - 8 Celery workers with 16 concurrent tasks
-- **Smart API Usage** - GraphQL for search (5000 req/hr), REST for data (5000 req/hr)
-- **Multi-factor Scoring** - `Score = Stars × 0.6 + Forks × 0.3 + Watchers × 0.1`
+### Core Functionality
+- **Distributed Processing** - 8 Celery workers with 16 concurrent tasks for efficient data collection
+- **Smart API Usage** - GraphQL for user search (5000 req/hr), REST for repository data (5000 req/hr)
+- **Multi-factor Scoring** - Comprehensive SSR algorithm balancing popularity, quality, and maintenance
 - **Language Classification** - 11 major programming languages with separate rankings
 - **Daily Auto-Updates** - Automated collection and deployment at midnight Seattle time
-- **Interactive UI** - React-based web app with pagination, filtering, and real-time search
+
+### Website Features
+- **Dual Rankings Pages**:
+  - **Overall Rankings** - Top 10,000 projects across all languages
+  - **Python Rankings** - Dedicated page with PyPI integration and bonus scoring
+- **Interactive UI** - React-based with real-time search, suggestions, and smooth pagination
+- **PyPI Integration** - Python projects receive 10% score bonus for PyPI publication
+- **Smart Search** - Debounced search with owner and topic suggestions
+- **Glass Morphism Design** - Modern, professional aesthetic with smooth animations
+- **Comprehensive Documentation** - Dedicated pages for scoring methodology and data validation
+
+### Technical Excellence
 - **Rate Limit Optimization** - 6 GitHub tokens with intelligent rotation
+- **PyPI Detection** - Offline matching with 702k+ packages, 100% precision
 - **Comprehensive Testing** - 91 tests covering all core functionality
+- **Organization Support** - Handles allenai, awslabs, FredHutch, and other Seattle organizations
 
 ---
 
@@ -130,10 +144,10 @@ The GitHub Actions workflow handles everything:
 - 💾 Commits user data and PyPI data to Git
 
 **Key Features:**
-- ✅ Zero false positives in PyPI detection (100% precision)
-- ✅ Offline matching for high performance (<30s for 55k projects)
-- ✅ Comprehensive test suite with 91 passing tests
-- ✅ Organization support (allenai, awslabs, FredHutch, etc.)
+- Zero false positives in PyPI detection (100% precision)
+- Offline matching for high performance (<30s for 55k projects)
+- Comprehensive test suite with 91 passing tests
+- Organization support (allenai, awslabs, FredHutch, etc.)
 
 **Want to run it yourself?**
 1. Fork this repository
@@ -141,12 +155,6 @@ The GitHub Actions workflow handles everything:
 3. Ensure tokens have `read:org` scope for organization data
 4. Enable GitHub Pages (Settings → Pages → `gh-pages` branch)
 5. Workflow runs daily or trigger manually from Actions tab
-
-**PR Checks:**
-- ✅ Python syntax validation
-- ✅ Import verification
-- ✅ **90/91 test suite** (skips data-heavy integration test)
-- ✅ Frontend build validation
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 
@@ -178,9 +186,20 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 │   ├── src/
 │   │   ├── App.js                    # Main component
 │   │   ├── App.css                   # Glass morphism styling
+│   │   ├── HomePage.js               # Landing page
+│   │   ├── OverallRankingsPage.js    # Overall rankings page
+│   │   ├── PythonRankingsPage.js     # Python rankings with PyPI
+│   │   ├── ScoringPage.js            # Scoring methodology
+│   │   ├── ValidationPage.js         # Data validation info
 │   │   └── index.js
 │   ├── public/
 │   │   ├── pages/                    # Paginated JSON files
+│   │   │   ├── python/               # Python project pages
+│   │   │   ├── javascript/           # JavaScript project pages
+│   │   │   └── ...                   # Other languages
+│   │   ├── owner_index/              # Owner search index
+│   │   ├── data/
+│   │   │   └── seattle_pypi_projects.json  # PyPI data
 │   │   └── metadata.json             # Stats & last updated
 │   ├── build/                        # Production build
 │   ├── package.json
@@ -224,7 +243,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 
 ## 🧮 Enhanced SSR Scoring Algorithm
 
-Projects are ranked using a comprehensive multi-factor scoring system:
+Projects are ranked using a comprehensive multi-factor scoring system that balances popularity with quality and maintenance signals.
 
 ### Base Popularity Metrics (70%)
 ```
@@ -252,11 +271,30 @@ Score = (
 ) × 10000
 ```
 
-**Why this approach?**
+### Python Projects: PyPI Bonus (10%)
+
+Python projects published on PyPI receive an additional scoring enhancement:
+
+```
+Python Final Score = Base SSR Score × 1.1  (if on PyPI)
+                   = Base SSR Score × 1.0  (if not on PyPI)
+```
+
+**Why PyPI matters:**
+- **Distribution Commitment** - Package is ready for `pip install`
+- **Ecosystem Integration** - Can be used as a dependency in other projects
+- **Maintenance Signal** - Publication indicates production readiness
+- **Community Reach** - Discoverable beyond GitHub
+
+The 10% bonus rewards projects that contribute to Python's package ecosystem while maintaining fairness to development-focused repositories.
+
+### Why This Approach?
+
 - **Logarithmic Scaling** - Better distribution across projects of different sizes
 - **Age Maturity** - Rewards established projects (2-8 years), penalizes too new/old
 - **Recent Activity** - Prefers actively maintained projects
 - **Health Metrics** - Considers issue management quality relative to popularity
+- **PyPI Integration** - Recognizes production-ready Python packages
 
 Projects are ranked both **overall** and **by programming language** (11 categories).
 

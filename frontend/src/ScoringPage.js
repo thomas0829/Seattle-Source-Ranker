@@ -1,9 +1,13 @@
 // src/ScoringPage.js
-import React from "react";
+import React, { useEffect } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 
 export default function ScoringPage() {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+    
     return (
         <div className="container">
             <Link to="/" className="back-btn">
@@ -30,7 +34,7 @@ export default function ScoringPage() {
                 }}
             >
                 {/* 1. Why a scoring system */}
-                <h2 style={{ color: "#c5d1e0", marginBottom: "10px" }}>
+                <h2 style={{ color: "#7dd3fc", marginBottom: "10px" }}>
                     1. Why a Scoring System?
                 </h2>
                 <p>
@@ -52,7 +56,7 @@ export default function ScoringPage() {
                 </ul>
 
                 {/* 2. Overview of factors */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     2. Overview of Score Factors
                 </h2>
                 <p>
@@ -88,7 +92,7 @@ export default function ScoringPage() {
                 </p>
 
                 {/* 3. Log scaling */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     3. Logarithmic Scaling of GitHub Metrics
                 </h2>
                 <p>
@@ -116,7 +120,7 @@ export default function ScoringPage() {
                 </p>
 
                 {/* 4. Final score formula */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     4. Final Score Formula
                 </h2>
                 <p>The SSR score combines the six factors into a single number:</p>
@@ -145,11 +149,11 @@ export default function ScoringPage() {
                 </p>
 
                 {/* 5. Factor definitions */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     5. How Each Factor is Interpreted
                 </h2>
 
-                <h3 style={{ color: "#d4def2", marginTop: "10px" }}>5.1 Base Popularity (70%)</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "10px" }}>5.1 Base Popularity (70%)</h3>
                 <ul style={{ marginLeft: "20px" }}>
                     <li>
                         <strong>Stars (40%)</strong> – main signal for community adoption.
@@ -167,7 +171,7 @@ export default function ScoringPage() {
                     </li>
                 </ul>
 
-                <h3 style={{ color: "#d4def2", marginTop: "18px" }}>5.2 Quality & Maintenance (30%)</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "18px" }}>5.2 Quality & Maintenance (30%)</h3>
                 <ul style={{ marginLeft: "20px" }}>
                     <li>
                         <strong>age_factor()</strong> – projects between ~3–5 years old receive the
@@ -188,7 +192,7 @@ export default function ScoringPage() {
                 </ul>
 
                 {/* 6. Overall vs language-specific */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     6. Overall vs Language-Specific Rankings
                 </h2>
                 <p>
@@ -210,8 +214,86 @@ export default function ScoringPage() {
                     repositories.
                 </p>
 
+                {/* 6.5 Python PyPI Bonus */}
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
+                    6.5 Python Projects: PyPI Integration Bonus
+                </h2>
+                <p>
+                    For <strong>Python projects specifically</strong>, Seattle Source Ranker applies an
+                    additional scoring enhancement to recognize packages that are published and distributed
+                    through the Python Package Index (PyPI).
+                </p>
+                
+                <h3 style={{ color: "#bae6fd", marginTop: "10px" }}>Why PyPI Matters</h3>
+                <p>
+                    Publishing a package to PyPI represents:
+                </p>
+                <ul style={{ marginLeft: "20px" }}>
+                    <li>
+                        <strong>Distribution commitment</strong> – the project is packaged and ready for
+                        installation via <code>pip install</code>
+                    </li>
+                    <li>
+                        <strong>Ecosystem integration</strong> – the package can be easily incorporated
+                        into other Python projects as a dependency
+                    </li>
+                    <li>
+                        <strong>Maintenance signal</strong> – published packages typically indicate higher
+                        production readiness and ongoing support
+                    </li>
+                    <li>
+                        <strong>Community reach</strong> – PyPI packages are discoverable by the global
+                        Python community beyond GitHub
+                    </li>
+                </ul>
+
+                <h3 style={{ color: "#bae6fd", marginTop: "18px" }}>The PyPI Multiplier</h3>
+                <p>
+                    Python projects that are published on PyPI receive a <strong>10% score bonus</strong>:
+                </p>
+
+                <pre
+                    style={{
+                        background: "rgba(0,0,0,0.3)",
+                        padding: "15px",
+                        borderRadius: "10px",
+                        marginTop: "15px",
+                        color: "#9ecbff",
+                        overflowX: "auto"
+                    }}
+                >{`Python Project Final Score = Base SSR Score × 1.1  (if on PyPI)
+                               = Base SSR Score × 1.0  (if not on PyPI)`}</pre>
+
+                <p style={{ marginTop: "10px" }}>
+                    This bonus is applied <em>after</em> the base SSR score calculation, ensuring that:
+                </p>
+                <ul style={{ marginLeft: "20px" }}>
+                    <li>Projects must still have strong fundamentals (stars, activity, health) to rank highly</li>
+                    <li>PyPI publication acts as a tiebreaker and quality signal, not a dominant factor</li>
+                    <li>The ranking remains fair to both published packages and development-focused repositories</li>
+                </ul>
+
+                <h3 style={{ color: "#bae6fd", marginTop: "18px" }}>PyPI Badge Indicator</h3>
+                <p>
+                    On the <Link to="/python" style={{ color: "#38bdf8", textDecoration: "none" }}>Python Projects page</Link>,
+                    packages published to PyPI are marked with an animated{" "}
+                    <span style={{
+                        marginLeft: "8px",
+                        padding: "2px 6px",
+                        fontSize: "9px",
+                        fontWeight: "700",
+                        borderRadius: "3px",
+                        background: "linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444, #ec4899)",
+                        backgroundSize: "200% 100%",
+                        letterSpacing: "0.5px",
+                        textTransform: "uppercase",
+                        display: "inline-block"
+                    }}>PyPI</span>{" "}
+                    badge, making it easy to identify packages that are production-ready and pip-installable.
+                </p>
+
                 {/* 7. Why this is fairer than raw stars */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     7. Why This Approach is Fairer than Raw Stars
                 </h2>
                 <p>
@@ -237,7 +319,7 @@ export default function ScoringPage() {
                 </ul>
 
                 {/* 8. Reproducibility note */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     8. Reproducibility & Future Extensions
                 </h2>
                 <p>
@@ -260,7 +342,7 @@ export default function ScoringPage() {
                 </p>
 
                 {/* SECTION 7 — Example */}
-                <h2 style={{ color: "#c5d1e0", marginTop: "30px" }}>
+                <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
                     9. Example: Scoring a Sample Project
                 </h2>
 
