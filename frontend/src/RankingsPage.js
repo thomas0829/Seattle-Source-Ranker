@@ -202,23 +202,29 @@ export default function RankingsPage() {
         // Try to load owner index for exact match
         const firstChar = query[0] && query[0].match(/[a-z0-9]/) ? query[0] : 'other';
         
-        // Check if we have this index cached
-        if (!ownerIndexCache[firstChar]) {
+        // Load owner index if not cached
+        let indexData = ownerIndexCache[firstChar];
+        if (!indexData) {
             try {
+                console.log(`📥 Loading owner index: ${firstChar}.json`);
                 const response = await fetch(`${process.env.PUBLIC_URL}/owner_index/${firstChar}.json`);
                 if (response.ok) {
-                    const data = await response.json();
-                    setOwnerIndexCache(prev => ({ ...prev, [firstChar]: data }));
+                    indexData = await response.json();
+                    setOwnerIndexCache(prev => ({ ...prev, [firstChar]: indexData }));
+                    console.log(`✅ Loaded owner index for '${firstChar}'`, Object.keys(indexData).length, 'owners');
+                } else {
+                    console.log(`❌ Failed to load owner index for '${firstChar}': ${response.status}`);
                 }
             } catch (err) {
-                console.log(`No owner index for '${firstChar}'`);
+                console.log(`❌ Error loading owner index for '${firstChar}':`, err);
             }
         }
         
         // Check if this is an exact owner search
-        if (ownerIndexCache[firstChar] && ownerIndexCache[firstChar][query]) {
+        if (indexData && indexData[query]) {
             console.log(`🚀 Using owner index for '${query}'`);
-            let ownerProjects = ownerIndexCache[firstChar][query];
+            let ownerProjects = indexData[query];
+            console.log(`📊 Total projects from index: ${ownerProjects.length}`);
             const matchCounts = {};
             
             // Count by language (include ALL languages including Other)
@@ -227,9 +233,13 @@ export default function RankingsPage() {
                 matchCounts[lang] = ownerProjects.filter(p => p.language === lang).length;
             });
             
+            console.log(`📈 Match counts:`, matchCounts);
+            console.log(`🎯 showAll: ${showAll}, selectedLanguages:`, selectedLanguages);
+            
             // Filter by selected languages if not showing all
             if (!showAll && selectedLanguages.length > 0) {
                 ownerProjects = ownerProjects.filter(p => selectedLanguages.includes(p.language));
+                console.log(`🔍 After language filter: ${ownerProjects.length} projects`);
             }
             
             setSearchMatchCounts(matchCounts);
