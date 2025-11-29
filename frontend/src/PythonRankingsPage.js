@@ -3,8 +3,13 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 
-// Scoring configuration
-const PYPI_BONUS_MULTIPLIER = 1.1; // 10% bonus for PyPI projects
+// Scoring configuration - Weighted average approach
+const GITHUB_WEIGHT = 1.0;      // 100% weight for GitHub score
+const PYPI_WEIGHT = 0.1;        // +10% for PyPI presence
+const PYPI_BASE_SCORE = 10000;  // Maximum possible score for PyPI projects
+
+// Effective formula: finalScore = githubScore * 1.0 + 10000 * 0.1 = githubScore + 1000
+// This adds up to 1000 points for PyPI projects (~10% bonus for typical scores)
 
 export default function PythonRankingsPage() {
     const [projects, setProjects] = useState([]);
@@ -102,8 +107,8 @@ export default function PythonRankingsPage() {
                     const key = proj.name.toLowerCase();
                     const onPypi = pypiMap.has(key);
                     const baseScore = proj.score || 0;
-                    // PyPI projects get 10% bonus
-                    const finalScore = onPypi ? baseScore * PYPI_BONUS_MULTIPLIER : baseScore;
+                    // Weighted average: GitHub (100%) + PyPI bonus (10% of max score)
+                    const finalScore = baseScore * GITHUB_WEIGHT + (onPypi ? PYPI_BASE_SCORE * PYPI_WEIGHT : 0);
                     
                     return {
                         ...proj,
@@ -168,8 +173,8 @@ export default function PythonRankingsPage() {
                             const key = proj.name.toLowerCase();
                             const onPypi = pypiMap.has(key);
                             const baseScore = proj.score || 0;
-                            // PyPI projects get 10% bonus
-                            const finalScore = onPypi ? baseScore * PYPI_BONUS_MULTIPLIER : baseScore;
+                            // Weighted average: GitHub (100%) + PyPI bonus (10% of max score)
+                            const finalScore = baseScore * GITHUB_WEIGHT + (onPypi ? PYPI_BASE_SCORE * PYPI_WEIGHT : 0);
                             
                             return {
                                 ...proj,
