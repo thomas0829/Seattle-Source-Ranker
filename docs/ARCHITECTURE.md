@@ -64,11 +64,14 @@
 
 ### 5. Frontend Layer (`frontend/`)
 Built with React, featuring:
-- Multi-select language filtering
-- Real-time search with debounce
+- **Dual ranking pages**:
+  - Overall Rankings: All languages with multi-select filtering
+  - Python Rankings: Python-specific with PyPI integration bonus
+- Real-time search with debounce and owner/topic suggestions
 - Paginated view (50 projects/page)
 - Lazy loading for performance
-- Glass morphism design
+- Animated PyPI badge with rainbow gradient
+- Slate blue theme with sky accents
 - Tech stack visualization
 
 ### 6. Automation Layer (`.github/workflows/`)

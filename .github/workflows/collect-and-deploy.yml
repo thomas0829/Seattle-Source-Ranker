@@ -232,6 +232,13 @@ jobs:
         python3 scripts/generate_frontend_data.py
         echo "✅ Frontend data generated with topics support"
     
+    - name: Copy PyPI data to frontend
+      run: |
+        echo "📦 Copying PyPI data to frontend..."
+        mkdir -p frontend/public/data
+        cp data/seattle_pypi_projects.json frontend/public/data/
+        echo "✅ PyPI data copied to frontend/public/data/"
+    
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -310,9 +317,10 @@ jobs:
         LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json 2>/dev/null | head -1)
         
         if [ -f "$LATEST_PROJECTS" ]; then
-          USERS=$(jq '.successful_users // 0' "$LATEST_PROJECTS")
-          PROJECTS=$(jq '.total_projects // 0' "$LATEST_PROJECTS")
-          STARS=$(jq '.total_stars // 0' "$LATEST_PROJECTS")
+          # Use -r for raw output and handle potential null/missing fields
+          USERS=$(jq -r '.successful_users // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
+          PROJECTS=$(jq -r '.total_projects // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
+          STARS=$(jq -r '.total_stars // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
           
           echo "- 👥 Users: **$USERS**" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
@@ -325,16 +333,16 @@ jobs:
         # Also show user data info
         LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
         if [ -f "$LATEST_USERS" ]; then
-          USER_COUNT=$(jq '.total_users // 0' "$LATEST_USERS")
+          USER_COUNT=$(jq -r '.total_users // 0' "$LATEST_USERS" 2>/dev/null || echo "0")
           echo "- 📋 User accounts collected: **$USER_COUNT**" >> $GITHUB_STEP_SUMMARY
           echo "- 📄 User file: \`$(basename $LATEST_USERS)\`" >> $GITHUB_STEP_SUMMARY
         fi
         
         # Show PyPI data info
         if [ -f "data/seattle_pypi_projects.json" ]; then
-          PYPI_COUNT=$(jq '.projects_on_pypi // 0' "data/seattle_pypi_projects.json")
-          TOTAL_PYTHON=$(jq '.total_python_projects // 0' "data/seattle_pypi_projects.json")
-          DETECTION_RATE=$(jq -r '.detection_rate // "0%"' "data/seattle_pypi_projects.json")
+          PYPI_COUNT=$(jq -r '.projects_on_pypi // 0' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0")
+          TOTAL_PYTHON=$(jq -r '.total_python_projects // 0' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0")
+          DETECTION_RATE=$(jq -r '.detection_rate // "0%"' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0%")
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 PyPI Statistics" >> $GITHUB_STEP_SUMMARY
           echo "- 🐍 Total Python projects: **$TOTAL_PYTHON**" >> $GITHUB_STEP_SUMMARY

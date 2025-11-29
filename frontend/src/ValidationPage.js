@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 
 export default function ValidationPage() {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+    
     return (
         <div className="container">
             <Link to="/" className="back-btn">
@@ -39,7 +43,7 @@ export default function ValidationPage() {
                 <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
 
                 {/* 1. Baseline User File */}
-                <h2 style={{ color: "#c5d1e0", marginBottom: "10px" }}>1. 📘 Baseline User File</h2>
+                <h2 style={{ color: "#7dd3fc", marginBottom: "10px" }}>1. Baseline User File</h2>
                 <p>
                     Each automated run produces a <strong>baseline file</strong> that contains all discovered Seattle GitHub
                     users.
@@ -78,7 +82,7 @@ export default function ValidationPage() {
 }`}
         </pre>
 
-                <h3 style={{ color: "#c5d1e0", marginTop: "22px" }}>Fields</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "22px" }}>Fields</h3>
                 <div style={{ overflowX: "auto" }}>
                     <table
                         style={{
@@ -145,13 +149,13 @@ export default function ValidationPage() {
                 <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
 
                 {/* 2. Coverage Validation */}
-                <h2 style={{ color: "#c5d1e0" }}>2. ✔ Coverage Validation</h2>
+                <h2 style={{ color: "#7dd3fc" }}>2. Coverage Validation</h2>
                 <p>
                     We verify that the system captures <strong>nearly all meaningful Seattle developers</strong>, rather than
                     every single account (including empty or dormant ones).
                 </p>
 
-                <h3 style={{ color: "#c5d1e0", marginTop: "14px" }}>User Inclusion Logic</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "14px" }}>User Inclusion Logic</h3>
                 <p>A user is included if:</p>
                 <ul style={{ marginLeft: "20px" }}>
                     <li>They have <strong>≥ 10 public repositories</strong>, or</li>
@@ -163,7 +167,7 @@ export default function ValidationPage() {
                     spam, or abandoned accounts.
                 </p>
 
-                <h3 style={{ color: "#c5d1e0", marginTop: "16px" }}>Coverage Check Steps</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "16px" }}>Coverage Check Steps</h3>
                 <ol style={{ marginLeft: "20px" }}>
                     <li>Compare the baseline file (28,203 users) with a separate validation username list</li>
                     <li>Identify missing or mismatched usernames</li>
@@ -180,7 +184,7 @@ export default function ValidationPage() {
                 <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
 
                 {/* 3. Repository-Level Validation */}
-                <h2 style={{ color: "#c5d1e0" }}>3. 🛠 Repository-Level Validation</h2>
+                <h2 style={{ color: "#7dd3fc" }}>3. Repository-Level Validation</h2>
                 <p>
                     For each included user, we validate their repositories to ensure metadata accuracy and language
                     classification quality.
@@ -253,13 +257,13 @@ export default function ValidationPage() {
                 <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
 
                 {/* 4. Scoring Validation */}
-                <h2 style={{ color: "#c5d1e0" }}>4. 🧮 Scoring Validation</h2>
+                <h2 style={{ color: "#7dd3fc" }}>4. Scoring Validation</h2>
                 <p>
                     To ensure <strong>transparency</strong> and <strong>fair rankings</strong>, we verify the entire scoring
                     pipeline, not just the final numbers.
                 </p>
 
-                <h3 style={{ color: "#c5d1e0", marginTop: "14px" }}>What we validate</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "14px" }}>What we validate</h3>
                 <ul style={{ marginLeft: "20px" }}>
                     <li>Logarithmic scaling is applied correctly to stars, forks, and watchers</li>
                     <li>All six factors (stars, forks, watchers, age, activity, health) are computed correctly</li>
@@ -268,7 +272,7 @@ export default function ValidationPage() {
                     <li>Very large and very small projects behave reasonably under the scoring model</li>
                 </ul>
 
-                <h3 style={{ color: "#c5d1e0", marginTop: "14px" }}>Cross-check</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "14px" }}>Cross-check</h3>
                 <p>
                     We manually recompute scores for <strong>50 randomly selected projects</strong> and compare them with the
                     system output.
@@ -282,7 +286,7 @@ export default function ValidationPage() {
                 <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
 
                 {/* 5. Reliability & Error Recovery */}
-                <h2 style={{ color: "#c5d1e0" }}>5. 🔁 Reliability &amp; Error Recovery</h2>
+                <h2 style={{ color: "#7dd3fc" }}>5. Reliability &amp; Error Recovery</h2>
                 <p>
                     The distributed collector (8 Celery workers, 16 parallel tasks) is designed for{" "}
                     <strong>robustness under API limits</strong> and transient failures.
@@ -357,7 +361,7 @@ export default function ValidationPage() {
                 <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
 
                 {/* 6. Reproducibility */}
-                <h2 style={{ color: "#c5d1e0" }}>6. 🧪 Reproducibility</h2>
+                <h2 style={{ color: "#7dd3fc" }}>6. Reproducibility</h2>
                 <p>All validation steps can be reproduced locally using the same inputs and scripts:</p>
 
                 <pre
@@ -384,7 +388,7 @@ python validate_scores.py --projects-sample 50`}
                 <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "24px 0" }} />
 
                 {/* Summary */}
-                <h2 style={{ color: "#c5d1e0" }}>⭐ Validation Summary</h2>
+                <h2 style={{ color: "#7dd3fc" }}>Validation Summary</h2>
 
                 <div style={{ overflowX: "auto", marginTop: "10px" }}>
                     <table

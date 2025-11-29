@@ -209,14 +209,21 @@ def main():
     
     # Calculate scores and classify by language
     by_language = defaultdict(list)
+    all_projects = []
     
     for project in projects:
         score = calculate_github_score(project, max_stars, max_forks, max_watchers)
         language_category = classify_language(project.get('language'))
         formatted = format_project(project, score)
         by_language[language_category].append(formatted)
+        all_projects.append(formatted)
     
-    # Sort each language by score
+    # Sort ALL projects globally by score and assign global rank
+    all_projects.sort(key=lambda x: x['score'], reverse=True)
+    for rank, project in enumerate(all_projects, start=1):
+        project['global_rank'] = rank
+    
+    # Sort each language by score (they already have global_rank assigned)
     for language in by_language:
         by_language[language].sort(key=lambda x: x['score'], reverse=True)
     
@@ -312,7 +319,8 @@ def main():
                 'language': language,
                 'description': project.get('description', ''),
                 'topics': project.get('topics', []),
-                'score': project['score']
+                'score': project['score'],
+                'global_rank': project['global_rank']
             })
     
     # Sort each owner's projects by score
