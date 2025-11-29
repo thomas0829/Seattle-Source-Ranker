@@ -312,10 +312,6 @@ sudo systemctl start redis-server  # Start if stopped
 
 # Test Redis connection
 redis-cli ping  # Should return PONG
-
-# If using Docker instead:
-# docker ps  # Check if ssr-redis is running
-# docker start ssr-redis  # Start if stopped
 ```
 
 **Rate Limit Issues:**
