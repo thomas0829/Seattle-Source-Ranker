@@ -1,20 +1,20 @@
 {
-  "generated_at": "2025-11-29T09:20:39.867659-08:00",
-  "total_python_projects": 55304,
-  "projects_on_pypi": 9999,
+  "generated_at": "2025-11-30T01:27:22.911956-08:00",
+  "total_python_projects": 55314,
+  "projects_on_pypi": 10000,
   "detection_rate": "18.08%",
   "statistics": {
-    "total_checked": 55304,
-    "on_pypi": 9999,
-    "not_on_pypi": 45305,
+    "total_checked": 55314,
+    "on_pypi": 10000,
+    "not_on_pypi": 45314,
     "by_confidence": {
       "very_high": 29,
-      "high": 9970,
+      "high": 9971,
       "medium": 0,
       "low": 0
     },
     "by_method": {
-      "direct_match": 9015,
+      "direct_match": 9016,
       "underscore_to_dash": 807,
       "direct_match_verified": 15,
       "dash_to_underscore": 148,
@@ -26,7 +26,7 @@
       "name": "Gooey",
       "full_name": null,
       "owner": "chriskiehl",
-      "stars": 21970,
+      "stars": 21969,
       "description": "Turn (almost) any Python command line program into a full GUI application with one line",
       "url": "https://github.com/chriskiehl/Gooey",
       "topics": [],
@@ -37,7 +37,7 @@
       "name": "olmocr",
       "full_name": null,
       "owner": "allenai",
-      "stars": 16098,
+      "stars": 16100,
       "description": "Toolkit for linearizing PDFs for LLM datasets/training",
       "url": "https://github.com/allenai/olmocr",
       "topics": [],
@@ -48,7 +48,7 @@
       "name": "WizardLM",
       "full_name": null,
       "owner": "nlpxucan",
-      "stars": 9462,
+      "stars": 9463,
       "description": "LLMs build upon Evol Insturct: WizardLM, WizardCoder, WizardMath",
       "url": "https://github.com/nlpxucan/WizardLM",
       "topics": [],
@@ -70,7 +70,7 @@
       "name": "visidata",
       "full_name": null,
       "owner": "saulpw",
-      "stars": 8615,
+      "stars": 8618,
       "description": "A terminal spreadsheet multitool for discovering and arranging data",
       "url": "https://github.com/saulpw/visidata",
       "topics": [
@@ -121,7 +121,7 @@
       "name": "aws-shell",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7329,
+      "stars": 7330,
       "description": "An integrated shell for working with the AWS CLI.",
       "url": "https://github.com/awslabs/aws-shell",
       "topics": [
@@ -137,7 +137,7 @@
       "name": "agent-squad",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7099,
+      "stars": 7100,
       "description": "Flexible and powerful framework for managing multiple AI agents and handling complex conversations",
       "url": "https://github.com/awslabs/agent-squad",
       "topics": [
@@ -509,7 +509,7 @@
       "name": "dolma",
       "full_name": null,
       "owner": "allenai",
-      "stars": 1350,
+      "stars": 1352,
       "description": "Data and tools for generating and inspecting OLMo pre-training data. ",
       "url": "https://github.com/allenai/dolma",
       "topics": [
@@ -589,7 +589,7 @@
       "name": "toml",
       "full_name": null,
       "owner": "uiri",
-      "stars": 1135,
+      "stars": 1134,
       "description": "Python lib for TOML",
       "url": "https://github.com/uiri/toml",
       "topics": [
@@ -616,7 +616,7 @@
       "name": "pyradio",
       "full_name": null,
       "owner": "coderholic",
-      "stars": 1041,
+      "stars": 1042,
       "description": "Curses based internet radio player",
       "url": "https://github.com/coderholic/pyradio",
       "topics": [],
@@ -951,6 +951,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "specter",
+      "full_name": null,
+      "owner": "allenai",
+      "stars": 566,
+      "description": "SPECTER: Document-level Representation Learning using Citation-informed Transformers",
+      "url": "https://github.com/allenai/specter",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "tango",
       "full_name": null,
       "owner": "allenai",
@@ -965,17 +976,6 @@
         "python3",
         "pytorch"
       ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "specter",
-      "full_name": null,
-      "owner": "allenai",
-      "stars": 564,
-      "description": "SPECTER: Document-level Representation Learning using Citation-informed Transformers",
-      "url": "https://github.com/allenai/specter",
-      "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -1067,7 +1067,7 @@
       "name": "LigandMPNN",
       "full_name": null,
       "owner": "dauparas",
-      "stars": 486,
+      "stars": 488,
       "description": null,
       "url": "https://github.com/dauparas/LigandMPNN",
       "topics": [],
@@ -1505,6 +1505,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "agent-evaluation",
+      "full_name": null,
+      "owner": "awslabs",
+      "stars": 318,
+      "description": "A generative AI-powered framework for testing virtual agents.",
+      "url": "https://github.com/awslabs/agent-evaluation",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "Waveformer",
       "full_name": null,
       "owner": "vb000",
@@ -1515,17 +1526,6 @@
         "audio",
         "deep-learning"
       ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "agent-evaluation",
-      "full_name": null,
-      "owner": "awslabs",
-      "stars": 317,
-      "description": "A generative AI-powered framework for testing virtual agents.",
-      "url": "https://github.com/awslabs/agent-evaluation",
-      "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -2350,6 +2350,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "catwalk",
+      "full_name": null,
+      "owner": "allenai",
+      "stars": 155,
+      "description": "This project studies the performance and robustness of language models and task-adaptation methods.",
+      "url": "https://github.com/allenai/catwalk",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "s3recon",
       "full_name": null,
       "owner": "clarketm",
@@ -2364,17 +2375,6 @@
         "s3",
         "s3-bucket"
       ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "catwalk",
-      "full_name": null,
-      "owner": "allenai",
-      "stars": 154,
-      "description": "This project studies the performance and robustness of language models and task-adaptation methods.",
-      "url": "https://github.com/allenai/catwalk",
-      "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -2463,6 +2463,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "ace",
+      "full_name": null,
+      "owner": "ai2cm",
+      "stars": 147,
+      "description": "Ai2 Climate Emulator",
+      "url": "https://github.com/ai2cm/ace",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "nrc-exporter",
       "full_name": null,
       "owner": "yasoob",
@@ -2476,17 +2487,6 @@
         "nike-run-club",
         "nrc"
       ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "ace",
-      "full_name": null,
-      "owner": "ai2cm",
-      "stars": 146,
-      "description": "Ai2 Climate Emulator",
-      "url": "https://github.com/ai2cm/ace",
-      "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -3040,6 +3040,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "olmoearth_pretrain",
+      "full_name": null,
+      "owner": "allenai",
+      "stars": 106,
+      "description": "Earth system foundation model data, training, and eval",
+      "url": "https://github.com/allenai/olmoearth_pretrain",
+      "topics": [],
+      "confidence": 0.85,
+      "match_method": "underscore_to_dash"
+    },
+    {
       "name": "recon",
       "full_name": null,
       "owner": "kabirkhan",
@@ -3054,17 +3065,6 @@
       ],
       "confidence": 0.9,
       "match_method": "direct_match"
-    },
-    {
-      "name": "olmoearth_pretrain",
-      "full_name": null,
-      "owner": "allenai",
-      "stars": 105,
-      "description": "Earth system foundation model data, training, and eval",
-      "url": "https://github.com/allenai/olmoearth_pretrain",
-      "topics": [],
-      "confidence": 0.85,
-      "match_method": "underscore_to_dash"
     },
     {
       "name": "StarMap",
@@ -4010,6 +4010,23 @@
       "match_method": "direct_match"
     },
     {
+      "name": "sleeper-api-wrapper",
+      "full_name": null,
+      "owner": "SwapnikKatkoori",
+      "stars": 75,
+      "description": "A Python wrapper for the Sleeper Fantasy Football API.",
+      "url": "https://github.com/SwapnikKatkoori/sleeper-api-wrapper",
+      "topics": [
+        "api-client",
+        "api-wrapper",
+        "fantasy-football",
+        "python",
+        "sleeper"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "FAVA",
       "full_name": null,
       "owner": "abhika-m",
@@ -4035,23 +4052,6 @@
         "spacy",
         "stanford-corenlp",
         "unstructured-text"
-      ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "sleeper-api-wrapper",
-      "full_name": null,
-      "owner": "SwapnikKatkoori",
-      "stars": 74,
-      "description": "A Python wrapper for the Sleeper Fantasy Football API.",
-      "url": "https://github.com/SwapnikKatkoori/sleeper-api-wrapper",
-      "topics": [
-        "api-client",
-        "api-wrapper",
-        "fantasy-football",
-        "python",
-        "sleeper"
       ],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -6496,6 +6496,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "generative-ai-toolkit",
+      "full_name": null,
+      "owner": "awslabs",
+      "stars": 33,
+      "description": "The Generative AI Toolkit is a lightweight library for building, testing and evaluating AI agents in Python, using any of the LLMs supported by the Amazon Bedrock Converse API.",
+      "url": "https://github.com/awslabs/generative-ai-toolkit",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "soundcloud-dl",
       "full_name": null,
       "owner": "yasoob",
@@ -6553,17 +6564,6 @@
       "stars": 32,
       "description": "TreeDict is a fast, flexible and full-featured hierarchical python container that makes simple and sophisticated bookkeeping easy.",
       "url": "https://github.com/hoytak/treedict",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "generative-ai-toolkit",
-      "full_name": null,
-      "owner": "awslabs",
-      "stars": 32,
-      "description": "The Generative AI Toolkit is a lightweight library for building, testing and evaluating AI agents in Python, using any of the LLMs supported by the Amazon Bedrock Converse API.",
-      "url": "https://github.com/awslabs/generative-ai-toolkit",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -9919,6 +9919,20 @@
       "match_method": "direct_match"
     },
     {
+      "name": "autoredteam",
+      "full_name": null,
+      "owner": "leondz",
+      "stars": 14,
+      "description": "autoredteam: code for training models that automatically red team other language models",
+      "url": "https://github.com/leondz/autoredteam",
+      "topics": [
+        "llms",
+        "redteaming"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "fluxpy",
       "full_name": null,
       "owner": "sampotter",
@@ -10233,20 +10247,6 @@
       "description": "Fetch urls quickly and asynchronously with Twisted, honoring politeness.",
       "url": "https://github.com/seomoz/downpour",
       "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "autoredteam",
-      "full_name": null,
-      "owner": "leondz",
-      "stars": 13,
-      "description": "autoredteam: code for training models that automatically red team other language models",
-      "url": "https://github.com/leondz/autoredteam",
-      "topics": [
-        "llms",
-        "redteaming"
-      ],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -77303,21 +77303,6 @@
       "match_method": "underscore_to_dash"
     },
     {
-      "name": "autotune",
-      "full_name": null,
-      "owner": "zhubert",
-      "stars": 0,
-      "description": "a toy post-trainer for base models",
-      "url": "https://github.com/zhubert/autotune",
-      "topics": [
-        "llm",
-        "llm-training",
-        "post-training"
-      ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
       "name": "transformer",
       "full_name": null,
       "owner": "zhubert",
@@ -80275,6 +80260,17 @@
       "stars": 0,
       "description": "test",
       "url": "https://github.com/byarges/flask-api",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "Chord",
+      "full_name": null,
+      "owner": "rik2801",
+      "stars": 0,
+      "description": null,
+      "url": "https://github.com/rik2801/Chord",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -101192,6 +101188,17 @@
       "stars": 0,
       "description": "ffmpeg-solution",
       "url": "https://github.com/Phinneas/ffmpeg",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "osrs",
+      "full_name": null,
+      "owner": "admiralbolt",
+      "stars": 0,
+      "description": null,
+      "url": "https://github.com/admiralbolt/osrs",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
