@@ -2,7 +2,7 @@
 """
 Homework 3 - Testing Assignment
 Author: Wenshu0206
-Tests for classify_by_name() — moderately advanced
+Tests for classify_by_name()
 """
 
 import sys
