@@ -265,10 +265,13 @@ time.sleep(0.05)  # Adjust between requests (default: 50ms)
 
 ## Additional Resources
 
-- [Main README](README.md) - Complete project documentation
-- [User Stories](docs/USER_STORIES.md) - Use cases and scenarios
+- [Architecture Details](ARCHITECTURE.md) - System architecture and technical implementation
+- [User Stories](USER_STORIES.md) - Use cases and scenarios
+- [Version History](VERSION_HISTORY.md) - Project changelog
 - [GitHub API Documentation](https://docs.github.com/en/rest) - REST API reference
 
 ---
 
-**🎉 Your multi-token system is ready to collect Seattle's open-source ecosystem!**
+## Back to Main Documentation
+
+← [Return to README](../README.md) - Main project documentation and quick start guide

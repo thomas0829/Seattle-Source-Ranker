@@ -147,52 +147,55 @@ These files persist on your machine and are never committed to Git:
 
 ## Complete Usage Workflow
 
-### Step-by-Step Process
+### Manual Pipeline
 
-**1. Data Collection** (60-90 minutes)
+#### 1. Data Collection (60-90 minutes)
 ```bash
 python main.py --max-users 30000 --workers 8
 ```
-Output: `data/seattle_projects_YYYYMMDD_HHMMSS.json` (~260MB)
+→ Output: `data/seattle_projects_YYYYMMDD_HHMMSS.json` (~260MB)
 
-**2. Update Watchers** (30-40 minutes with 8 workers)
+#### 2. Update Watchers (30-40 minutes)
 ```bash
 python scripts/update_watchers.py --workers 8
 ```
-- Fetches real subscriber counts via GraphQL
-- Validates repository accessibility
-- Removes deleted/blocked repos (~2%)
-- Overwrites original file with validated data
+→ Fetches real subscriber counts via GraphQL  
+→ Validates repository accessibility  
+→ Removes deleted/blocked repos (~2%)
 
-**3. Generate PyPI List** (< 1 minute)
+#### 3. Generate PyPI List (< 1 minute)
 ```bash
 python scripts/generate_pypi_projects.py
 ```
-Output: `data/seattle_pypi_projects.json`
+→ Output: `data/seattle_pypi_projects.json`
 
-**4. Generate Frontend Data** (30 seconds)
+#### 4. Generate Frontend Data (30 seconds)
 ```bash
 python scripts/generate_frontend_data.py
 ```
-Output: Paginated JSON files for website
+→ Creates ~9,150 paginated JSON files
 
-**5. Update README** (< 1 second)
+#### 5. Update README (< 1 second)
 ```bash
 python scripts/update_readme.py
 ```
+→ Updates statistics in README
 
-**6. Deploy to GitHub Pages**
+#### 6. Build Frontend (optional, for local testing)
 ```bash
 cd frontend
-npm run deploy  # Builds and deploys to gh-pages branch
+npm install      # First time only
+npm start        # Development server at http://localhost:3000
 ```
 
-**7. Commit Metadata**
+#### 7. Commit Metadata (optional, if you want to save to Git)
 ```bash
 git add data/seattle_users_*.json data/seattle_pypi_projects.json README.md
 git commit -m "chore: Update data - $(date +'%Y-%m-%d')"
 git push
 ```
+
+**Total Time:** ~90-120 minutes (steps 1-5 required, 6-7 optional)
 
 ### Automated Daily Updates
 
@@ -203,84 +206,13 @@ See `.github/workflows/collect-and-deploy.yml` for details.
 
 ---
 
-## Project Structure
+## System Architecture
 
-```
-.
-├── .github/
-│   └── workflows/
-│       └── collect-and-deploy.yml    # Daily automation
-├── data/                             # Collection output
-│   ├── seattle_projects_*.json       # Raw project data (~260MB, local only)
-│   ├── seattle_users_*.json          # User metadata (in Git)
-│   ├── seattle_pypi_projects.json    # PyPI packages (in Git)
-│   └── pypi_official_packages.json   # PyPI index cache (in Git)
-├── distributed/                      # Distributed collection system
-│   ├── distributed_collector.py      # Main coordinator
-│   ├── workers/
-│   │   └── collection_worker.py      # Celery worker tasks
-│   └── __init__.py
-├── docs/                             # Extended documentation
-│   ├── ARCHITECTURE.md               # System architecture details
-│   ├── VERSION_HISTORY.md            # Complete changelog
-│   ├── MULTI_TOKEN_GUIDE.md          # Token setup guide
-│   └── USER_STORIES.md               # Use cases
-├── frontend/                         # React web application
-│   ├── src/
-│   │   ├── App.js                    # Main component
-│   │   ├── App.css                   # Glass morphism styling
-│   │   ├── HomePage.js               # Landing page
-│   │   ├── OverallRankingsPage.js    # Overall rankings page
-│   │   ├── PythonRankingsPage.js     # Python rankings with PyPI
-│   │   ├── ScoringPage.js            # Scoring methodology
-│   │   ├── ValidationPage.js         # Data validation info
-│   │   └── index.js
-│   ├── public/
-│   │   ├── pages/                    # Paginated JSON files
-│   │   │   ├── python/               # Python project pages
-│   │   │   ├── javascript/           # JavaScript project pages
-│   │   │   └── ...                   # Other languages
-│   │   ├── owner_index/              # Owner search index
-│   │   ├── data/
-│   │   │   └── seattle_pypi_projects.json  # PyPI data
-│   │   └── metadata.json             # Stats & last updated
-│   ├── build/                        # Production build
-│   ├── package.json
-│   ├── package-lock.json
-│   └── .npmrc                        # npm configuration
-├── scripts/                          # Automation scripts
-│   ├── generate_frontend_data.py     # Generate paginated data
-│   ├── generate_pypi_projects.py     # Generate PyPI project list
-│   ├── update_readme.py              # Auto-update README stats
-│   ├── start_workers.sh              # Start Celery workers
-│   ├── stop_workers.sh               # Stop workers
-│   ├── start_collection.sh           # Start collection process
-│   └── test_workflow.sh              # Local testing
-├── test/                             # Test suite (91 tests)
-│   ├── test_token_manager.py         # Token rotation tests (21 tests)
-│   ├── test_scoring_algorithms.py    # SSR scoring tests (40 tests)
-│   ├── test_distributed_collector.py # Distributed system tests (12 tests)
-│   ├── test_pypi_checker_full.py     # PyPI detection tests (14 tests)
-│   ├── test_graphql_queries.py       # GraphQL query tests (4 tests)
-│   ├── test_update_readme.py         # README update tests (5 tests)
-│   ├── test_classify_languages.py    # Language classification tests (6 tests)
-│   ├── test_pypi_50_projects.py      # Integration test (1 test)
-│   ├── run_tests.sh                  # Test runner
-│   └── pytest.ini                    # Pytest configuration
-├── utils/                            # Utility modules
-│   ├── token_manager.py              # Multi-token rotation
-│   ├── classify_languages.py         # Language classification
-│   ├── celery_config.py              # Celery configuration
-│   ├── pypi_checker.py               # PyPI package detection
-│   └── pypi_client.py                # PyPI package info
-├── .gitattributes                    # Git LFS configuration
-├── .gitignore
-├── environment.yml                   # Conda environment specification
-├── pyproject.toml                    # Python project metadata
-├── pytest.ini                        # Pytest configuration
-├── LICENSE
-└── README.md
-```
+For detailed technical documentation, see:
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture, data flow, and component design
+- **[VERSION_HISTORY.md](docs/VERSION_HISTORY.md)** - Project changelog and version history
+- **[MULTI_TOKEN_GUIDE.md](docs/MULTI_TOKEN_GUIDE.md)** - GitHub token setup and rotation guide
+- **[USER_STORIES.md](docs/USER_STORIES.md)** - Use cases and target audiences
 
 ---
 
@@ -424,21 +356,13 @@ A: **No**. Frontend data files are regenerated during deployment. Only commit:
 
 ---
 
-## Documentation
-
-- **[Architecture Details](docs/ARCHITECTURE.md)** - System components, data pipeline, performance metrics
-- **[Version History](docs/VERSION_HISTORY.md)** - Complete changelog from v1.0 to current
-- **[Live Website](https://thomas0829.github.io/Seattle-Source-Ranker/)** - Interactive data exploration
-
----
-
-## 📄 License
+## License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **GitHub API** for providing comprehensive data access
 - **Seattle's developer community** for creating amazing open source projects

@@ -24,4 +24,10 @@ David is a systems administrator at a mid-sized Seattle tech company managing a 
 
 Rachel is a technical consultant who performs due diligence for companies acquiring Seattle startups. She evaluates the technical capabilities of acquisition targets by analyzing their engineering teams' open-source portfolios. For initial assessments she will review aggregate metrics like total stars and active contributors. For detailed reports, she needs access to individual developer profiles and cross-project collaboration patterns. Rachel is highly technical and knows how to identify key technical talent and assess code quality standards.
 
+---
+
+## Back to Main Documentation
+
+← [Return to README](../README.md) - Main project documentation and quick start guide
+
 

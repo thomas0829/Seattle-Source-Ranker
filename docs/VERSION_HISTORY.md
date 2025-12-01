@@ -1,5 +1,47 @@
 # Version History
 
+## Beta-v4.0 (2025-12-01) - Watchers Validation & Documentation Overhaul
+
+### Highlights
+- **Real watchers data** - Fixed watchers field showing real subscribers instead of duplicate stars
+- **Data validation** - GraphQL-based validation removes inaccessible repositories (~2%)
+- **Parallel processing** - 8-worker implementation for watchers update (8× speedup)
+- **Documentation simplification** - README reduced from 644 to 379 lines, better organization
+- **Automated watchers update** - Integrated into GitHub Actions workflow
+
+### Data Quality Improvements
+- **Watchers validation script** (`scripts/update_watchers.py`)
+  - GraphQL batch queries (100 repos per request)
+  - Fetches real subscribers count (not duplicate stars)
+  - Removes HTTP 451 (legally blocked), deleted, and private repos
+  - 8-worker parallel processing: ~30-40 minutes (vs ~5 hours single-threaded)
+  - Automatic removal of 8,200 inaccessible repos from 465,423 → 457,223 projects
+- **Real data example**: olmocr 16,109 stars → 83 watchers (0.5%, was incorrectly 16,109)
+
+### Frontend Enhancements
+- **Watchers display** added to both Overall and Python rankings pages
+- **Icon update**: Changed forks icon from 🍴 to 🔀 (Git fork symbol)
+- Display format: ⭐ stars | 👁️ watchers | 🔀 forks | 🐛 issues
+- Fallback handling for missing watchers data
+
+### Automation Improvements
+- **GitHub Actions integration**: Watchers update step added between PyPI generation and frontend
+- **Command**: `python3 scripts/update_watchers.py "$LATEST_PROJECTS" --workers 8`
+- **Workflow**: Collection → PyPI → **Watchers** → Frontend → Build → Deploy
+
+### Documentation
+- **Simplified README**: Removed redundant sections, excessive emojis, and deployment flow diagram
+- **Enhanced docs structure**: Clear navigation with "Back to README" links in all docs
+- **File management guide**: Clear explanation of local-only vs Git-tracked files
+- **Updated .gitignore**: Exclude generated frontend files (pages/, owner_index/, build/)
+- **Manual workflow guide**: Step-by-step process with timing and output information
+
+### Technical Details
+- **Token efficiency**: 15.5% usage (4,655/30,000 requests per hour)
+- **GraphQL aliases**: repo_0, repo_1... for batch efficiency
+- **Performance**: 341,979 updated (73.5%), 115,244 unchanged (24.8%)
+- **File handling**: Direct overwrite instead of timestamped copies
+
 ## Beta-v3.1 (2025-11-15) - GitHub Actions Automation
 
 ### Highlights
@@ -106,3 +148,9 @@ Initial implementation of weighted scoring:
 - Proof of concept
 - Manual execution
 - Limited scale (< 1,000 projects)
+
+---
+
+## Back to Main Documentation
+
+← [Return to README](../README.md) - Main project documentation and quick start guide
