@@ -226,7 +226,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                         "url": repo["html_url"],
                         "stars": repo["stargazers_count"],
                         "forks": repo["forks_count"],
-                        "watchers": repo["watchers_count"],
+                        "watchers": repo.get("subscribers_count", repo["watchers_count"]),  # Use subscribers_count (true watchers), fallback to watchers_count
                         "language": repo.get("language"),
                         "topics": repo.get("topics", []),  # Topics are already in the response
                         "created_at": repo["created_at"],
