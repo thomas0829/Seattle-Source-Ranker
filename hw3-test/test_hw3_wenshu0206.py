@@ -30,7 +30,7 @@ def test_classify_smoke_multiple_inputs():
 def test_one_shot_python_keyword():
     """
     author: Wenshu0206
-    reviewer: Chase-Zou
+    reviewer: Muwen320
     category: one-shot test
     """
     name = "my-django-app"
@@ -56,7 +56,7 @@ def test_one_shot_known_language_mapping():
 def test_edge_numeric_and_very_long():
     """
     author: Wenshu0206
-    reviewer: Chase-Zou
+    reviewer: Muwen320
     category: edge test
     """
     numeric = classify_by_name("123456789")
