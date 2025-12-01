@@ -29,7 +29,7 @@ def test_one_shot_known_language_mapping():
 def test_edge_numeric_and_very_long():
     """
     author: Muwen320
-    reviewer: Wenshu0206
+    reviewer: Chase-Zou
     category: edge test
     """
     name = "1234567890-" + "x" * 200
@@ -41,7 +41,7 @@ def test_edge_numeric_and_very_long():
 def test_pattern_many_python_repos():
     """
     author: Muwen320
-    reviewer: Wenshu0206
+    reviewer: Chase-Zou
     category: pattern test
     """
     python_like = [
