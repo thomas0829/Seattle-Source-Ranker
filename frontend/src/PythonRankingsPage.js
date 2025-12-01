@@ -3,12 +3,13 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 
-// Scoring configuration - Multiplicative bonus approach
-const GITHUB_WEIGHT = 1.0;       // 100% of base score
-const PYPI_BONUS = 0.1;          // +10% multiplier for PyPI projects
-
-// Current formula: finalScore = baseScore * (1.0 + 0.1) = baseScore * 1.1
-// Future: Can change to weighted average by using separate weights for GitHub/PyPI components
+// Scoring configuration for Python + PyPI
+// Normalize base score to [0, 1] by dividing by BASE_MAX_SCORE.
+// If on PyPI:  final_norm = x + PYPI_BETA * (1 - x)^2  (低 base 多加分)
+// If not:      final_norm = x * (1 - NO_PYPI_ALPHA * x) (高 base 多扣分)
+const BASE_MAX_SCORE = 10000;
+const NO_PYPI_ALPHA = 0.2;
+const PYPI_BETA = 0.2;
 
 export default function PythonRankingsPage() {
     const [projects, setProjects] = useState([]);
@@ -99,6 +100,30 @@ export default function PythonRankingsPage() {
                 firstBatch.forEach(pageData => {
                     allProjects.push(...pageData);
                 });
+
+                // Helper: compute final score with PyPI-aware adjustment
+                const computeFinalScore = (baseScore, onPypi) => {
+                    const base = baseScore || 0;
+                    // Normalize base score to [0, 1]
+                    let x = base / BASE_MAX_SCORE;
+                    if (x < 0) x = 0;
+                    if (x > 1) x = 1;
+
+                    let finalNorm;
+                    if (onPypi) {
+                        // Low base => larger bonus via (1 - x)^2
+                        finalNorm = x + PYPI_BETA * Math.pow(1 - x, 2);
+                    } else {
+                        // High base => stronger penalty via x^2
+                        finalNorm = x * (1 - NO_PYPI_ALPHA * x);
+                    }
+
+                    // Scale back to 0–BASE_MAX_SCORE
+                    let finalScore = Math.round(finalNorm * BASE_MAX_SCORE);
+                    if (finalScore < 0) finalScore = 0;
+                    if (finalScore > BASE_MAX_SCORE) finalScore = BASE_MAX_SCORE;
+                    return finalScore;
+                };
                 
                 // Calculate initial scores and display first 10 pages
                 let scoredProjects = allProjects.map(proj => {
@@ -106,8 +131,8 @@ export default function PythonRankingsPage() {
                     const key = proj.name.toLowerCase();
                     const onPypi = pypiMap.has(key);
                     const baseScore = proj.score || 0;
-                    // PyPI projects get 10% bonus (multiplicative)
-                    const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
+
+                    const finalScore = computeFinalScore(baseScore, onPypi);
                     
                     return {
                         ...proj,
@@ -116,7 +141,7 @@ export default function PythonRankingsPage() {
                         full_name: proj.name,
                         url: proj.html_url,
                         original_score: baseScore,
-                        final_score: Math.round(finalScore),
+                        final_score: finalScore,
                         on_pypi: onPypi
                     };
                 });
@@ -172,8 +197,8 @@ export default function PythonRankingsPage() {
                             const key = proj.name.toLowerCase();
                             const onPypi = pypiMap.has(key);
                             const baseScore = proj.score || 0;
-                            // PyPI projects get 10% bonus (multiplicative)
-                            const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
+
+                            const finalScore = computeFinalScore(baseScore, onPypi);
                             
                             return {
                                 ...proj,
@@ -182,7 +207,7 @@ export default function PythonRankingsPage() {
                                 full_name: proj.name,
                                 url: proj.html_url,
                                 original_score: baseScore,
-                                final_score: Math.round(finalScore),
+                                final_score: finalScore,
                                 on_pypi: onPypi
                             };
                         });
