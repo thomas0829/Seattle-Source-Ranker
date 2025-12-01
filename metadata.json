@@ -1,50 +1,50 @@
 {
   "languages": {
     "Other": {
-      "total": 203890,
-      "pages": 4078
+      "total": 144941,
+      "pages": 2899
     },
     "JavaScript": {
-      "total": 115697,
-      "pages": 2314
+      "total": 96754,
+      "pages": 1936
     },
     "Python": {
-      "total": 55314,
-      "pages": 1107
+      "total": 54189,
+      "pages": 1084
+    },
+    "HTML": {
+      "total": 42018,
+      "pages": 841
     },
     "Java": {
-      "total": 27965,
-      "pages": 560
+      "total": 27438,
+      "pages": 549
     },
-    "C++": {
-      "total": 20720,
-      "pages": 415
+    "Jupyter Notebook": {
+      "total": 17409,
+      "pages": 349
+    },
+    "TypeScript": {
+      "total": 17240,
+      "pages": 345
+    },
+    "C#": {
+      "total": 16417,
+      "pages": 329
     },
     "Ruby": {
-      "total": 14976,
-      "pages": 300
+      "total": 14766,
+      "pages": 296
     },
-    "Go": {
-      "total": 8070,
-      "pages": 162
+    "CSS": {
+      "total": 13704,
+      "pages": 275
     },
-    "Rust": {
-      "total": 5891,
-      "pages": 118
-    },
-    "Swift": {
-      "total": 5548,
-      "pages": 111
-    },
-    "PHP": {
-      "total": 5186,
-      "pages": 104
-    },
-    "Kotlin": {
-      "total": 1965,
-      "pages": 40
+    "C++": {
+      "total": 12347,
+      "pages": 247
     }
   },
   "page_size": 50,
-  "last_updated": "2025-11-30 00:18:59 PST"
+  "last_updated": "2025-12-01 07:40:39 PST"
 }
