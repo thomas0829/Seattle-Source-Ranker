@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Homework 3 - Testing Assignment (Enhanced Version)
+Homework 3 - Testing Assignment
 Author: Wenshu0206
 Tests for classify_by_name() — moderately advanced
 """
