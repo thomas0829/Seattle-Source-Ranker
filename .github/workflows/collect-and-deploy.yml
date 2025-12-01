@@ -46,6 +46,7 @@ jobs:
     
     - name: Configure GitHub tokens
       run: |
+        # Create .env.tokens file with all tokens
         cat > .env.tokens << EOF
         GITHUB_TOKEN_1=${{ secrets.GH_TOKEN_1 }}
         GITHUB_TOKEN_2=${{ secrets.GH_TOKEN_2 }}
@@ -55,12 +56,17 @@ jobs:
         GITHUB_TOKEN_6=${{ secrets.GH_TOKEN_6 }}
         EOF
         
+        # Export tokens to environment for workers
         echo "GITHUB_TOKEN_1=${{ secrets.GH_TOKEN_1 }}" >> $GITHUB_ENV
         echo "GITHUB_TOKEN_2=${{ secrets.GH_TOKEN_2 }}" >> $GITHUB_ENV
         echo "GITHUB_TOKEN_3=${{ secrets.GH_TOKEN_3 }}" >> $GITHUB_ENV
         echo "GITHUB_TOKEN_4=${{ secrets.GH_TOKEN_4 }}" >> $GITHUB_ENV
         echo "GITHUB_TOKEN_5=${{ secrets.GH_TOKEN_5 }}" >> $GITHUB_ENV
         echo "GITHUB_TOKEN_6=${{ secrets.GH_TOKEN_6 }}" >> $GITHUB_ENV
+        
+        # Count tokens
+        TOKEN_COUNT=$(grep -c "^GITHUB_TOKEN_[0-9]=" .env.tokens)
+        echo "✅ Configured $TOKEN_COUNT GitHub tokens"
     
     - name: Check user data age
       id: check_user_data
