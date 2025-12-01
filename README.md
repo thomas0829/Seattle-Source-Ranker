@@ -5,33 +5,33 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> 🏔️ **Discover and rank open source projects from Seattle's tech community**
+> **Discover and rank open source projects from Seattle's tech community**
 
 A comprehensive tool that collects, analyzes, and ranks open source projects from Seattle-based GitHub users. Features intelligent multi-factor scoring, distributed collection, and automated daily updates.
 
-🌐 **Live Website**: [https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)
+**Live Website**: [https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)
 
 ---
 
-## 📊 Latest Statistics
+## Latest Statistics
 
-- **465,222 projects** tracked across Seattle's developer community
-- **2,830,750 total stars** accumulated by Seattle projects
+- **457,223 projects** tracked across Seattle's developer community
+- **2,476,997 total stars** accumulated by Seattle projects
 - **28,251 users** collected in latest run
-- **9,999 Python projects** published on PyPI (18.08% of Python projects)
-- Last updated: 2025-11-29 00:30:46 PST
+- **10,000 Python projects** published on PyPI (18.08% of Python projects)
+- Last updated: 2025-12-01 00:27:06 PST
 
 ---
 
-## 🎯 Target Audience & User Stories
+## Target Audience & User Stories
 
-### For Students 📚
+### For Students
 - **Portfolio Discovery**: "As a CS student, I want to discover high-quality Seattle projects to learn from real-world code"
 - **Contribution Opportunities**: "I want to find active local projects where I can make meaningful contributions"
 - **Technology Trends**: "I want to see what technologies Seattle developers are using to guide my learning path"
 - **Networking**: "I want to identify influential developers in Seattle to follow and learn from"
 
-### For Recruiters 💼
+### For Recruiters
 - **Talent Discovery**: "As a recruiter, I want to find active Seattle developers based on their project quality and activity"
 - **Skill Assessment**: "I want to see a developer's technical stack and project involvement at a glance"
 - **Local Tech Landscape**: "I want to understand what technologies are trending in Seattle's developer community"
@@ -39,7 +39,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 ---
 
-## 👥 Team & Contributions
+## Team & Contributions
 
 | Team Member | Role | Contributions |
 |------------|------|---------------|
@@ -50,7 +50,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 ### Core Functionality
 - **Distributed Processing** - 8 Celery workers with 16 concurrent tasks for efficient data collection
@@ -82,7 +82,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 ### View Live Rankings
 Visit **[https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)** to explore Seattle's open source projects.
 
-### Local Development Setup
+### Run Locally
 
 **Prerequisites:**
 - Python 3.11+
@@ -108,111 +108,41 @@ redis-cli ping  # Should return PONG
 GITHUB_TOKEN_1=ghp_your_token_here
 GITHUB_TOKEN_2=ghp_your_token_here
 # ... up to GITHUB_TOKEN_6
-
-# 5. Run collection
-python main.py --max-users 30000 --workers 8
 ```
 
----
-
-## File Management
-
-### Local-Only Files
-These files persist on your machine and are never committed to Git:
-
-**Configuration:**
-- `.env.tokens` - Your GitHub tokens (NEVER commit)
-- `.collection_success` - Collection completion marker
-
-**Generated Data:**
-- `data/seattle_projects_*.json` - Full dataset (~260MB)
-- `frontend/public/pages/` - Paginated JSON files (~9,150 files)
-- `frontend/public/owner_index/` - Owner search index
-- `frontend/public/metadata.json` - Statistics
-- `frontend/build/` - React production build
-- `logs/` - Collection logs
-
-### Committed to Git
-**Small Data Files:**
-- `data/seattle_users_*.json` - User metadata (~20KB)
-- `data/seattle_pypi_projects.json` - PyPI project list
-- `data/pypi_official_packages.json` - Official PyPI packages
-
-**Code & Config:**
-- Source code, documentation, configuration files
-
-**Note:** Generated frontend files are recreated during GitHub Actions deployment - no need to commit them locally.
-
----
-
-## Complete Usage Workflow
-
-### Manual Pipeline
+**Usage Pipeline:**
 
 #### 1. Data Collection (60-90 minutes)
 ```bash
 python main.py --max-users 30000 --workers 8
 ```
-→ Output: `data/seattle_projects_YYYYMMDD_HHMMSS.json` (~260MB)
 
 #### 2. Update Watchers (30-40 minutes)
 ```bash
 python scripts/update_watchers.py --workers 8
 ```
-→ Fetches real subscriber counts via GraphQL  
-→ Validates repository accessibility  
-→ Removes deleted/blocked repos (~2%)
 
 #### 3. Generate PyPI List (< 1 minute)
 ```bash
 python scripts/generate_pypi_projects.py
 ```
-→ Output: `data/seattle_pypi_projects.json`
 
 #### 4. Generate Frontend Data (30 seconds)
 ```bash
 python scripts/generate_frontend_data.py
 ```
-→ Creates ~9,150 paginated JSON files
 
 #### 5. Update README (< 1 second)
 ```bash
 python scripts/update_readme.py
 ```
-→ Updates statistics in README
 
-#### 6. Build Frontend (optional, for local testing)
+#### 6. Test Frontend (optional)
 ```bash
-cd frontend
-npm install      # First time only
-npm start        # Development server at http://localhost:3000
+cd frontend && npm start  # http://localhost:3000
 ```
 
-#### 7. Commit Metadata (optional, if you want to save to Git)
-```bash
-git add data/seattle_users_*.json data/seattle_pypi_projects.json README.md
-git commit -m "chore: Update data - $(date +'%Y-%m-%d')"
-git push
-```
-
-**Total Time:** ~90-120 minutes (steps 1-5 required, 6-7 optional)
-
-### Automated Daily Updates
-
-GitHub Actions runs the complete pipeline automatically at midnight Seattle time:
-1. Collection → 2. Watchers → 3. PyPI → 4. Frontend → 5. Build → 6. Deploy → 7. Commit
-
-See `.github/workflows/collect-and-deploy.yml` for details.
-
----
-
-## System Architecture
-
-For detailed technical documentation, see:
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture, data flow, and component design
-- **[VERSION_HISTORY.md](docs/VERSION_HISTORY.md)** - Project changelog and version history
-- **[MULTI_TOKEN_GUIDE.md](docs/MULTI_TOKEN_GUIDE.md)** - GitHub token setup and rotation guide
-- **[USER_STORIES.md](docs/USER_STORIES.md)** - Use cases and target audiences
+**Note:** Generated files (`data/seattle_projects_*.json`, `frontend/public/pages/`) stay local and are not committed to Git.
 
 ---
 
@@ -279,80 +209,20 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed factor calculations.
 
 ## Troubleshooting
 
-### Common Issues
+Having issues? Check the **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** for:
+- Common errors and solutions (Redis, rate limits, collection failures)
+- Frontend build issues
+- Frequently Asked Questions (watchers, tokens, file management)
 
-**Redis Connection Error:**
-```bash
-# Check if Redis system service is running
-systemctl status redis-server
-sudo systemctl start redis-server  # Start if stopped
+---
 
-# Test Redis connection
-redis-cli ping  # Should return PONG
-```
+## Documentation
 
-**Rate Limit Issues:**
-- **Check token validity**: Ensure all tokens in `.env.tokens` are valid
-- **Verify token rotation**: Logs show which token is active
-- **Add more tokens**: Supports up to 6 tokens (currently using 6)
-- **Check rate limits**: Each token has 5,000 GraphQL + 5,000 REST requests/hour
-
-**Collection Failures:**
-- **Review logs**: Check `logs/YYYYMMDD/` for error messages
-- **GitHub Actions**: Verify all 6 tokens are added as Secrets
-- **Cleanup issues**: Ensure `.collection_success` marker exists before cleanup
-- **Worker timeout**: Increase timeout in `celery_config.py` if needed
-
-**Frontend Build Issues:**
-```bash
-cd frontend
-rm -rf node_modules package-lock.json  # Clean install
-npm install
-npm run build
-```
-
-**Watchers Update Slow:**
-```bash
-# Use 8 workers for faster processing (8x speedup)
-python scripts/update_watchers.py --workers 8
-
-# Single-threaded (slow): ~5 hours
-# 8 workers (recommended): ~30-40 minutes
-```
-
-### Frequently Asked Questions
-
-**Q: Why are watchers much lower than stars?**  
-A: `watchers` = GitHub subscribers (notifications), `stars` = bookmarks. Typically 0.5%-4% ratio is normal. Projects with 10,000 stars often have only 50-400 watchers.
-
-**Q: Why were some repositories removed?**  
-A: ~2% of repos become inaccessible between collection and validation:
-- **HTTP 451** - Legally blocked (DMCA, court order)
-- **Deleted** - Owner deleted the repository
-- **Private** - Changed from public to private
-
-**Q: Can I use fewer than 6 tokens?**  
-A: Yes, but collection will be slower. Minimum 1 token required. Each token adds 10,000 req/hr capacity (5k GraphQL + 5k REST).
-
-**Q: Why is `data/seattle_projects_*.json` so large?**  
-A: Contains full metadata for 450k+ repositories (~260MB). Not committed to Git. Only generated/processed locally and during GitHub Actions deployment.
-
-**Q: How do I add more GitHub tokens?**  
-A:
-1. Generate tokens at https://github.com/settings/tokens
-2. Required scopes: `public_repo` (read public repositories)
-3. Add to `.env.tokens` as `GITHUB_TOKEN_7`, `GITHUB_TOKEN_8`, etc.
-4. Update `TokenManager` to support more tokens if needed
-
-**Q: What happens if I switch Git branches?**  
-A: Local-only files (`.env.tokens`, `data/seattle_projects_*.json`, `frontend/public/pages/`) **persist across branch switches** - they are never committed to Git, so they stay on your machine.
-
-**Q: Should I commit the generated frontend files?**  
-A: **No**. Frontend data files are regenerated during deployment. Only commit:
-- `data/seattle_users_*.json` (small user metadata)
-- `data/seattle_pypi_projects.json` (PyPI list)
-- `data/pypi_official_packages.json` (official packages)
-- `README.md` (documentation)
+For detailed technical information:
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture, data flow, and component design
+- **[VERSION_HISTORY.md](docs/VERSION_HISTORY.md)** - Project changelog and version history
+- **[MULTI_TOKEN_GUIDE.md](docs/MULTI_TOKEN_GUIDE.md)** - GitHub token setup and rotation guide
+- **[USER_STORIES.md](docs/USER_STORIES.md)** - Use cases and target audiences
 
 ---
 
