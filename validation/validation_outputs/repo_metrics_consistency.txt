@@ -1,0 +1,17 @@
+Repo Metrics Consistency Checks
+================================
+
+[watchers_vs_stars]
+valid_count: 447533
+mismatch_count: 0
+mismatch_rate: 0.0
+
+[created_vs_pushed]
+valid_count: 447301
+invalid_count: 3049
+invalid_rate: 0.006816439042166237
+
+[open_issues_non_negative]
+valid_count: 447533
+negative_count: 0
+
