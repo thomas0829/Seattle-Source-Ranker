@@ -118,12 +118,156 @@ export default function OverallRankingsPage() {
                 });
             }
             
+            // Add languages from Other category (not in Top 10)
+            // Sorted by popularity - more popular languages are easier to match
+            const otherLanguages = [
+                // Tier 1: Very popular (5000+ projects) - match with 1+ chars
+                { name: 'Go', count: 8129 }, { name: 'C', count: 8101 }, { name: 'Shell', count: 7437 },
+                { name: 'Rust', count: 5884 }, { name: 'Swift', count: 5536 }, { name: 'PHP', count: 5181 }, { name: 'R', count: 5122 },
+                
+                // Tier 2: Popular (1000-5000 projects) - match with 2+ chars
+                { name: 'Objective-C', count: 2361 }, { name: 'Kotlin', count: 1965 }, { name: 'TeX', count: 1623 },
+                { name: 'Scala', count: 1487 }, { name: 'Lua', count: 1327 }, { name: 'Dockerfile', count: 1218 },
+                { name: 'PowerShell', count: 1151 }, { name: 'Vue', count: 1131 }, { name: 'Matlab', count: 1034 },
+                
+                // Tier 3: Medium (400-1000 projects) - match with 2+ chars
+                { name: 'HCL', count: 963 }, { name: 'SCSS', count: 918 }, { name: 'Makefile', count: 904 },
+                { name: 'Dart', count: 901 }, { name: 'Haskell', count: 885 }, { name: 'Perl', count: 822 },
+                { name: 'Clojure', count: 801 }, { name: 'MATLAB', count: 732 }, { name: 'CoffeeScript', count: 730 },
+                { name: 'Elixir', count: 692 }, { name: 'Assembly', count: 581 }, { name: 'Vim script', count: 546 },
+                { name: 'Emacs Lisp', count: 504 }, { name: 'Arduino', count: 488 }, { name: 'Julia', count: 430 },
+                { name: 'VimL', count: 429 }, { name: 'GDScript', count: 422 }, { name: 'Svelte', count: 402 },
+                
+                // Tier 4: Less common (100-400 projects) - match with 3+ chars
+                { name: 'Processing', count: 392 }, { name: 'CMake', count: 309 }, { name: 'Nix', count: 308 },
+                { name: 'Vim Script', count: 296 }, { name: 'Racket', count: 277 }, { name: 'Astro', count: 257 },
+                { name: 'ShaderLab', count: 252 }, { name: 'EJS', count: 250 }, { name: 'TSQL', count: 246 },
+                { name: 'Groovy', count: 236 }, { name: 'Solidity', count: 233 }, { name: 'OCaml', count: 204 },
+                { name: 'Verilog', count: 196 }, { name: 'F#', count: 184 }, { name: 'ASP', count: 184 },
+                { name: 'Erlang', count: 175 }, { name: 'Handlebars', count: 171 }, { name: 'Cuda', count: 169 },
+                { name: 'Tcl', count: 164 }, { name: 'Elm', count: 157 }, { name: 'Fortran', count: 152 },
+                { name: 'Zig', count: 140 }, { name: 'Common Lisp', count: 132 }, { name: 'Smarty', count: 130 },
+                { name: 'AutoHotkey', count: 127 }, { name: 'VHDL', count: 125 }, { name: 'Batchfile', count: 121 },
+                { name: 'Sass', count: 120 }, { name: 'Scheme', count: 117 }, { name: 'PureScript', count: 114 },
+                { name: 'Vala', count: 112 }, { name: 'Crystal', count: 107 },
+                
+                // Tier 5: Rare (50-100 projects) - match with 4+ chars
+                { name: 'GLSL', count: 99 }, { name: 'Roff', count: 99 }, { name: 'Less', count: 98 },
+                { name: 'Haxe', count: 97 }, { name: 'Pascal', count: 95 }, { name: 'Nunjucks', count: 92 },
+                { name: 'Nim', count: 88 }, { name: 'Haml', count: 87 }, { name: 'ReScript', count: 84 },
+                { name: 'D', count: 82 }, { name: 'Terra', count: 78 }, { name: 'Odin', count: 76 },
+                { name: 'PureBasic', count: 75 }, { name: 'Jsonnet', count: 74 }, { name: 'V', count: 73 },
+                { name: 'SystemVerilog', count: 72 }, { name: 'Stylus', count: 71 }, { name: 'ActionScript', count: 69 },
+                { name: 'PLpgSQL', count: 69 }, { name: 'Objective-C++', count: 68 }, { name: 'QML', count: 66 },
+                { name: 'FreeMarker', count: 65 }, { name: 'WebAssembly', count: 63 }, { name: 'G-code', count: 63 },
+                { name: 'AGS Script', count: 62 }, { name: 'Standard ML', count: 62 }, { name: 'Coq', count: 61 },
+                { name: 'Starlark', count: 60 }, { name: 'sed', count: 59 }, { name: 'Rust', count: 59 },
+                { name: 'Smalltalk', count: 57 }, { name: 'Liquid', count: 56 }, { name: 'Apex', count: 55 },
+                { name: 'Prolog', count: 54 }, { name: 'OpenSCAD', count: 54 }, { name: 'Eagle', count: 53 },
+                { name: 'Pug', count: 53 }, { name: 'Mako', count: 51 }, { name: 'Lean', count: 50 },
+                
+                // Tier 6: Very rare (<50 projects) - match with 5+ chars  
+                { name: 'PostScript', count: 48 }, { name: 'Red', count: 47 }, { name: 'OpenQASM', count: 46 },
+                { name: 'Blade', count: 46 }, { name: 'Pkl', count: 45 }, { name: 'Max', count: 45 },
+                { name: 'Mercury', count: 44 }, { name: 'Awk', count: 44 }, { name: 'Forth', count: 43 },
+                { name: 'HLSL', count: 42 }, { name: 'Bicep', count: 42 }, { name: 'XSLT', count: 41 },
+                { name: 'Fennel', count: 40 }, { name: 'Idris', count: 39 }, { name: 'M4', count: 39 },
+                { name: 'Cuda', count: 38 }, { name: 'MDX', count: 38 }, { name: 'Meson', count: 37 },
+                { name: 'Jinja', count: 37 }, { name: 'Pony', count: 36 }, { name: 'Ballerina', count: 36 },
+                { name: 'Agda', count: 36 }, { name: 'PEG.js', count: 35 }, { name: 'AppleScript', count: 35 },
+                { name: 'Inno Setup', count: 34 }, { name: 'NASL', count: 34 }, { name: 'Ren\'Py', count: 33 },
+                { name: 'Papyrus', count: 33 }, { name: 'Gnuplot', count: 33 }, { name: 'LLVM', count: 32 },
+                { name: 'Frege', count: 32 }, { name: 'Factor', count: 31 }, { name: 'BitBake', count: 31 },
+                { name: 'Gherkin', count: 30 }, { name: 'Ada', count: 30 }, { name: 'CartoCSS', count: 30 },
+                { name: 'Chapel', count: 29 }, { name: 'Modelica', count: 29 }, { name: 'Nemerle', count: 28 },
+                { name: 'nesC', count: 28 }, { name: 'KiCad Layout', count: 27 }, { name: 'Cirru', count: 27 },
+                { name: 'q', count: 27 }, { name: 'Module Management System', count: 26 }, { name: 'LilyPond', count: 26 },
+                { name: 'Dhall', count: 26 }, { name: 'AMPL', count: 25 }, { name: 'Logos', count: 25 },
+                { name: 'Raku', count: 25 }, { name: 'ASP.NET', count: 24 }, { name: 'POV-Ray SDL', count: 24 },
+                { name: 'Yacc', count: 24 }, { name: 'mcfunction', count: 23 }, { name: 'NewLisp', count: 23 },
+                { name: 'X10', count: 23 }, { name: 'RPM Spec', count: 23 }, { name: 'Lex', count: 23 },
+                { name: 'Wren', count: 22 }, { name: 'Alloy', count: 22 }, { name: 'EmberScript', count: 22 },
+                { name: 'Brainfuck', count: 21 }, { name: 'Reason', count: 21 }, { name: 'SWIG', count: 21 },
+                { name: 'TLA', count: 20 }, { name: 'Nearley', count: 20 }, { name: 'Io', count: 20 },
+                { name: 'AutoIt', count: 20 }, { name: 'MATLAB', count: 19 }, { name: 'Gosu', count: 19 },
+                { name: 'Monkey', count: 19 }, { name: 'POV-Ray', count: 19 }, { name: 'IDL', count: 19 },
+                { name: 'Ring', count: 18 }, { name: 'Self', count: 18 }, { name: 'Dylan', count: 18 },
+                { name: 'XQuery', count: 18 }, { name: 'RAML', count: 18 }, { name: 'xBase', count: 17 },
+                { name: 'Component Pascal', count: 17 }, { name: 'Sage', count: 17 }, { name: 'NetLinx', count: 17 },
+                { name: 'FLUX', count: 16 }, { name: 'LiveScript', count: 16 }, { name: 'XC', count: 16 },
+                { name: 'Thrift', count: 16 }, { name: 'P4', count: 16 }, { name: 'mupad', count: 15 },
+                { name: 'DriveIt', count: 15 }, { name: 'J', count: 15 }, { name: 'Harbour', count: 15 },
+                { name: 'FreeBasic', count: 15 }, { name: 'M', count: 15 }, { name: 'Befunge', count: 14 },
+                { name: 'JFlex', count: 14 }, { name: 'KRL', count: 14 }, { name: 'Hack', count: 14 },
+                { name: 'VBA', count: 14 }, { name: 'Logtalk', count: 13 }, { name: 'Grammatical Framework', count: 13 },
+                { name: 'CWeb', count: 13 }, { name: 'Fantom', count: 13 }, { name: 'Oxygene', count: 13 },
+                { name: 'API Blueprint', count: 13 }, { name: 'Clean', count: 13 }, { name: 'Csound', count: 13 },
+                { name: 'Charity', count: 12 }, { name: 'HolyC', count: 12 }, { name: 'SuperCollider', count: 12 },
+                { name: 'DM', count: 12 }, { name: 'SourcePawn', count: 12 }, { name: 'Genie', count: 12 },
+                { name: 'Turing', count: 11 }, { name: 'Ant Build System', count: 11 }, { name: 'Boo', count: 11 },
+                { name: 'DataWeave', count: 11 }, { name: 'Csound Document', count: 11 }, { name: 'ANTLR', count: 11 },
+                { name: 'Shen', count: 10 }, { name: 'OpenEdge ABL', count: 10 }, { name: 'Isabelle', count: 10 },
+                { name: 'SaltStack', count: 10 }, { name: 'Cool', count: 10 }, { name: 'Latte', count: 10 },
+                { name: 'Berry', count: 9 }, { name: 'VBScript', count: 9 }, { name: 'BlitzMax', count: 9 },
+                { name: 'SQF', count: 9 }, { name: 'Motorola 68K Assembly', count: 9 }, { name: 'Rebol', count: 9 },
+                { name: 'Classic ASP', count: 9 }, { name: 'PLSQL', count: 9 }, { name: 'GCC Machine Description', count: 9 },
+                { name: 'Clarion', count: 8 }, { name: 'Click', count: 8 }, { name: 'Nu', count: 8 },
+                { name: 'Pike', count: 8 }, { name: 'Lingo', count: 8 }, { name: 'Squirrel', count: 8 },
+                { name: 'Euphoria', count: 8 }, { name: 'Zimpl', count: 8 }, { name: 'DTrace', count: 8 },
+                { name: 'Cycript', count: 7 }, { name: 'Visual Basic', count: 7 }, { name: 'Game Maker Language', count: 7 },
+                { name: 'Bison', count: 7 }, { name: 'Bluespec', count: 7 }, { name: 'Brightscript', count: 7 },
+                { name: 'E', count: 7 }, { name: 'MAXScript', count: 7 }, { name: 'Hy', count: 7 },
+                { name: 'UnrealScript', count: 6 }, { name: 'Oz', count: 6 }, { name: 'Pure Data', count: 6 },
+                { name: 'mirah', count: 6 }, { name: 'Squeak', count: 6 }, { name: 'ChucK', count: 6 },
+                { name: 'Lasso', count: 6 }, { name: 'Asymptote', count: 6 }, { name: 'REXX', count: 6 },
+                { name: 'OpenCL', count: 6 }, { name: 'IGOR Pro', count: 5 }, { name: 'Limbo', count: 5 },
+                { name: 'Metal', count: 5 }, { name: 'Smali', count: 5 }, { name: 'MoonScript', count: 5 },
+                { name: 'X++', count: 5 }, { name: 'Turbo Pascal', count: 5 }, { name: 'ECL', count: 5 },
+                { name: 'Slash', count: 5 }, { name: 'ZIL', count: 5 }, { name: 'Stan', count: 5 },
+                { name: 'ATS', count: 4 }, { name: 'Ioke', count: 4 }, { name: 'LabVIEW', count: 4 },
+                { name: 'Jolie', count: 4 }, { name: 'ColdFusion', count: 4 }, { name: 'Parrot', count: 4 },
+                { name: 'Gettext Catalog', count: 4 }, { name: 'Objective-J', count: 4 }, { name: 'TXL', count: 4 },
+                { name: 'LSL', count: 4 }, { name: 'BlitzBasic', count: 4 }, { name: 'ABAP', count: 4 },
+                { name: 'TypeLanguage', count: 3 }, { name: 'Eiffel', count: 3 }, { name: 'Claire', count: 3 },
+                { name: 'Ragel', count: 3 }, { name: 'Singularity', count: 3 }, { name: 'PicoLisp', count: 3 },
+                { name: 'Opa', count: 3 }, { name: 'wisp', count: 3 }, { name: 'NCL', count: 3 },
+                { name: 'Amulet', count: 3 }, { name: 'AspectJ', count: 3 }, { name: 'RobotFramework', count: 3 },
+                { name: 'KiCad Schematic', count: 2 }, { name: 'XPROC', count: 2 }, { name: 'Mathematica', count: 2 },
+                { name: 'YARA', count: 2 }, { name: 'ooc', count: 2 }, { name: 'AngelScript', count: 2 },
+                { name: 'Inform 7', count: 2 }, { name: 'Makefile', count: 2 }, { name: 'MQL4', count: 2 },
+                { name: 'Mirah', count: 2 }, { name: 'ColdFusion CFC', count: 2 }, { name: 'ChucKs', count: 2 },
+                { name: 'Windows Registry Entries', count: 2 }, { name: 'MQL5', count: 2 }, { name: 'DIGITAL Command Language', count: 2 },
+                { name: 'Monkey C', count: 1 }, { name: 'Scilab', count: 1 }, { name: 'CLIPS', count: 1 },
+                { name: 'Puppet', count: 1 }, { name: 'Verona', count: 1 }, { name: 'Volt', count: 1 },
+                { name: 'RenderScript', count: 1 }, { name: 'Zimpl', count: 1 }, { name: 'Groovy Server Pages', count: 1 },
+                { name: 'DenizenScript', count: 1 }, { name: 'RUNOFF', count: 1 }, { name: 'WDL', count: 1 }
+            ];
+            
+            // Filter languages based on query length and popularity
+            otherLanguages.forEach(langObj => {
+                const lang = langObj.name;
+                const count = langObj.count;
+                const langLower = lang.toLowerCase();
+                
+                // Determine minimum match length based on popularity
+                let minMatchLength;
+                if (count >= 5000) minMatchLength = 1;
+                else if (count >= 1000) minMatchLength = 2;
+                else if (count >= 400) minMatchLength = 2;
+                else if (count >= 100) minMatchLength = 3;
+                else if (count >= 50) minMatchLength = 4;
+                else minMatchLength = 5;
+                
+                // Match if query is long enough and language contains the query
+                if (query.length >= minMatchLength && langLower.includes(query)) {
+                    suggestions.push({ text: lang, type: 'language', icon: '💻' });
+                }
+            });
+            
             // Add popular topic suggestions
             const popularTopics = [
                 'machine-learning', 'deep-learning', 'artificial-intelligence', 'neural-networks',
-                'react', 'vue', 'angular', 'typescript', 'javascript',
-                'python', 'data-science', 'data-analysis', 'visualization',
-                'api', 'rest', 'graphql', 'docker', 'kubernetes',
+                'react', 'angular', 'docker', 'kubernetes',
                 'blockchain', 'cryptocurrency', 'web3',
                 'database', 'sql', 'nosql', 'mongodb', 'postgresql',
                 'testing', 'automation', 'ci-cd', 'devops',
@@ -136,14 +280,28 @@ export default function OverallRankingsPage() {
                 }
             });
             
-            // Sort: owners first, then topics; both alphabetically
+            // Sort: owners first, then languages, then topics; all alphabetically within type
             suggestions.sort((a, b) => {
-                if (a.type !== b.type) return a.type === 'owner' ? -1 : 1;
+                const typeOrder = { 'owner': 0, 'language': 1, 'topic': 2 };
+                if (a.type !== b.type) return typeOrder[a.type] - typeOrder[b.type];
                 return a.text.localeCompare(b.text);
             });
             
-            setSearchSuggestions(suggestions.slice(0, 8));
-            setShowSuggestions(suggestions.length > 0);
+            // Limit each type to ensure diversity: max 4 owners, 3 languages, 2 topics
+            const limitedSuggestions = [];
+            const typeCounts = { 'owner': 0, 'language': 0, 'topic': 0 };
+            const typeMaxCounts = { 'owner': 4, 'language': 3, 'topic': 2 };
+            
+            for (const suggestion of suggestions) {
+                if (typeCounts[suggestion.type] < typeMaxCounts[suggestion.type]) {
+                    limitedSuggestions.push(suggestion);
+                    typeCounts[suggestion.type]++;
+                }
+                if (limitedSuggestions.length >= 8) break;
+            }
+            
+            setSearchSuggestions(limitedSuggestions);
+            setShowSuggestions(limitedSuggestions.length > 0);
         };
         
         loadAndGenerateSuggestions();
@@ -265,11 +423,11 @@ export default function OverallRankingsPage() {
                 try {
                     const response = await fetch(pageUrl);
                     const pageData = await response.json();
-                    const reposWithLang = pageData.map((repo) => ({
+                    const reposWithCategory = pageData.map((repo) => ({
                         ...repo,
-                        language: lang
+                        category: lang
                     }));
-                    langRepos.push(...reposWithLang);
+                    langRepos.push(...reposWithCategory);
                 } catch (err) {
                     console.error(`Failed to load ${lang} page ${page}:`, err);
                 }
@@ -374,11 +532,11 @@ export default function OverallRankingsPage() {
                 try {
                     const response = await fetch(pageUrl);
                     const pageData = await response.json();
-                    const reposWithLang = pageData.map((repo) => ({
+                    const reposWithCategory = pageData.map((repo) => ({
                         ...repo,
-                        language: lang
+                        category: lang  // Use category field instead of overwriting language
                     }));
-                    allReposForLoad.push(...reposWithLang);
+                    allReposForLoad.push(...reposWithCategory);
                 } catch (err) {
                     console.error(`Failed to load ${lang} page ${page}:`, err);
                 }
@@ -488,6 +646,11 @@ export default function OverallRankingsPage() {
         }
         
         console.log(`🔍 Searching pages for '${query}'`);
+        
+        // Check if this is an exact language search (language:XXX)
+        const languageMatch = query.match(/^language:(.+)$/i);
+        const exactLanguage = languageMatch ? languageMatch[1].trim() : null;
+        
         const allMatchingRepos = [];
         const matchCounts = {};
 
@@ -524,6 +687,12 @@ export default function OverallRankingsPage() {
 
                         // Apply search filter with relevance scoring
                         const filtered = pageData.filter(repo => {
+                            // If exact language search, only match by language field
+                            if (exactLanguage) {
+                                return repo.language && repo.language.toLowerCase() === exactLanguage.toLowerCase();
+                            }
+                            
+                            // Otherwise, normal fuzzy search
                             const searchFields = [
                                 repo.name.toLowerCase(),
                                 repo.owner.toLowerCase(),
@@ -554,7 +723,7 @@ export default function OverallRankingsPage() {
                             // Match in description (lowest priority)
                             if (descLower.includes(query)) relevance += 50;
                             
-                            return { ...repo, language: lang, relevance };
+                            return { ...repo, category: lang, relevance };
                         });
 
                         langMatches.push(...filtered);
@@ -601,6 +770,14 @@ export default function OverallRankingsPage() {
     // Handle language checkbox toggle
     const handleLanguageToggle = (lang) => {
         setShowAll(false); // Uncheck "All" when selecting specific languages
+        
+        // Clear language-specific search when switching languages
+        if (searchQuery.match(/^language:.+$/i)) {
+            setSearchQuery('');
+            setDebouncedSearchQuery('');
+            setSearchMatchCounts({});
+        }
+        
         setSelectedLanguages((prev) => {
             if (prev.includes(lang)) {
                 const newSelected = prev.filter((l) => l !== lang);
@@ -622,6 +799,13 @@ export default function OverallRankingsPage() {
             setShowAll(true);
             setSelectedLanguages([]);
             setCurrentPage(1);
+            
+            // Clear search if it's a language-specific search
+            if (searchQuery.match(/^language:.+$/i)) {
+                setSearchQuery('');
+                setDebouncedSearchQuery('');
+                setSearchMatchCounts({});
+            }
         }
     };
 
@@ -685,8 +869,10 @@ export default function OverallRankingsPage() {
     // Get repository description
     const getRepoDescription = (repo) => {
         const details = repoDetails[repo.name];
+        const watchers = repo.watchers || 0;
+        
         if (!details) {
-            return `⭐ ${repo.stars.toLocaleString()} stars | 🍴 ${repo.forks.toLocaleString()} forks | 🐛 ${repo.issues.toLocaleString()} issues`;
+            return `⭐ ${repo.stars.toLocaleString()} stars | 👁️ ${watchers.toLocaleString()} watchers | 🔀 ${repo.forks.toLocaleString()} forks | 🐛 ${repo.issues.toLocaleString()} issues`;
         }
 
         const hasTechStack = details.topics && details.topics.length > 0;
@@ -705,7 +891,8 @@ export default function OverallRankingsPage() {
                     <strong>Description:</strong> {details.description}
                 </div>
                 <div>
-                    ⭐ {repo.stars.toLocaleString()} stars | 🍴{" "}
+                    ⭐ {repo.stars.toLocaleString()} stars | 👁️{" "}
+                    {watchers.toLocaleString()} watchers | 🔀{" "}
                     {repo.forks.toLocaleString()} forks | 🐛{" "}
                     {repo.issues.toLocaleString()} issues
                 </div>
@@ -743,15 +930,44 @@ export default function OverallRankingsPage() {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
                                 if (selectedSuggestionIndex >= 0 && searchSuggestions.length > 0) {
-                                    // Select suggestion and search
-                                    const selectedText = searchSuggestions[selectedSuggestionIndex].text;
-                                    setSearchQuery(selectedText);
-                                    setDebouncedSearchQuery(selectedText);
-                                    setShowSuggestions(false);
-                                    setSelectedSuggestionIndex(-1);
-                                    setCurrentPage(1);
+                                    // Select suggestion - trigger the same logic as clicking
+                                    const suggestion = searchSuggestions[selectedSuggestionIndex];
+                                    const selectedText = suggestion.text;
+                                    
+                                    // If it's a language suggestion, filter by that language
+                                    if (suggestion.type === 'language') {
+                                        setShowSuggestions(false);
+                                        setSelectedSuggestionIndex(-1);
+                                        setSearchSuggestions([]);
+                                        setCurrentPage(1);
+                                        
+                                        // Determine which language category to use
+                                        const topLanguages = ['JavaScript', 'Python', 'HTML', 'Java', 'Jupyter Notebook', 
+                                                              'TypeScript', 'C#', 'Ruby', 'CSS', 'C++'];
+                                        
+                                        if (topLanguages.includes(selectedText)) {
+                                            // It's a top 10 language - select it and clear search
+                                            setShowAll(false);
+                                            setSelectedLanguages([selectedText]);
+                                            setSearchQuery('');
+                                            setDebouncedSearchQuery('');
+                                        } else {
+                                            // It's from Other category - select Other and search for exact language
+                                            setShowAll(false);
+                                            setSelectedLanguages(['Other']);
+                                            setSearchQuery(`language:${selectedText}`);
+                                            setDebouncedSearchQuery(`language:${selectedText}`);
+                                        }
+                                    } else {
+                                        // For owner/topic suggestions, just search
+                                        setSearchQuery(selectedText);
+                                        setDebouncedSearchQuery(selectedText);
+                                        setShowSuggestions(false);
+                                        setSelectedSuggestionIndex(-1);
+                                        setCurrentPage(1);
+                                    }
                                 } else {
-                                    // Trigger search with current input
+                                    // Trigger search with current input (normal fuzzy search)
                                     triggerSearch();
                                 }
                                 return;
@@ -778,9 +994,14 @@ export default function OverallRankingsPage() {
                             className="clear-search-btn"
                             onClick={() => {
                                 setSearchQuery('');
+                                setDebouncedSearchQuery('');
                                 setCurrentPage(1);
                                 setPageCache({}); // Clear cache when clearing search
                                 setShowSuggestions(false);
+                                setSearchMatchCounts({});
+                                // Reset to "All" languages
+                                setShowAll(true);
+                                setSelectedLanguages([]);
                             }}
                             title="Clear search"
                         >
@@ -798,17 +1019,48 @@ export default function OverallRankingsPage() {
                                     onMouseDown={(e) => {
                                         e.preventDefault(); // Prevent input blur
                                         const selectedText = suggestion.text;
-                                        setSearchQuery(selectedText);
-                                        setDebouncedSearchQuery(selectedText);
-                                        setShowSuggestions(false);
-                                        setSelectedSuggestionIndex(-1);
-                                        setSearchSuggestions([]);
-                                        setCurrentPage(1);
+                                        
+                                        // If it's a language suggestion, filter by that language
+                                        if (suggestion.type === 'language') {
+                                            setShowSuggestions(false);
+                                            setSelectedSuggestionIndex(-1);
+                                            setSearchSuggestions([]);
+                                            setCurrentPage(1);
+                                            
+                                            // Determine which language category to use
+                                            const topLanguages = ['JavaScript', 'Python', 'HTML', 'Java', 'Jupyter Notebook', 
+                                                                  'TypeScript', 'C#', 'Ruby', 'CSS', 'C++'];
+                                            
+                                            if (topLanguages.includes(selectedText)) {
+                                                // It's a top 10 language - select it and clear search
+                                                setShowAll(false);
+                                                setSelectedLanguages([selectedText]);
+                                                setSearchQuery('');
+                                                setDebouncedSearchQuery('');
+                                            } else {
+                                                // It's from Other category - select Other and search for exact language
+                                                setShowAll(false);
+                                                setSelectedLanguages(['Other']);
+                                                setSearchQuery(`language:${selectedText}`);
+                                                setDebouncedSearchQuery(`language:${selectedText}`);
+                                            }
+                                        } else {
+                                            // For owner/topic suggestions, just search
+                                            setSearchQuery(selectedText);
+                                            setDebouncedSearchQuery(selectedText);
+                                            setShowSuggestions(false);
+                                            setSelectedSuggestionIndex(-1);
+                                            setSearchSuggestions([]);
+                                            setCurrentPage(1);
+                                        }
                                     }}
                                     onMouseEnter={() => setSelectedSuggestionIndex(index)}
                                 >
                                     <span className="suggestion-icon">{suggestion.icon}</span>
                                     <span className="suggestion-text">{suggestion.text}</span>
+                                    {suggestion.type === 'language' && (
+                                        <span className="suggestion-badge">Language</span>
+                                    )}
                                     {suggestion.type === 'topic' && (
                                         <span className="suggestion-badge">Topic</span>
                                     )}
@@ -830,7 +1082,7 @@ export default function OverallRankingsPage() {
                 onClick={() => setShowFilters(!showFilters)}
             >
                 <span>{showFilters ? '▼' : '▶'}</span> Filter by Language
-                {!showAll && selectedLanguages.length > 0 && (
+                {!showAll && selectedLanguages.length > 0 && !searchQuery.match(/^language:.+$/i) && (
                     <span className="active-filter-badge">{selectedLanguages.length}</span>
                 )}
             </button>

@@ -34,10 +34,11 @@ export default function HomePage() {
                     </p>
 
                     <p className="home-card-body" style={{color: "white"}}>
-                        Rankings display the top 10,000 projects spanning JavaScript, Python, Java, Go, 
-                        C++, and more. Use the search function to discover any project from our complete 
-                        400K+ repository database. Our SSR algorithm combines GitHub stars, forks, 
-                        recency, and project health metrics.
+                        Rankings display the top 10,000 projects across 10 major languages: JavaScript, 
+                        Python, HTML, Java, TypeScript, C#, Ruby, CSS, C++, and Jupyter Notebook. 
+                        Use the search function to discover any project from our complete 400K+ repository 
+                        database. Our SSR algorithm combines GitHub stars, forks, recency, and project 
+                        health metrics.
                     </p>
 
                     <div className="home-card-actions">

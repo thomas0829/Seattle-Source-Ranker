@@ -121,7 +121,7 @@ export default function ValidationPage() {
                         </tr>
                         <tr>
                             <td style={{ padding: "6px 8px" }}><code>collected_at</code></td>
-                            <td style={{ padding: "6px 8px" }}>Timestamp of the collection (PST)</td>
+                            <td style={{ padding: "6px 8px" }}>Timestamp of the collection (PST/PDT)</td>
                         </tr>
                         <tr>
                             <td style={{ padding: "6px 8px" }}><code>query_strategy</code></td>
@@ -297,7 +297,7 @@ export default function ValidationPage() {
                     <li>Token rotation across 6 GitHub tokens</li>
                     <li>Logging of failed usernames and repository fetches</li>
                     <li>Ability to re-run failed tasks only</li>
-                    <li>Daily automated full-collection at midnight Seattle time (PST)</li>
+                    <li>Daily automated full-collection at midnight Seattle time (PST/PDT)</li>
                 </ul>
 
                 <p style={{ marginTop: "10px" }}>We actively track the following reliability signals:</p>

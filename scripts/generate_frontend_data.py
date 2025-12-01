@@ -139,39 +139,59 @@ def calculate_github_score(project, max_stars, max_forks, max_watchers):
     return final_score
 
 def classify_language(language):
-    """Classify language into major categories."""
+    """Classify language into major categories for frontend display.
+    
+    Returns:
+        tuple: (category, original_language, is_true_other)
+        - category: Frontend category (top 10 languages or 'Other')
+        - original_language: Original language name (for detail display)
+        - is_true_other: True if truly unrecognized (null/None), False if it's a known language
+    """
     if not language:
-        return 'Other'
+        return 'Other', 'Other', True  # True Other - will be penalized
+    
+    # Top 10 languages by project count (from actual data analysis)
+    top_10_languages = {
+        'javascript': 'JavaScript',
+        'python': 'Python',
+        'html': 'HTML',
+        'java': 'Java',
+        'jupyter notebook': 'Jupyter Notebook',
+        'typescript': 'TypeScript',
+        'c#': 'C#',
+        'ruby': 'Ruby',
+        'css': 'CSS',
+        'c++': 'C++',
+    }
     
     language_lower = language.lower()
     
-    major_languages = {
-        'javascript': 'JavaScript',
-        'typescript': 'JavaScript',
-        'python': 'Python',
-        'java': 'Java',
-        'c++': 'C++',
-        'c': 'C++',
-        'ruby': 'Ruby',
-        'go': 'Go',
-        'rust': 'Rust',
-        'swift': 'Swift',
-        'php': 'PHP',
-        'kotlin': 'Kotlin',
-    }
+    # Check if it's in top 10
+    if language_lower in top_10_languages:
+        cat = top_10_languages[language_lower]
+        return cat, language, False
     
-    return major_languages.get(language_lower, 'Other')
+    # All other known languages go to "Other" category but keep original name
+    # These are real languages, just not in top 10, so no penalty
+    return 'Other', language, False
 
-def format_project(project, score):
-    """Format project data for frontend."""
+def format_project(project, score, display_language=None):
+    """Format project data for frontend.
+    
+    Args:
+        project: Raw project data
+        score: Calculated score (already penalized if needed)
+        display_language: Language to display (defaults to original if not specified)
+    """
     return {
         'name': project['name_with_owner'],
         'owner': project['owner']['login'],
         'html_url': project['url'],
         'stars': project['stars'],
         'forks': project['forks'],
+        'watchers': project.get('watchers', 0),
         'issues': project.get('open_issues', 0),
-        'language': project.get('language', 'Unknown'),
+        'language': display_language or project.get('language', 'Unknown'),
         'description': project.get('description', ''),
         'topics': project.get('topics', []),
         'score': score
@@ -212,10 +232,14 @@ def main():
     all_projects = []
     
     for project in projects:
-        score = calculate_github_score(project, max_stars, max_forks, max_watchers)
-        language_category = classify_language(project.get('language'))
-        formatted = format_project(project, score)
-        by_language[language_category].append(formatted)
+        base_score = calculate_github_score(project, max_stars, max_forks, max_watchers)
+        category, original_lang, is_true_other = classify_language(project.get('language'))
+        
+        # Apply penalty for truly unrecognized languages
+        final_score = base_score * 0.8 if is_true_other else base_score
+        
+        formatted = format_project(project, final_score, original_lang)
+        by_language[category].append(formatted)
         all_projects.append(formatted)
     
     # Sort ALL projects globally by score and assign global rank
@@ -245,11 +269,15 @@ def main():
         date_str = filename_match.group(1)  # YYYYMMDD
         time_str = filename_match.group(2)  # HHMMSS
         data_datetime = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
-        # Filename timestamp is already in PST (local Seattle time)
+        # Filename timestamp is already in PST/PDT (local Seattle time)
         data_datetime = data_datetime.replace(tzinfo=SEATTLE_TZ)
-        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S PST")
+        # Automatically use PST or PDT based on daylight saving time
+        tz_name = data_datetime.strftime("%Z")  # Will be "PST" or "PDT"
+        last_updated = data_datetime.strftime(f"%Y-%m-%d %H:%M:%S {tz_name}")
     else:
-        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S PST")
+        now = datetime.now(SEATTLE_TZ)
+        tz_name = now.strftime("%Z")  # Will be "PST" or "PDT"
+        last_updated = now.strftime(f"%Y-%m-%d %H:%M:%S {tz_name}")
     
     metadata = {
         'languages': {},
@@ -316,6 +344,7 @@ def main():
                 'html_url': project['html_url'],
                 'stars': project['stars'],
                 'forks': project['forks'],
+                'watchers': project.get('watchers', 0),
                 'issues': project['issues'],
                 'language': language,
                 'description': project.get('description', ''),

@@ -12,10 +12,14 @@ echo "=========================================="
 echo "🚀 Safe Distributed Collection Starter"
 echo "=========================================="
 
-# Activate conda environment
-echo "📦 Activating conda environment..."
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate ssr
+# Activate conda environment (if exists)
+if [ -f ~/anaconda3/etc/profile.d/conda.sh ]; then
+    echo "📦 Activating conda environment..."
+    source ~/anaconda3/etc/profile.d/conda.sh
+    conda activate ssr 2>/dev/null || echo "⚠️  ssr environment not found, using system Python"
+else
+    echo "📦 Using system Python (conda not found)"
+fi
 
 # Get date and timestamp
 DATE=$(date +%Y%m%d)
@@ -57,10 +61,6 @@ echo ""
 
 LOG_FILE="${LOG_DIR}/collection_${TIMESTAMP}.log"
 
-# Record start time
-echo "Start time: $(date '+%Y-%m-%d %H:%M:%S')" | tee collection_time.log
-date +%s > collection_start.txt
-
 nohup python3 -u distributed/distributed_collector.py \
     --max-users 30000 \
     --batch-size 50 \
@@ -68,7 +68,6 @@ nohup python3 -u distributed/distributed_collector.py \
     > "$LOG_FILE" 2>&1 &
 
 COLLECTOR_PID=$!
-echo "$COLLECTOR_PID" > collection.pid
 
 echo "   ✅ Collection started!"
 echo "   PID: $COLLECTOR_PID"
@@ -79,17 +78,15 @@ echo ""
 sleep 5
 
 if ps -p $COLLECTOR_PID > /dev/null; then
-    echo "✅ Collection is running successfully!"
+    echo "   Collection is running successfully!"
     echo ""
-    echo "📊 To monitor progress:"
+    echo "   To monitor progress:"
     echo "   tail -f $LOG_FILE"
     echo ""
-    echo "🛑 To stop collection:"
+    echo "   To stop collection:"
     echo "   kill $COLLECTOR_PID"
     echo "   pkill -f distributed_collector"
     echo ""
-    echo "Process ID saved to: .collection_pid"
-    echo "$COLLECTOR_PID" > .collection_pid
 else
     echo "❌ Collection failed to start!"
     echo "   Check log: $LOG_FILE"

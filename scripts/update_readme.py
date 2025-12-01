@@ -7,6 +7,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 def load_latest_data():
     """Load the latest collection data from user and project files"""
@@ -77,15 +78,23 @@ def update_readme(stats):
     pypi_rate = stats.get('pypi_detection_rate')
     collected_at = stats.get('collected_at', '')
     
-    # Format date
+    # Format date with Seattle timezone (auto PST/PDT)
+    SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
     if collected_at:
         try:
             dt = datetime.fromisoformat(collected_at.replace('Z', '+00:00'))
-            date_str = dt.strftime('%Y-%m-%d %H:%M:%S PST')
+            # Convert to Seattle timezone
+            dt = dt.astimezone(SEATTLE_TZ)
+            tz_name = dt.strftime('%Z')  # Will be "PST" or "PDT"
+            date_str = dt.strftime(f'%Y-%m-%d %H:%M:%S {tz_name}')
         except:
-            date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S PST')
+            now = datetime.now(SEATTLE_TZ)
+            tz_name = now.strftime('%Z')
+            date_str = now.strftime(f'%Y-%m-%d %H:%M:%S {tz_name}')
     else:
-        date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S PST')
+        now = datetime.now(SEATTLE_TZ)
+        tz_name = now.strftime('%Z')
+        date_str = now.strftime(f'%Y-%m-%d %H:%M:%S {tz_name}')
     
     new_content = content
     
@@ -126,8 +135,8 @@ def update_readme(stats):
             )
     
     # Update the date line
-    # Pattern: - Last updated: 2025-11-15 21:06:33 PST
-    date_pattern = r'- Last updated: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} PST'
+    # Pattern: - Last updated: 2025-11-15 21:06:33 PST (or PDT)
+    date_pattern = r'- Last updated: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} (PST|PDT)'
     date_text = f"- Last updated: {date_str}"
     
     new_content = re.sub(date_pattern, date_text, new_content)
@@ -160,14 +169,15 @@ def main():
     
     # Build statistics from user data
     # Check if it's the new format (with total_users field) or old format (dict of users)
+    SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
     if isinstance(user_data, dict) and 'total_users' in user_data:
         # New format: has metadata
         total_users = user_data.get('total_users', 0)
-        collected_at = user_data.get('collected_at', datetime.now().isoformat())
+        collected_at = user_data.get('collected_at', datetime.now(SEATTLE_TZ).isoformat())
     else:
         # Old format: dict of users
         total_users = len(user_data)
-        collected_at = datetime.now().isoformat()
+        collected_at = datetime.now(SEATTLE_TZ).isoformat()
     
     stats = {
         'total_users': total_users,
