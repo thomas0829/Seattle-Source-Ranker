@@ -338,3 +338,9 @@ npm run build  # Rebuild
 - **GitHub Actions** for CI/CD
 - **Docker** for Redis containerization
 - **Git LFS** for large data files (optional)
+
+---
+
+## Back to Main Documentation
+
+← [Return to README](../README.md) - Main project documentation and quick start guide
