@@ -232,6 +232,14 @@ jobs:
         python3 scripts/generate_pypi_projects.py
         echo "✅ PyPI projects list generated"
     
+    - name: Update watchers data
+      run: |
+        echo "👁️ Updating watchers data with GraphQL..."
+        LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json | head -1)
+        echo "Processing: $LATEST_PROJECTS"
+        python3 scripts/update_watchers.py "$LATEST_PROJECTS" --workers 8
+        echo "✅ Watchers data updated (validated and enriched)"
+    
     - name: Generate frontend paginated data
       run: |
         echo "📊 Generating frontend data with topics..."

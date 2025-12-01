@@ -77,49 +77,34 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### View the Data
-Simply visit our **[live website](https://thomas0829.github.io/Seattle-Source-Ranker/)** to explore Seattle's open source projects.
+### View Live Rankings
+Visit **[https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)** to explore Seattle's open source projects.
 
-### Run Collection Locally
+### Local Development Setup
 
 **Prerequisites:**
 - Python 3.11+
 - Redis server
-- GitHub Personal Access Tokens
+- GitHub Personal Access Tokens (6 recommended)
 
-**Setup:**
+**Installation:**
 ```bash
 # 1. Clone repository
 git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
 cd Seattle-Source-Ranker
 
-# 2. Install dependencies (choose one method)
-
-## Option A: Using conda
+# 2. Install dependencies
 conda env create -f environment.yml
 conda activate ssr
+# Or: pip install -e .
 
-## Option B: Using pip
-# Recommended for local development:
-pip install -e .    # editable install (recommended for development)
-# Or install from source (non-editable):
-pip install .
-
-# 3. Start Redis (System Service)
-# Most Linux distributions come with Redis pre-installed
+# 3. Start Redis
 sudo systemctl start redis-server
-sudo systemctl enable redis-server  # Auto-start on boot
-
-# Check Redis is running
-systemctl status redis-server
 redis-cli ping  # Should return PONG
 
-# Optional: If you prefer Docker instead
-# docker run -d --name ssr-redis -p 6379:6379 redis:7-alpine
-
-# 4. Configure tokens (create .env.tokens file)
+# 4. Configure tokens (.env.tokens file)
 GITHUB_TOKEN_1=ghp_your_token_here
 GITHUB_TOKEN_2=ghp_your_token_here
 # ... up to GITHUB_TOKEN_6
@@ -130,37 +115,95 @@ python main.py --max-users 30000 --workers 8
 
 ---
 
-## 🤖 Automated Daily Updates
+## File Management
 
-✨ **Runs automatically at midnight Seattle time (00:00 PST)**
+### Local-Only Files
+These files persist on your machine and are never committed to Git:
 
-The GitHub Actions workflow handles everything:
-- 🔍 Discovers Seattle developers (76 location filters)
-- 📦 Collects up to 30,000 user repositories in parallel
-- 🐍 Detects Python packages on PyPI (702k+ packages indexed)
-- 📊 Ranks projects using SSR algorithm
-- 🌐 Builds and deploys website to GitHub Pages
-- 📝 Updates statistics in README
-- 💾 Commits user data and PyPI data to Git
+**Configuration:**
+- `.env.tokens` - Your GitHub tokens (NEVER commit)
+- `.collection_success` - Collection completion marker
 
-**Key Features:**
-- Zero false positives in PyPI detection (100% precision)
-- Offline matching for high performance (<30s for 55k projects)
-- Comprehensive test suite with 91 passing tests
-- Organization support (allenai, awslabs, FredHutch, etc.)
+**Generated Data:**
+- `data/seattle_projects_*.json` - Full dataset (~260MB)
+- `frontend/public/pages/` - Paginated JSON files (~9,150 files)
+- `frontend/public/owner_index/` - Owner search index
+- `frontend/public/metadata.json` - Statistics
+- `frontend/build/` - React production build
+- `logs/` - Collection logs
 
-**Want to run it yourself?**
-1. Fork this repository
-2. Add 6 GitHub Personal Access Tokens as Secrets (`GH_TOKEN_1` - `GH_TOKEN_6`)
-3. Ensure tokens have `read:org` scope for organization data
-4. Enable GitHub Pages (Settings → Pages → `gh-pages` branch)
-5. Workflow runs daily or trigger manually from Actions tab
+### Committed to Git
+**Small Data Files:**
+- `data/seattle_users_*.json` - User metadata (~20KB)
+- `data/seattle_pypi_projects.json` - PyPI project list
+- `data/pypi_official_packages.json` - Official PyPI packages
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
+**Code & Config:**
+- Source code, documentation, configuration files
+
+**Note:** Generated frontend files are recreated during GitHub Actions deployment - no need to commit them locally.
 
 ---
 
-## 📁 Project Structure
+## Complete Usage Workflow
+
+### Step-by-Step Process
+
+**1. Data Collection** (60-90 minutes)
+```bash
+python main.py --max-users 30000 --workers 8
+```
+Output: `data/seattle_projects_YYYYMMDD_HHMMSS.json` (~260MB)
+
+**2. Update Watchers** (30-40 minutes with 8 workers)
+```bash
+python scripts/update_watchers.py --workers 8
+```
+- Fetches real subscriber counts via GraphQL
+- Validates repository accessibility
+- Removes deleted/blocked repos (~2%)
+- Overwrites original file with validated data
+
+**3. Generate PyPI List** (< 1 minute)
+```bash
+python scripts/generate_pypi_projects.py
+```
+Output: `data/seattle_pypi_projects.json`
+
+**4. Generate Frontend Data** (30 seconds)
+```bash
+python scripts/generate_frontend_data.py
+```
+Output: Paginated JSON files for website
+
+**5. Update README** (< 1 second)
+```bash
+python scripts/update_readme.py
+```
+
+**6. Deploy to GitHub Pages**
+```bash
+cd frontend
+npm run deploy  # Builds and deploys to gh-pages branch
+```
+
+**7. Commit Metadata**
+```bash
+git add data/seattle_users_*.json data/seattle_pypi_projects.json README.md
+git commit -m "chore: Update data - $(date +'%Y-%m-%d')"
+git push
+```
+
+### Automated Daily Updates
+
+GitHub Actions runs the complete pipeline automatically at midnight Seattle time:
+1. Collection → 2. Watchers → 3. PyPI → 4. Frontend → 5. Build → 6. Deploy → 7. Commit
+
+See `.github/workflows/collect-and-deploy.yml` for details.
+
+---
+
+## Project Structure
 
 ```
 .
@@ -241,7 +284,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed workflow documentation.
 
 ---
 
-## 🧮 Enhanced SSR Scoring Algorithm
+## Enhanced SSR Scoring Algorithm
 
 Projects are ranked using a comprehensive multi-factor scoring system that balances popularity with quality and maintenance signals.
 
@@ -302,7 +345,9 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed factor calculations.
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
+
+### Common Issues
 
 **Redis Connection Error:**
 ```bash
@@ -315,25 +360,71 @@ redis-cli ping  # Should return PONG
 ```
 
 **Rate Limit Issues:**
-- Check token validity in `.env.tokens`
-- Verify token rotation is working (logs show which token is active)
-- Add more tokens if needed (up to 6 supported)
+- **Check token validity**: Ensure all tokens in `.env.tokens` are valid
+- **Verify token rotation**: Logs show which token is active
+- **Add more tokens**: Supports up to 6 tokens (currently using 6)
+- **Check rate limits**: Each token has 5,000 GraphQL + 5,000 REST requests/hour
 
 **Collection Failures:**
-- Review GitHub Actions logs
-- Ensure all 6 tokens are added as Secrets
-- Check `.collection_success` marker exists before cleanup
+- **Review logs**: Check `logs/YYYYMMDD/` for error messages
+- **GitHub Actions**: Verify all 6 tokens are added as Secrets
+- **Cleanup issues**: Ensure `.collection_success` marker exists before cleanup
+- **Worker timeout**: Increase timeout in `celery_config.py` if needed
 
 **Frontend Build Issues:**
 ```bash
 cd frontend
+rm -rf node_modules package-lock.json  # Clean install
 npm install
 npm run build
 ```
 
+**Watchers Update Slow:**
+```bash
+# Use 8 workers for faster processing (8x speedup)
+python scripts/update_watchers.py --workers 8
+
+# Single-threaded (slow): ~5 hours
+# 8 workers (recommended): ~30-40 minutes
+```
+
+### Frequently Asked Questions
+
+**Q: Why are watchers much lower than stars?**  
+A: `watchers` = GitHub subscribers (notifications), `stars` = bookmarks. Typically 0.5%-4% ratio is normal. Projects with 10,000 stars often have only 50-400 watchers.
+
+**Q: Why were some repositories removed?**  
+A: ~2% of repos become inaccessible between collection and validation:
+- **HTTP 451** - Legally blocked (DMCA, court order)
+- **Deleted** - Owner deleted the repository
+- **Private** - Changed from public to private
+
+**Q: Can I use fewer than 6 tokens?**  
+A: Yes, but collection will be slower. Minimum 1 token required. Each token adds 10,000 req/hr capacity (5k GraphQL + 5k REST).
+
+**Q: Why is `data/seattle_projects_*.json` so large?**  
+A: Contains full metadata for 450k+ repositories (~260MB). Not committed to Git. Only generated/processed locally and during GitHub Actions deployment.
+
+**Q: How do I add more GitHub tokens?**  
+A:
+1. Generate tokens at https://github.com/settings/tokens
+2. Required scopes: `public_repo` (read public repositories)
+3. Add to `.env.tokens` as `GITHUB_TOKEN_7`, `GITHUB_TOKEN_8`, etc.
+4. Update `TokenManager` to support more tokens if needed
+
+**Q: What happens if I switch Git branches?**  
+A: Local-only files (`.env.tokens`, `data/seattle_projects_*.json`, `frontend/public/pages/`) **persist across branch switches** - they are never committed to Git, so they stay on your machine.
+
+**Q: Should I commit the generated frontend files?**  
+A: **No**. Frontend data files are regenerated during deployment. Only commit:
+- `data/seattle_users_*.json` (small user metadata)
+- `data/seattle_pypi_projects.json` (PyPI list)
+- `data/pypi_official_packages.json` (official packages)
+- `README.md` (documentation)
+
 ---
 
-## 📖 Documentation
+## Documentation
 
 - **[Architecture Details](docs/ARCHITECTURE.md)** - System components, data pipeline, performance metrics
 - **[Version History](docs/VERSION_HISTORY.md)** - Complete changelog from v1.0 to current
