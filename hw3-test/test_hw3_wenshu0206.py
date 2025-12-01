@@ -43,7 +43,7 @@ def test_one_shot_python_keyword():
 def test_one_shot_known_language_mapping():
     """
     author: Wenshu0206
-    reviewer: Muwen320
+    reviewer: thomas0829
     category: one-shot test
 
     Known language mapping: system-design-primer → Python.
@@ -70,7 +70,7 @@ def test_edge_numeric_and_very_long():
 def test_pattern_tensorflow_priority():
     """
     author: Wenshu0206
-    reviewer: Muwen320
+    reviewer: thomas0829
     category: pattern test
 
     tensorflow appears in BOTH Python and C++ keywords.
