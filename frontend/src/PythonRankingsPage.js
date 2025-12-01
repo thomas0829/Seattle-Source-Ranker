@@ -568,7 +568,8 @@ export default function PythonRankingsPage() {
                                                                     <strong>Description:</strong> {project.description || "No description available"}
                                                                 </div>
                                                                 <div>
-                                                                    ⭐ {project.stars.toLocaleString()} stars | 🍴{" "}
+                                                                    ⭐ {project.stars.toLocaleString()} stars | 👁️{" "}
+                                                                    {(project.watchers || 0).toLocaleString()} watchers | 🔀{" "}
                                                                     {project.forks.toLocaleString()} forks | 🐛{" "}
                                                                     {project.issues.toLocaleString()} issues
                                                                 </div>
