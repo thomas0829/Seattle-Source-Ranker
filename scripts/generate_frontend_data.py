@@ -176,6 +176,106 @@ def format_project(project, score):
         'topics': project.get('topics', []),
         'score': score
     }
+# ============================================================
+# PyPI-based scoring for Python projects (NEW)
+# ============================================================
+
+def load_pypi_index(filename='data/seattle_pypi_projects.json'):
+    """
+    Build an index from seattle_pypi_projects.json:
+
+        key:  'owner/repo'
+        value: {
+            'packages': [pkg1, pkg2, ...],
+            'max_confidence': float in [0,1]
+        }
+    """
+    if not os.path.exists(filename):
+        print(f"⚠️ PyPI data file not found: {filename}")
+        return {}
+
+    with open(filename, 'r') as f:
+        data = json.load(f)
+
+    projects = data.get('projects', [])
+    index = {}
+
+    for item in projects:
+        url = item.get('url') or ''
+        repo_full_name = None
+
+        # Typical: https://github.com/owner/repo
+        prefix = 'https://github.com/'
+        if url.startswith(prefix):
+            parts = url[len(prefix):].split('/')
+            if len(parts) >= 2:
+                repo_full_name = parts[0] + '/' + parts[1]
+
+        # Fallback: full_name
+        if not repo_full_name:
+            repo_full_name = item.get('full_name')
+
+        # Fallback: owner + name
+        if not repo_full_name:
+            owner = item.get('owner')
+            name = item.get('name')
+            if owner and name:
+                repo_full_name = f'{owner}/{name}'
+
+        if not repo_full_name:
+            continue
+
+        entry = index.setdefault(
+            repo_full_name,
+            {'packages': set(), 'max_confidence': 0.0},
+        )
+
+        pkg_name = item.get('name')
+        if pkg_name:
+            entry['packages'].add(pkg_name)
+
+        conf = item.get('confidence', 0.0) or 0.0
+        if conf > entry['max_confidence']:
+            entry['max_confidence'] = conf
+
+    # Convert sets to sorted lists for JSON serialization
+    for repo, info in index.items():
+        info['packages'] = sorted(list(info['packages']))
+
+    print(f"📦 PyPI index built for {len(index)} GitHub repos")
+    return index
+
+def calculate_pypi_score(pypi_info):
+    """
+    Binary PyPI score in [0, 1].
+
+    - Has at least one PyPI package mapping → 1.0
+    - Otherwise → 0.0
+    """
+    if not pypi_info:
+        return 0.0
+
+    num_packages = len(pypi_info.get('packages', []))
+    if num_packages <= 0:
+        return 0.0
+
+    return 1.0
+
+def calculate_python_project_score(base_score, pypi_info):
+    """
+    Only for Python main-language projects.
+
+    overall_norm = 0.7 * github_norm + 0.3 * pypi_score
+    """
+    github_norm = base_score / 10000.0
+    pypi_score = calculate_pypi_score(pypi_info)  # 0 or 1
+
+    # No PyPI info → keep original score
+    if pypi_score <= 0.0:
+        return base_score
+
+    final_norm = 0.7 * github_norm + 0.3 * pypi_score
+    return int(final_norm * 10000)
 
 def main():
     import sys
@@ -199,6 +299,9 @@ def main():
     
     projects = data.get('projects', [])
     print(f"📦 Loaded {len(projects):,} projects")
+
+    # NEW: load PyPI mapping for Python projects
+    pypi_index = load_pypi_index('data/seattle_pypi_projects.json')
     
     # Find max values for normalization
     max_stars = max((p.get('stars', 0) for p in projects), default=1)
@@ -209,21 +312,34 @@ def main():
     
     # Calculate scores and classify by language
     by_language = defaultdict(list)
-    all_projects = []
+    python_pypi_projects = []   # NEW: Python+PyPI view data
     
     for project in projects:
         score = calculate_github_score(project, max_stars, max_forks, max_watchers)
         language_category = classify_language(project.get('language'))
         formatted = format_project(project, score)
         by_language[language_category].append(formatted)
-        all_projects.append(formatted)
+
+        # NEW: extra Python+PyPI view
+        if language_category == 'Python':
+            repo_key = project.get('name_with_owner')
+            pypi_info = pypi_index.get(repo_key)
+            python_score = calculate_python_project_score(score, pypi_info)
+
+            python_entry = format_project(project, python_score)
+            python_entry['base_score'] = score
+            python_entry['python_score'] = python_score
+            python_entry['has_pypi'] = bool(pypi_info)
+
+            if pypi_info:
+                python_entry['pypi_packages'] = pypi_info.get('packages', [])
+                python_entry['pypi_max_confidence'] = pypi_info.get(
+                    'max_confidence', 0.0
+                )
+
+            python_pypi_projects.append(python_entry)
     
-    # Sort ALL projects globally by score and assign global rank
-    all_projects.sort(key=lambda x: x['score'], reverse=True)
-    for rank, project in enumerate(all_projects, start=1):
-        project['global_rank'] = rank
-    
-    # Sort each language by score (they already have global_rank assigned)
+    # Sort each language by score
     for language in by_language:
         by_language[language].sort(key=lambda x: x['score'], reverse=True)
     
@@ -245,11 +361,10 @@ def main():
         date_str = filename_match.group(1)  # YYYYMMDD
         time_str = filename_match.group(2)  # HHMMSS
         data_datetime = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
-        # Filename timestamp is already in PST (local Seattle time)
-        data_datetime = data_datetime.replace(tzinfo=SEATTLE_TZ)
-        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S PST")
+        data_datetime = data_datetime.replace(tzinfo=ZoneInfo("UTC")).astimezone(SEATTLE_TZ)
+        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S %Z")
     else:
-        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S PST")
+        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S %Z")
     
     metadata = {
         'languages': {},
@@ -298,72 +413,62 @@ def main():
     with open(metadata_file, 'w') as f:
         json.dump(metadata, f, indent=2)
     
+    # NEW: Python-only PyPI-enhanced view
+    print("\n🐍 Generating Python+PyPI enhanced view:")
+    python_pypi_projects.sort(key=lambda x: x['score'], reverse=True)
+
+    python_total = len(python_pypi_projects)
+    python_pages = (python_total + PAGE_SIZE - 1) // PAGE_SIZE
+
+    python_dir = os.path.join(pages_dir, 'python_pypi')
+    os.makedirs(python_dir, exist_ok=True)
+
+    python_build_dir = os.path.join(pages_build_dir, 'python_pypi')
+    os.makedirs(python_build_dir, exist_ok=True)
+
+    for page_num in range(python_pages):
+        start_idx = page_num * PAGE_SIZE
+        end_idx = min(start_idx + PAGE_SIZE, python_total)
+        page_data = python_pypi_projects[start_idx:end_idx]
+
+        page_file = os.path.join(python_dir, f'page_{page_num + 1}.json')
+        with open(page_file, 'w') as f:
+            json.dump(page_data, f, separators=(',', ':'))
+
+        build_page_file = os.path.join(python_build_dir, f'page_{page_num + 1}.json')
+        with open(build_page_file, 'w') as f:
+            json.dump(page_data, f, separators=(',', ':'))
+
+    metadata_python = {
+        'language': 'Python',
+        'view': 'python_pypi',
+        'page_size': PAGE_SIZE,
+        'last_updated': last_updated,
+        'total': python_total,
+        'pages': python_pages,
+        'description': 'Python projects ranked by GitHub score (70%) and PyPI presence (30%).',
+    }
+
+    metadata_python_file = 'frontend/public/metadata_python_pypi.json'
+    with open(metadata_python_file, 'w') as f:
+        json.dump(metadata_python, f, indent=2)
+
+    with open('frontend/build/metadata_python_pypi.json', 'w') as f:
+        json.dump(metadata_python, f, indent=2)
+
+    print(f"  ✅ Python+PyPI: {python_total:,} projects → {python_pages} pages")
+    
     # Copy to build
     with open('frontend/build/metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
     print(f"\n✅ Saved metadata to {metadata_file}")
-    
-    # Generate owner index for fast user searches (split into chunks)
-    print(f"\n📇 Generating owner index...")
-    owner_index = defaultdict(list)
-    
-    for language, lang_projects in by_language.items():
-        for project in lang_projects:
-            owner_index[project['owner']].append({
-                'name': project['name'],
-                'owner': project['owner'],
-                'html_url': project['html_url'],
-                'stars': project['stars'],
-                'forks': project['forks'],
-                'issues': project['issues'],
-                'language': language,
-                'description': project.get('description', ''),
-                'topics': project.get('topics', []),
-                'score': project['score'],
-                'global_rank': project['global_rank']
-            })
-    
-    # Sort each owner's projects by score
-    for owner in owner_index:
-        owner_index[owner].sort(key=lambda x: x['score'], reverse=True)
-    
-    # Split index into multiple files to avoid GitHub size limits
-    # Group owners by first character for faster loading
-    owner_groups = defaultdict(dict)
-    for owner, projects in owner_index.items():
-        first_char = owner[0].lower() if owner else 'other'
-        if not first_char.isalnum():
-            first_char = 'other'
-        owner_groups[first_char][owner] = projects
-    
-    # Create owner_index directory
-    owner_index_dir = 'frontend/public/owner_index'
-    os.makedirs(owner_index_dir, exist_ok=True)
-    
-    owner_build_dir = 'frontend/build/owner_index'
-    os.makedirs(owner_build_dir, exist_ok=True)
-    
-    # Save each group
-    total_owners = 0
-    for char, owners in owner_groups.items():
-        index_file = os.path.join(owner_index_dir, f'{char}.json')
-        with open(index_file, 'w') as f:
-            json.dump(owners, f, separators=(',', ':'))
-        
-        # Copy to build
-        build_file = os.path.join(owner_build_dir, f'{char}.json')
-        with open(build_file, 'w') as f:
-            json.dump(owners, f, separators=(',', ':'))
-        
-        total_owners += len(owners)
-        print(f"  ✅ {char}.json: {len(owners):,} owners")
-    
-    print(f"✅ Generated split owner index with {total_owners:,} unique owners")
-    
-    print(f"\n🎉 Done! Generated {sum(m['pages'] for m in metadata['languages'].values())} page files")
+    print(f"✅ Saved Python+PyPI metadata to {metadata_python_file}")
+    print(f"\n🎉 Done! Generated {sum(m['pages'] for m in metadata['languages'].values())} page files"
+          f" + {python_pages} Python+PyPI pages")
     print(f"   Each page contains up to {PAGE_SIZE} projects")
     print(f"   Total size: ~{sum(m['total'] for m in metadata['languages'].values()):,} projects")
+    print(f"   Python+PyPI projects: {python_total:,}")
 
 if __name__ == "__main__":
     main()
