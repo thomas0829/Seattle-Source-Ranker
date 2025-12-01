@@ -245,10 +245,11 @@ def main():
         date_str = filename_match.group(1)  # YYYYMMDD
         time_str = filename_match.group(2)  # HHMMSS
         data_datetime = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
-        data_datetime = data_datetime.replace(tzinfo=ZoneInfo("UTC")).astimezone(SEATTLE_TZ)
-        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S %Z")
+        # Filename timestamp is already in PST (local Seattle time)
+        data_datetime = data_datetime.replace(tzinfo=SEATTLE_TZ)
+        last_updated = data_datetime.strftime("%Y-%m-%d %H:%M:%S PST")
     else:
-        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S %Z")
+        last_updated = datetime.now(SEATTLE_TZ).strftime("%Y-%m-%d %H:%M:%S PST")
     
     metadata = {
         'languages': {},

@@ -3,8 +3,12 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 
-// Scoring configuration
-const PYPI_BONUS_MULTIPLIER = 1.1; // 10% bonus for PyPI projects
+// Scoring configuration - Multiplicative bonus approach
+const GITHUB_WEIGHT = 1.0;       // 100% of base score
+const PYPI_BONUS = 0.1;          // +10% multiplier for PyPI projects
+
+// Current formula: finalScore = baseScore * (1.0 + 0.1) = baseScore * 1.1
+// Future: Can change to weighted average by using separate weights for GitHub/PyPI components
 
 export default function PythonRankingsPage() {
     const [projects, setProjects] = useState([]);
@@ -102,8 +106,8 @@ export default function PythonRankingsPage() {
                     const key = proj.name.toLowerCase();
                     const onPypi = pypiMap.has(key);
                     const baseScore = proj.score || 0;
-                    // PyPI projects get 10% bonus
-                    const finalScore = onPypi ? baseScore * PYPI_BONUS_MULTIPLIER : baseScore;
+                    // PyPI projects get 10% bonus (multiplicative)
+                    const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
                     
                     return {
                         ...proj,
@@ -168,8 +172,8 @@ export default function PythonRankingsPage() {
                             const key = proj.name.toLowerCase();
                             const onPypi = pypiMap.has(key);
                             const baseScore = proj.score || 0;
-                            // PyPI projects get 10% bonus
-                            const finalScore = onPypi ? baseScore * PYPI_BONUS_MULTIPLIER : baseScore;
+                            // PyPI projects get 10% bonus (multiplicative)
+                            const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
                             
                             return {
                                 ...proj,

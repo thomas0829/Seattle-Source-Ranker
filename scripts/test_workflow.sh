@@ -1,19 +1,19 @@
 #!/bin/bash
-# 測試 GitHub Actions workflow 的本地執行
-# 這個腳本模擬 GitHub Actions 的執行流程
+# Test GitHub Actions workflow locally
+# This script simulates the GitHub Actions execution flow
 
-set -e  # 遇到錯誤立即退出
+set -e  # Exit immediately on error
 
 echo "🧪 Testing GitHub Actions workflow locally..."
 echo "=============================================="
 
-# 顏色定義
+# Color definitions
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 檢查 Redis
+# Check Redis
 echo -e "\n${YELLOW}1. Checking Redis...${NC}"
 if pgrep -x "redis-server" > /dev/null; then
     echo -e "${GREEN}✅ Redis is running${NC}"
@@ -23,7 +23,7 @@ else
     exit 1
 fi
 
-# 檢查 .env.tokens
+# Check .env.tokens
 echo -e "\n${YELLOW}2. Checking .env.tokens...${NC}"
 if [ -f ".env.tokens" ]; then
     TOKEN_COUNT=$(grep -c "GITHUB_TOKEN_" .env.tokens || true)
@@ -33,7 +33,7 @@ else
     exit 1
 fi
 
-# 檢查 Python 依賴
+# Check Python dependencies
 echo -e "\n${YELLOW}3. Checking Python dependencies...${NC}"
 if python3 -c "import celery, redis, requests, dotenv" 2>/dev/null; then
     echo -e "${GREEN}✅ All Python dependencies installed${NC}"
@@ -43,7 +43,7 @@ else
     exit 1
 fi
 
-# 測試小規模收集
+# Test small-scale collection
 echo -e "\n${YELLOW}4. Running test collection (100 users)...${NC}"
 python3 << 'PYTHON_EOF'
 import sys
@@ -53,7 +53,7 @@ try:
     collector = DistributedCollector(
         batch_size=50,
         auto_manage_workers=True,
-        num_workers=4,  # 使用較少 worker 測試
+        num_workers=4,  # Use fewer workers for testing
         concurrency=2
     )
     
@@ -73,7 +73,7 @@ else
     exit 1
 fi
 
-# 清理舊數據
+# Clean old data
 echo -e "\n${YELLOW}5. Cleaning old data files...${NC}"
 cd data
 OLD_PROJECTS=$(ls -t seattle_projects_*.json 2>/dev/null | tail -n +2)
@@ -98,7 +98,7 @@ else
 fi
 cd ..
 
-# 測試 README 更新
+# Test README update
 echo -e "\n${YELLOW}6. Testing README update...${NC}"
 if python3 scripts/update_readme.py; then
     echo -e "${GREEN}✅ README update test passed${NC}"
@@ -107,7 +107,7 @@ else
     exit 1
 fi
 
-# 檢查輸出文件
+# Check output files
 echo -e "\n${YELLOW}7. Checking output files...${NC}"
 if [ -f "data/ranked_project_local_seattle.json" ]; then
     echo -e "${GREEN}✅ ranked_project_local_seattle.json exists${NC}"
@@ -121,7 +121,7 @@ else
     echo -e "${YELLOW}⚠️  ranked_by_language_seattle.json not found${NC}"
 fi
 
-# 測試前端構建 (可選)
+# Test frontend build (optional)
 read -p $'\n'"Build frontend? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
