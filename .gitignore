@@ -216,3 +216,11 @@ logs/
 
 # Collection success markers
 .collection_success
+
+# Generated frontend data (auto-generated during deployment)
+# Only needed in gh-pages branch, not in main
+frontend/public/pages/
+frontend/public/owner_index/
+frontend/public/data/seattle_pypi_projects.json
+frontend/public/metadata.json
+frontend/build/
