@@ -35,7 +35,14 @@ npm run build
 ### Watchers Update Slow
 ```bash
 # Use 8 workers for faster processing (8x speedup)
-python scripts/update_watchers.py --workers 8
+# Start workers first
+bash scripts/start_workers.sh
+
+# Run secondary update
+python scripts/secondary_update.py
+
+# Stop workers when done
+bash scripts/stop_workers.sh
 
 # Single-threaded (slow): ~5 hours
 # 8 workers (recommended): ~30-40 minutes

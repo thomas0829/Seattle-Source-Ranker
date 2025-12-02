@@ -470,3 +470,94 @@ def collect_seattle_projects_task(
         "projects": all_projects,
         "completed_at": datetime.utcnow().isoformat()
     }
+
+
+@celery_app.task(bind=True, max_retries=3, name="workers.collection_worker.update_watchers_batch")
+def update_watchers_batch_task(self, repos_batch):
+    """
+    Celery task to update watchers for a batch of repos.
+    
+    Args:
+        repos_batch: List of dicts with 'owner' and 'name' keys
+    
+    Returns:
+        Dict with results: {repo_key: watchers_count or None if deleted}
+    """
+    import requests
+    from utils.token_manager import TokenManager
+    
+    token_manager = TokenManager()
+    
+    # Build GraphQL query
+    aliases = []
+    repo_keys = []
+    
+    for idx, repo in enumerate(repos_batch):
+        owner = repo['owner']['login'] if isinstance(repo['owner'], dict) else repo['owner']
+        repo_name = repo['name']
+        repo_keys.append(f"{owner}/{repo_name}")
+        safe_alias = f"repo_{idx}"
+        
+        aliases.append(f'''
+    {safe_alias}: repository(owner: "{owner}", name: "{repo_name}") {{
+        nameWithOwner
+        watchers {{
+            totalCount
+        }}
+    }}''')
+    
+    query = "{" + "".join(aliases) + "\n}"
+    
+    token = token_manager.get_token()
+    headers = {
+        'Authorization': f'bearer {token}',
+        'Content-Type': 'application/json',
+    }
+    
+    payload = {'query': query}
+    
+    try:
+        response = requests.post(
+            'https://api.github.com/graphql',
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            results = {}
+            
+            if 'data' in data:
+                for idx, repo_key in enumerate(repo_keys):
+                    safe_alias = f"repo_{idx}"
+                    repo_data = data['data'].get(safe_alias)
+                    
+                    if repo_data and repo_data.get('watchers'):
+                        results[repo_key] = repo_data['watchers']['totalCount']
+                    else:
+                        # Repo deleted or inaccessible
+                        results[repo_key] = None
+            
+            return results
+            
+        elif response.status_code == 403:
+            # Rate limit - retry once
+            if self.request.retries < 1:
+                raise self.retry(countdown=60)
+            else:
+                # Give up and return empty to avoid blocking
+                return {}
+        else:
+            return {}
+            
+    except requests.exceptions.Timeout:
+        # Timeout - return empty to avoid blocking
+        return {}
+    except Exception as e:
+        # Only retry once for other errors
+        if self.request.retries < 1:
+            raise self.retry(exc=e, countdown=10)
+        else:
+            # Give up and return empty
+            return {}

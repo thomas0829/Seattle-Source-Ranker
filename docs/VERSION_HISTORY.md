@@ -10,7 +10,7 @@
 - **Automated watchers update** - Integrated into GitHub Actions workflow
 
 ### Data Quality Improvements
-- **Watchers validation script** (`scripts/update_watchers.py`)
+- **Secondary data update script** (`scripts/secondary_update.py`)
   - GraphQL batch queries (100 repos per request)
   - Fetches real subscribers count (not duplicate stars)
   - Removes HTTP 451 (legally blocked), deleted, and private repos
@@ -26,7 +26,7 @@
 
 ### Automation Improvements
 - **GitHub Actions integration**: Watchers update step added between PyPI generation and frontend
-- **Command**: `python3 scripts/update_watchers.py "$LATEST_PROJECTS" --workers 8`
+- **Command**: `python3 scripts/secondary_update.py "$LATEST_PROJECTS"`
 - **Workflow**: Collection → PyPI → **Watchers** → Frontend → Build → Deploy
 
 ### Documentation

@@ -30,7 +30,10 @@ class TokenManager:
         if not self._tokens:
             raise ValueError("No GitHub tokens provided. Please set GITHUB_TOKEN_1, GITHUB_TOKEN_2, etc.")
         
-        print(f"✅ TokenManager initialized with {len(self._tokens)} tokens")
+        # Only print in main process (not in worker processes)
+        import multiprocessing
+        if multiprocessing.current_process().name == 'MainProcess':
+            print(f"✅ TokenManager initialized with {len(self._tokens)} tokens")
     
     def _load_tokens_from_env(self) -> List[str]:
         """Load tokens from environment variables"""

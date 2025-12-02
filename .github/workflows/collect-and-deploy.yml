@@ -237,7 +237,14 @@ jobs:
         echo "👁️ Updating watchers data with GraphQL..."
         LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json | head -1)
         echo "Processing: $LATEST_PROJECTS"
-        python3 scripts/update_watchers.py "$LATEST_PROJECTS" --workers 8
+        # Start Celery workers
+        bash scripts/start_workers.sh
+        
+        # Run secondary update
+        python3 scripts/secondary_update.py "$LATEST_PROJECTS"
+        
+        # Stop workers
+        bash scripts/stop_workers.sh
         echo "✅ Watchers data updated (validated and enriched)"
     
     - name: Generate frontend paginated data
