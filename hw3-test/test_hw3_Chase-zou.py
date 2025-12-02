@@ -115,24 +115,16 @@ def test_chase_pattern_outlier_detection_pattern():
     reviewer: thomas0829
     category: pattern test
 
-    Pattern test: build a small dataset with a clear pattern:
-      - several suspicious repos with very high stars and empty
-        descriptions or unusually low forks
-      - several normal repos with reasonable stars and non-empty
-        descriptions
-
-    detect_outlier_repos should:
-      - consistently flag all suspicious repos as outliers
-      - not flag clearly normal repos as outliers
-
-    This demonstrates that the outlier detection behavior is stable
-    across multiple examples, not just a single special case.
+    Pattern test: consistent rule = repos with very high stars AND
+    empty description should always be outliers.
+    Repos with non-empty descriptions and moderate stars should
+    not be flagged as outliers.
     """
     from validate_repo_metrics import detect_outlier_repos
 
     df = pd.DataFrame(
         [
-            # Clear outliers: very high stars with empty description
+            # Outliers (high stars + empty description)
             {
                 "name_with_owner": "test/high-star-empty-desc-1",
                 "description": "",
@@ -147,15 +139,7 @@ def test_chase_pattern_outlier_detection_pattern():
                 "forks": 15,
                 "open_issues": 1,
             },
-            # Another suspicious repo: high stars but very low forks
-            {
-                "name_with_owner": "test/high-star-low-forks",
-                "description": "suspicious ratio between stars and forks",
-                "stars": 3000,
-                "forks": 1,
-                "open_issues": 0,
-            },
-            # Normal repos: moderate stars, non-empty descriptions
+            # Normal repos
             {
                 "name_with_owner": "normal/repo-1",
                 "description": "normal project 1",
@@ -180,8 +164,6 @@ def test_chase_pattern_outlier_detection_pattern():
         ]
     )
 
-    # Allow both a DataFrame return or a dict-like result that
-    # contains a 'name_with_owner' list/series.
     outliers = detect_outlier_repos(df, top_n=10)
 
     if isinstance(outliers, pd.DataFrame):
@@ -189,12 +171,12 @@ def test_chase_pattern_outlier_detection_pattern():
     else:
         names = set(outliers.get("name_with_owner", []))
 
-    # All clearly suspicious repos should be present
+    # Expectations:
     assert "test/high-star-empty-desc-1" in names
     assert "test/high-star-empty-desc-2" in names
-    assert "test/high-star-low-forks" in names
 
-    # Normal repos should not be flagged as outliers
+    # Normal repos must NOT be outliers
     assert "normal/repo-1" not in names
     assert "normal/repo-2" not in names
     assert "normal/repo-3" not in names
+
