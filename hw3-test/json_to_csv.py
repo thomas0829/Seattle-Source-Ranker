@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 
-INPUT_PATH = "../data/seattle_projects_20251120_220648.json"
+INPUT_PATH = "../data/seattle_projects_20251201_074039.json"
 OUTPUT_PATH = "../data/repos_for_validation.csv"
 
 # 1. Load JSON
