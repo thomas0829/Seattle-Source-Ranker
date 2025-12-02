@@ -117,9 +117,19 @@ GITHUB_TOKEN_2=ghp_your_token_here
 python main.py --max-users 30000 --workers 8
 ```
 
-#### 2. Update Watchers (30-40 minutes)
+#### 2. Secondary Update - Validate & Update Watchers (30-40 minutes)
 ```bash
-python scripts/update_watchers.py --workers 8
+# Start Redis (if not running)
+redis-server --daemonize yes
+
+# Start Celery workers
+bash scripts/start_workers.sh
+
+# Run secondary update
+python scripts/secondary_update.py
+
+# Stop workers when done
+bash scripts/stop_workers.sh
 ```
 
 #### 3. Generate PyPI List (< 1 minute)
