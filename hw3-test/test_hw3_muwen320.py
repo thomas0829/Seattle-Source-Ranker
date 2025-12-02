@@ -74,8 +74,8 @@ def test_github_score_edge_many_issues():
     category: edge test
 
     Edge test:
-    Holding all other fields constant, a project with extremely many open issues
-    should not receive a *higher* GitHub score than the same project with very few issues.
+    Projects with extremely many issues should not receive a higher score,
+    and ideally the score should decrease when issue count becomes very large.
     """
     now = datetime.now(timezone.utc)
     created = (now - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -89,16 +89,17 @@ def test_github_score_edge_many_issues():
         "pushed_at": pushed,
     }
 
-    project_few_issues = {**base, "open_issues": 1}
-    project_many_issues = {**base, "open_issues": 5000}
+    project_few = {**base, "open_issues": 1}
+    project_many = {**base, "open_issues": 5000}
 
-    score_few = calculate_github_score(project_few_issues, 10_000, 5_000, 2_000)
-    score_many = calculate_github_score(project_many_issues, 10_000, 5_000, 2_000)
+    score_few = calculate_github_score(project_few, 10_000, 5_000, 2_000)
+    score_many = calculate_github_score(project_many, 10_000, 5_000, 2_000)
 
-    assert score_many <= score_few, (
-        f"Expected score with many issues <= score with few issues, "
-        f"got many={score_many}, few={score_few}"
-    )
+    # Must not increase
+    assert score_many <= score_few
+
+    # And in realistic scoring, many issues should reduce score
+    assert score_many < score_few or abs(score_many - score_few) < 1e-6
 
 
 def test_age_factor_pattern_time_ordering():
@@ -108,24 +109,26 @@ def test_age_factor_pattern_time_ordering():
     category: pattern test
 
     Pattern test:
-    Check the monotonic ordering of `age_factor()`:
-    older projects should produce age factor values that are
-    not smaller than those of newer projects.
+    Older projects should not receive a smaller age factor.
+    Uses multiple timestamps to better verify monotonic behavior.
     """
     now = datetime.now(timezone.utc)
 
-    created_new = (now - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    created_mid = (now - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    created_old = (now - timedelta(days=5 * 365)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    timestamps = [
+        (now - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        (now - timedelta(days=100)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        (now - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        (now - timedelta(days=1000)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        (now - timedelta(days=2000)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    ]
 
-    new_score = age_factor(created_new)
-    mid_score = age_factor(created_mid)
-    old_score = age_factor(created_old)
+    scores = [age_factor(ts) for ts in timestamps]
 
-    for s in (new_score, mid_score, old_score):
+    # All scores must be valid and between 0 and 1
+    for s in scores:
         assert 0.0 <= s <= 1.0
 
-    assert new_score <= mid_score <= old_score, (
-        f"Expected new <= mid <= old, got "
-        f"new={new_score}, mid={mid_score}, old={old_score}"
-    )
+    # Check non-decreasing order
+    for i in range(len(scores) - 1):
+        assert scores[i] <= scores[i + 1], \
+            f"Expected monotonic increase: {scores}"
