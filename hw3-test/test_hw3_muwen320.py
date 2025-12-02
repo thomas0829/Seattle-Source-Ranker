@@ -2,14 +2,18 @@
 """
 Homework 3 - Testing Assignment
 Author: Muwen320
-Tests for Seattle Source Ranker project
+
+Tests for Seattle Source Ranker project modules:
+- calculate_github_score
+- normalize
+- age_factor
 """
 
 import sys
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-# 和 thomas 一样：把项目根目录加进 sys.path 里，方便导入本地模块
+# Ensure project root is in Python path for local imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.token_manager import TokenManager
@@ -27,9 +31,8 @@ def test_github_score_smoke_basic():
     category: smoke test
 
     Smoke test:
-    最基础的端到端测试——给一个合理的 project 字典，
-    确认 calculate_github_score 能跑完，并返回非负数值。
-    （不关心具体分数，只关心“能正常跑起来”）
+    Verify that `calculate_github_score()` can run on a valid project dictionary
+    without raising errors, and returns a non-negative numeric value.
     """
     now = datetime.now(timezone.utc)
     created = (now - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -56,8 +59,9 @@ def test_normalize_one_shot_full_value():
     reviewer: Wenshu0206
     category: one-shot test
 
-    One-shot:
-    固定输入输出对：当 value == max_value 时，归一化结果应该精确等于 1.0。
+    One-shot test:
+    Fixed input–output pair. When value == max_value, normalization
+    should return exactly 1.0.
     """
     result = normalize(100, 100)
     assert result == 1.0, f"Expected 1.0 but got {result}"
@@ -70,8 +74,8 @@ def test_github_score_edge_many_issues():
     category: edge test
 
     Edge test:
-    在其他条件完全相同的情况下，打开 issue 的数量从很少增加到非常多，
-    总分应该不会“变高”（也就是 many_issues 的分数 <= few_issues）。
+    Holding all other fields constant, a project with extremely many open issues
+    should not receive a *higher* GitHub score than the same project with very few issues.
     """
     now = datetime.now(timezone.utc)
     created = (now - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -104,27 +108,23 @@ def test_age_factor_pattern_time_ordering():
     category: pattern test
 
     Pattern test:
-    同一个函数 age_factor，关注的模式和 thomas 不一样——
-    我们测试：项目“越老”，age_factor 越大（或至少不更小）。
+    Check the monotonic ordering of `age_factor()`:
+    older projects should produce age factor values that are
+    not smaller than those of newer projects.
     """
     now = datetime.now(timezone.utc)
 
-    # 非常新的项目（3 天）
     created_new = (now - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    # 中等年龄项目（1 年）
     created_mid = (now - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    # 很老的项目（5 年）
     created_old = (now - timedelta(days=5 * 365)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     new_score = age_factor(created_new)
     mid_score = age_factor(created_mid)
     old_score = age_factor(created_old)
 
-    # 所有分数都应该在 [0,1] 范围内
     for s in (new_score, mid_score, old_score):
         assert 0.0 <= s <= 1.0
 
-    # 模式：项目越老，age_factor 不应低于“更新”的项目
     assert new_score <= mid_score <= old_score, (
         f"Expected new <= mid <= old, got "
         f"new={new_score}, mid={mid_score}, old={old_score}"
