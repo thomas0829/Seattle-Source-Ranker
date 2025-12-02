@@ -1,50 +1,50 @@
 {
   "languages": {
     "Other": {
-      "total": 144941,
-      "pages": 2899
+      "total": 147800,
+      "pages": 2956
     },
     "JavaScript": {
-      "total": 96754,
-      "pages": 1936
+      "total": 98166,
+      "pages": 1964
     },
     "Python": {
-      "total": 54189,
-      "pages": 1084
+      "total": 55345,
+      "pages": 1107
     },
     "HTML": {
-      "total": 42018,
-      "pages": 841
+      "total": 42587,
+      "pages": 852
     },
     "Java": {
-      "total": 27438,
-      "pages": 549
+      "total": 27962,
+      "pages": 560
     },
     "Jupyter Notebook": {
-      "total": 17409,
-      "pages": 349
+      "total": 17748,
+      "pages": 355
     },
     "TypeScript": {
-      "total": 17240,
-      "pages": 345
+      "total": 17569,
+      "pages": 352
     },
     "C#": {
-      "total": 16417,
-      "pages": 329
+      "total": 16710,
+      "pages": 335
     },
     "Ruby": {
-      "total": 14766,
-      "pages": 296
+      "total": 14982,
+      "pages": 300
     },
     "CSS": {
-      "total": 13704,
-      "pages": 275
+      "total": 13949,
+      "pages": 279
     },
     "C++": {
-      "total": 12347,
-      "pages": 247
+      "total": 12603,
+      "pages": 253
     }
   },
   "page_size": 50,
-  "last_updated": "2025-12-01 07:40:39 PST"
+  "last_updated": "2025-12-01 20:48:56 PST"
 }
