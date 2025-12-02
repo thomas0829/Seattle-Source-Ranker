@@ -2,14 +2,14 @@
 """
 Homework 3 - Testing Assignment (Enhanced Version)
 Author: Wenshu0206
-Tests for classify_by_name()
+Tests for classify_language()
 """
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.classify_languages import classify_by_name
+from scripts.generate_frontend_data import classify_language
 
 
 def test_classify_smoke_multiple_inputs():
@@ -18,29 +18,29 @@ def test_classify_smoke_multiple_inputs():
     reviewer: thomas0829
     category: smoke test
 
-    Smoke test: ensure function runs on simple names without crashing,
-    and returns valid string outputs.
+    Smoke test: ensure function runs on different language inputs without crashing,
+    and returns valid tuple outputs with correct structure.
     """
-    names = ["repo", "python-utils", "opencv-lib", "vscode"]
-    results = [classify_by_name(n) for n in names]
+    languages = ["Python", "JavaScript", "Java", "Go"]
+    results = [classify_language(lang) for lang in languages]
 
-    assert all(isinstance(r, str) for r in results)
+    assert all(isinstance(r, tuple) and len(r) == 3 for r in results)
     assert len(results) == 4
 
 
-def test_one_shot_python_keyword():
+def test_one_shot_python_top10():
     """
     author: Wenshu0206
     reviewer: Muwen320
     category: one-shot test
 
-    One-shot: a single known Python keyword should map to Python.
+    One-shot: Python is a top 10 language and should be classified correctly.
     """
-    name = "my-django-app"
-    result = classify_by_name(name)
+    category, original, is_true_other = classify_language("Python")
 
-    assert result == "Python"
-    assert isinstance(result, str)
+    assert category == "Python"
+    assert original == "Python"
+    assert is_true_other == False
 
 
 def test_one_shot_known_language_mapping():
@@ -49,47 +49,48 @@ def test_one_shot_known_language_mapping():
     reviewer: thomas0829
     category: one-shot test
 
-    One-shot: known mapping from project name dictionary.
+    One-shot: JavaScript should map to top 10 category.
     """
-    result = classify_by_name("system-design-primer")
-    assert result == "Python"
+    category, original, is_true_other = classify_language("JavaScript")
+    assert category == "JavaScript"
+    assert is_true_other == False
 
 
-def test_edge_numeric_and_very_long():
+def test_edge_null_and_empty():
     """
     author: Wenshu0206
     reviewer: Muwen320
     category: edge test
 
-    Edge: non-alphabetic name and extremely long name.
+    Edge: null/None and empty string should return 'Other' with is_true_other=True.
     """
-    numeric = classify_by_name("123456789")
-    long_name = "python" + ("x" * 2000)
-    long_result = classify_by_name(long_name)
+    result_none = classify_language(None)
+    result_empty = classify_language("")
 
-    assert numeric == "Other"
-
-    assert long_result == "Python"
-    assert len(long_name) > 2000
+    assert result_none == ('Other', 'Other', True)
+    assert result_empty == ('Other', 'Other', True)
 
 
-def test_pattern_tensorflow_priority():
+def test_pattern_case_insensitive():
     """
     author: Wenshu0206
     reviewer: thomas0829
     category: pattern test
 
-    Pattern: all names containing 'tensorflow' should map to Python
-    even if they also contain other language keywords.
+    Pattern: language classification should be case-insensitive for top 10 languages.
     """
-    tensorflow_names = [
-        "tensorflow-utils",
-        "tensorflow-models",
-        "my-tensorflow-project",
-        "tensorflow-cpp",
-        "tensorflow"
+    test_cases = [
+        "python",
+        "PYTHON",
+        "Python",
+        "PyThOn"
     ]
 
-    results = [classify_by_name(n) for n in tensorflow_names]
+    results = [classify_language(lang) for lang in test_cases]
 
-    assert all(r == "Python" for r in results)
+    # All should map to Python category
+    assert all(r[0] == "Python" for r in results)
+    # All should preserve original input
+    assert [r[1] for r in results] == test_cases
+    # None should be marked as true other
+    assert all(r[2] == False for r in results)
