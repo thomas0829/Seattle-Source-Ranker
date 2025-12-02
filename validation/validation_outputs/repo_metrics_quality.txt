@@ -1,0 +1,43 @@
+Repo Metrics Quality Summary
+================================
+
+[stars]
+total: 457223
+missing: 0
+missing_rate: 0.0
+negatives: 0
+min: 0.0
+max: 60680.0
+mean: 5.417481185329697
+median: 0.0
+
+[forks]
+total: 457223
+missing: 0
+missing_rate: 0.0
+negatives: 0
+min: 0.0
+max: 243381.0
+mean: 1.8461800915526996
+median: 0.0
+
+[watchers]
+total: 457223
+missing: 0
+missing_rate: 0.0
+negatives: 0
+min: 0.0
+max: 1786.0
+mean: 1.2338727491836587
+median: 1.0
+
+[open_issues]
+total: 457223
+missing: 0
+missing_rate: 0.0
+negatives: 0
+min: 0.0
+max: 1519.0
+mean: 0.911924815680751
+median: 0.0
+
