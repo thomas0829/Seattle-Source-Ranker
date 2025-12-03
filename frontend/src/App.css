@@ -1160,3 +1160,208 @@ tbody td {
   color: #7dd3fc;
   border-bottom-color: #7dd3fc;
 }
+
+/* ============= 手机端优化（不会影响电脑端） ============= */
+@media screen and (max-width: 768px) {
+
+  /* 整个容器内边距缩小，不再两侧溢出 */
+  .home-container {
+    padding: 12px;
+  }
+
+  /* 让卡片从左右两列 → 变成纵向排列 */
+  .home-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  /* 文字区域占满整行 */
+  .home-card-text {
+    width: 100%;
+    text-align: left;
+  }
+
+  /* 图片在手机端自动变成 100% 宽度 */
+  .home-card-image {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .home-card-image img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* 按钮适配 */
+  .home-card-actions .primary-btn,
+  .home-card-actions .glass-btn {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  /* Info Links 垂直排版 */
+  .home-info-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .info-link {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .info-link-arrow {
+    margin-top: 8px;
+    align-self: flex-end;
+  }
+}
+
+/* ============================================================
+   FINAL MOBILE FIX — combine both styles + restore true bar ratio
+   ============================================================ */
+@media screen and (max-width: 768px) {
+
+  /* TABLE: keep proportional bar */
+  .ranking-table table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  /*!* Hide Rank *!*/
+  /*th.rank-col,*/
+  /*td.rank-col {*/
+  /*  display: none !important;*/
+  /*}*/
+
+  /* OWNER — keep first screenshot style */
+  th.owner-col,
+  td.owner-col {
+    width: 28% !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* PROJECT NAME COLUMN — like second screenshot */
+  th.chart-col,
+  td.chart-col {
+    width: 52% !important;
+    text-align: left !important;
+  }
+
+  /* SCORE — keep first screenshot style */
+  th.score-col,
+  td.score-col {
+    width: 20% !important;
+    text-align: right !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+
+  /* Remove conflicting ellipsis in old code */
+  .ranking-table th,
+  .ranking-table td {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  /* Bar container */
+  .bar-container {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* REAL proportional bar scaling */
+  .bar {
+    height: 24px !important;
+    transform-origin: left center !important;
+    /*transform: scaleX(0.95) !important; !* Change to 0.8 / 0.7 depending preference *!*/
+    overflow: hidden !important;
+  }
+
+  .bar-fill {
+    height: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Project name */
+  .project-name {
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    width: 260px !important;
+    padding: 12px 14px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Extra small devices */
+@media screen and (max-width: 480px) {
+
+  .bar {
+    height: 22px !important;
+    /*transform: scaleX(0.70) !important;*/
+  }
+
+  th.owner-col,
+  td.owner-col {
+    width: 20% !important;
+  }
+
+  th.chart-col,
+  td.chart-col {
+    width: 56% !important;
+  }
+
+  th.score-col,
+  td.score-col {
+    width: 24% !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  /* OWNER列 - 强制所有情况 */
+  th.owner-col,
+  td.owner-col {
+    width: 28% !important;
+    font-size: 13px !important;
+    /* 确保单元格本身 */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* 确保单元格内所有内容都应用省略号 */
+  td.owner-col span,
+  td.owner-col div,
+  td.owner-col a {
+    display: inline-block !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+  }
+
+  /* 移除其他可能的冲突 */
+  td.owner-col {
+    overflow: hidden !important; /* 确保不会被其他规则覆盖 */
+  }
+}
