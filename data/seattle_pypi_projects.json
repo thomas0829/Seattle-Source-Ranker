@@ -1,20 +1,20 @@
 {
-  "generated_at": "2025-12-02T10:43:12.450747-08:00",
-  "total_python_projects": 55369,
-  "projects_on_pypi": 10011,
-  "detection_rate": "18.08%",
+  "generated_at": "2025-12-03T01:32:24.913615-08:00",
+  "total_python_projects": 55396,
+  "projects_on_pypi": 10019,
+  "detection_rate": "18.09%",
   "statistics": {
-    "total_checked": 55369,
-    "on_pypi": 10011,
-    "not_on_pypi": 45358,
+    "total_checked": 55396,
+    "on_pypi": 10019,
+    "not_on_pypi": 45377,
     "by_confidence": {
       "very_high": 29,
-      "high": 9982,
+      "high": 9990,
       "medium": 0,
       "low": 0
     },
     "by_method": {
-      "direct_match": 9027,
+      "direct_match": 9035,
       "underscore_to_dash": 807,
       "direct_match_verified": 15,
       "dash_to_underscore": 148,
@@ -37,7 +37,7 @@
       "name": "olmocr",
       "full_name": null,
       "owner": "allenai",
-      "stars": 16121,
+      "stars": 16129,
       "description": "Toolkit for linearizing PDFs for LLM datasets/training",
       "url": "https://github.com/allenai/olmocr",
       "topics": [],
@@ -59,7 +59,7 @@
       "name": "moondream",
       "full_name": null,
       "owner": "vikhyat",
-      "stars": 8959,
+      "stars": 8961,
       "description": "tiny vision language model",
       "url": "https://github.com/vikhyat/moondream",
       "topics": [],
@@ -70,7 +70,7 @@
       "name": "visidata",
       "full_name": null,
       "owner": "saulpw",
-      "stars": 8625,
+      "stars": 8632,
       "description": "A terminal spreadsheet multitool for discovering and arranging data",
       "url": "https://github.com/saulpw/visidata",
       "topics": [
@@ -100,7 +100,7 @@
       "name": "mcp",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7523,
+      "stars": 7532,
       "description": "AWS MCP Servers \u2014 helping you get the most out of AWS, wherever you use MCP.",
       "url": "https://github.com/awslabs/mcp",
       "topics": [
@@ -121,7 +121,7 @@
       "name": "aws-shell",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7330,
+      "stars": 7331,
       "description": "An integrated shell for working with the AWS CLI.",
       "url": "https://github.com/awslabs/aws-shell",
       "topics": [
@@ -137,7 +137,7 @@
       "name": "agent-squad",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 7106,
+      "stars": 7107,
       "description": "Flexible and powerful framework for managing multiple AI agents and handling complex conversations",
       "url": "https://github.com/awslabs/agent-squad",
       "topics": [
@@ -169,7 +169,7 @@
       "name": "howmanypeoplearearound",
       "full_name": null,
       "owner": "schollz",
-      "stars": 7051,
+      "stars": 7052,
       "description": "Count the number of people around you :family_man_man_boy: by monitoring wifi signals :satellite:",
       "url": "https://github.com/schollz/howmanypeoplearearound",
       "topics": [
@@ -196,7 +196,7 @@
       "name": "hug",
       "full_name": null,
       "owner": "hugapi",
-      "stars": 6908,
+      "stars": 6907,
       "description": "Embrace the APIs of the future. Hug aims to make developing APIs as simple as possible, but no simpler.",
       "url": "https://github.com/hugapi/hug",
       "topics": [
@@ -216,7 +216,7 @@
       "name": "gluonts",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 5074,
+      "stars": 5076,
       "description": "Probabilistic time series modeling in Python",
       "url": "https://github.com/awslabs/gluonts",
       "topics": [
@@ -243,7 +243,7 @@
       "name": "facenet-pytorch",
       "full_name": null,
       "owner": "timesler",
-      "stars": 5073,
+      "stars": 5075,
       "description": "Pretrained Pytorch face detection (MTCNN) and facial recognition (InceptionResnet) models",
       "url": "https://github.com/timesler/facenet-pytorch",
       "topics": [
@@ -265,7 +265,7 @@
       "name": "pacu",
       "full_name": null,
       "owner": "RhinoSecurityLabs",
-      "stars": 4989,
+      "stars": 4990,
       "description": "The AWS exploitation framework, designed for testing the security of Amazon Web Services environments.",
       "url": "https://github.com/RhinoSecurityLabs/pacu",
       "topics": [
@@ -351,7 +351,7 @@
       "name": "datasketch",
       "full_name": null,
       "owner": "ekzhu",
-      "stars": 2821,
+      "stars": 2822,
       "description": "MinHash, LSH, LSH Forest, Weighted MinHash, HyperLogLog, HyperLogLog++, LSH Ensemble and HNSW",
       "url": "https://github.com/ekzhu/datasketch",
       "topics": [
@@ -448,7 +448,7 @@
       "name": "scispacy",
       "full_name": null,
       "owner": "allenai",
-      "stars": 1901,
+      "stars": 1902,
       "description": "A full spaCy pipeline and models for scientific/biomedical documents.",
       "url": "https://github.com/allenai/scispacy",
       "topics": [
@@ -466,7 +466,7 @@
       "name": "twython",
       "full_name": null,
       "owner": "ryanmcgrath",
-      "stars": 1870,
+      "stars": 1869,
       "description": "Actively maintained, pure Python wrapper for the Twitter API. Supports both normal and streaming Twitter APIs.",
       "url": "https://github.com/ryanmcgrath/twython",
       "topics": [],
@@ -509,7 +509,7 @@
       "name": "dolma",
       "full_name": null,
       "owner": "allenai",
-      "stars": 1354,
+      "stars": 1355,
       "description": "Data and tools for generating and inspecting OLMo pre-training data. ",
       "url": "https://github.com/allenai/dolma",
       "topics": [
@@ -820,7 +820,7 @@
       "name": "OneDiffusion",
       "full_name": null,
       "owner": "lehduong",
-      "stars": 657,
+      "stars": 656,
       "description": "Official implementation of OneDiffusion paper (CVPR 2025)",
       "url": "https://github.com/lehduong/OneDiffusion",
       "topics": [
@@ -1050,6 +1050,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "LigandMPNN",
+      "full_name": null,
+      "owner": "dauparas",
+      "stars": 490,
+      "description": null,
+      "url": "https://github.com/dauparas/LigandMPNN",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "transformer-pytorch",
       "full_name": null,
       "owner": "tunz",
@@ -1060,17 +1071,6 @@
         "pytorch",
         "transformer"
       ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "LigandMPNN",
-      "full_name": null,
-      "owner": "dauparas",
-      "stars": 489,
-      "description": null,
-      "url": "https://github.com/dauparas/LigandMPNN",
-      "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -1215,7 +1215,7 @@
       "name": "chatterbox-tts-api",
       "full_name": null,
       "owner": "travisvn",
-      "stars": 403,
+      "stars": 405,
       "description": "Local, OpenAI-compatible text-to-speech (TTS) API using Chatterbox, enabling users to generate voice cloned speech anywhere the OpenAI API is used (e.g. Open WebUI, AnythingLLM, etc.)",
       "url": "https://github.com/travisvn/chatterbox-tts-api",
       "topics": [
@@ -1274,7 +1274,7 @@
       "name": "rogue",
       "full_name": null,
       "owner": "faizann24",
-      "stars": 385,
+      "stars": 387,
       "description": "Automated web vulnerability scanning with LLM agents",
       "url": "https://github.com/faizann24/rogue",
       "topics": [
@@ -1414,7 +1414,7 @@
       "name": "simba",
       "full_name": null,
       "owner": "sgoldenlab",
-      "stars": 344,
+      "stars": 345,
       "description": "SimBA (Simple Behavioral Analysis), a pipeline and GUI for developing supervised behavioral classifiers",
       "url": "https://github.com/sgoldenlab/simba",
       "topics": [],
@@ -1508,7 +1508,7 @@
       "name": "Waveformer",
       "full_name": null,
       "owner": "vb000",
-      "stars": 319,
+      "stars": 320,
       "description": "A deep neural network architecture for low-latency audio processing",
       "url": "https://github.com/vb000/Waveformer",
       "topics": [
@@ -1533,7 +1533,7 @@
       "name": "bmtk",
       "full_name": null,
       "owner": "AllenInstitute",
-      "stars": 309,
+      "stars": 310,
       "description": "Brain Modeling Toolkit",
       "url": "https://github.com/AllenInstitute/bmtk",
       "topics": [
@@ -2646,7 +2646,7 @@
       "name": "aws-sdk-python",
       "full_name": null,
       "owner": "awslabs",
-      "stars": 134,
+      "stars": 135,
       "description": "Experimental Async AWS SDK Clients for Python (In Development)",
       "url": "https://github.com/awslabs/aws-sdk-python",
       "topics": [],
@@ -3553,6 +3553,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "dsnap",
+      "full_name": null,
+      "owner": "RhinoSecurityLabs",
+      "stars": 90,
+      "description": "Utility for downloading and mounting EBS snapshots using the EBS Direct API's",
+      "url": "https://github.com/RhinoSecurityLabs/dsnap",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "elastic",
       "full_name": null,
       "owner": "allenai",
@@ -3564,13 +3575,25 @@
       "match_method": "direct_match"
     },
     {
-      "name": "dsnap",
+      "name": "dploy",
       "full_name": null,
-      "owner": "RhinoSecurityLabs",
+      "owner": "arecarn",
       "stars": 89,
-      "description": "Utility for downloading and mounting EBS snapshots using the EBS Direct API's",
-      "url": "https://github.com/RhinoSecurityLabs/dsnap",
-      "topics": [],
+      "description": "Provides the functionality of GNU Stow in a cross platform CLI tool and python module",
+      "url": "https://github.com/arecarn/dploy",
+      "topics": [
+        "cli",
+        "cross-platform",
+        "dotfiles",
+        "dotfiles-installer",
+        "dotfiles-manager",
+        "linux",
+        "osx",
+        "python",
+        "stow",
+        "symbolic-links",
+        "windows"
+      ],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -3599,29 +3622,6 @@
         "python",
         "terminal-based",
         "webcam"
-      ],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "dploy",
-      "full_name": null,
-      "owner": "arecarn",
-      "stars": 88,
-      "description": "Provides the functionality of GNU Stow in a cross platform CLI tool and python module",
-      "url": "https://github.com/arecarn/dploy",
-      "topics": [
-        "cli",
-        "cross-platform",
-        "dotfiles",
-        "dotfiles-installer",
-        "dotfiles-manager",
-        "linux",
-        "osx",
-        "python",
-        "stow",
-        "symbolic-links",
-        "windows"
       ],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -4292,6 +4292,23 @@
       "match_method": "direct_match"
     },
     {
+      "name": "MetSim",
+      "full_name": null,
+      "owner": "UW-Hydro",
+      "stars": 67,
+      "description": "Meteorology Simulator",
+      "url": "https://github.com/UW-Hydro/MetSim",
+      "topics": [
+        "climate",
+        "disaggregation",
+        "hydrology",
+        "meteorology",
+        "mtclim"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "PARTNER",
       "full_name": null,
       "owner": "behavioral-data",
@@ -4346,23 +4363,6 @@
       "description": "Cross-lingual metaphor detection.",
       "url": "https://github.com/ytsvetko/metaphor",
       "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "MetSim",
-      "full_name": null,
-      "owner": "UW-Hydro",
-      "stars": 66,
-      "description": "Meteorology Simulator",
-      "url": "https://github.com/UW-Hydro/MetSim",
-      "topics": [
-        "climate",
-        "disaggregation",
-        "hydrology",
-        "meteorology",
-        "mtclim"
-      ],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -11097,6 +11097,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "ADAPT",
+      "full_name": null,
+      "owner": "phbradley",
+      "stars": 11,
+      "description": "Antigen-receptor Design Against Peptide-MHC Targets",
+      "url": "https://github.com/phbradley/ADAPT",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "django-mcp",
       "full_name": null,
       "owner": "hyperb1iss",
@@ -11431,17 +11442,6 @@
       "stars": 10,
       "description": "This repo contains the code for the ICLR 2024 paper: \"CrIBo: Self-Supervised Learning via Cross-Image Object-Level Bootstrapping\".",
       "url": "https://github.com/tileb1/CrIBo",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "ADAPT",
-      "full_name": null,
-      "owner": "phbradley",
-      "stars": 10,
-      "description": "Antigen-receptor Design Against Peptide-MHC Targets",
-      "url": "https://github.com/phbradley/ADAPT",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -13169,6 +13169,28 @@
       ],
       "confidence": 0.85,
       "match_method": "underscore_to_dash"
+    },
+    {
+      "name": "bardic",
+      "full_name": null,
+      "owner": "katelouie",
+      "stars": 7,
+      "description": "A Python interactive fiction engine",
+      "url": "https://github.com/katelouie/bardic",
+      "topics": [
+        "bardic",
+        "domain-specific-language",
+        "dsl",
+        "game-development",
+        "game-engine",
+        "if",
+        "interactive-fiction",
+        "markup-language",
+        "python",
+        "python3"
+      ],
+      "confidence": 0.9,
+      "match_method": "direct_match"
     },
     {
       "name": "tabular-rl",
@@ -18299,6 +18321,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "rnnt",
+      "full_name": null,
+      "owner": "jakepoz",
+      "stars": 3,
+      "description": null,
+      "url": "https://github.com/jakepoz/rnnt",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "python-wordpress-api",
       "full_name": null,
       "owner": "maxcutler",
@@ -20567,6 +20600,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "savvy",
+      "full_name": null,
+      "owner": "shlizee",
+      "stars": 3,
+      "description": "Repository for SAVVY(Spatial Awareness via Audio-Visual LLMs through Seeing and Hearing) Benchmark and SAVVY model",
+      "url": "https://github.com/shlizee/savvy",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "HARE",
       "full_name": null,
       "owner": "jjon",
@@ -21182,17 +21226,6 @@
       "stars": 2,
       "description": "XGBoost classifier for news20group Data set.",
       "url": "https://github.com/sabuz-262/XGBoost",
-      "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "rnnt",
-      "full_name": null,
-      "owner": "jakepoz",
-      "stars": 2,
-      "description": null,
-      "url": "https://github.com/jakepoz/rnnt",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -46323,6 +46356,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "qr",
+      "full_name": null,
+      "owner": "Zuriahn-Yun",
+      "stars": 0,
+      "description": null,
+      "url": "https://github.com/Zuriahn-Yun/qr",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "align",
       "full_name": null,
       "owner": "homologus",
@@ -57088,28 +57132,6 @@
       "description": null,
       "url": "https://github.com/kajal-puri/MasterMind",
       "topics": [],
-      "confidence": 0.9,
-      "match_method": "direct_match"
-    },
-    {
-      "name": "bardic",
-      "full_name": null,
-      "owner": "katelouie",
-      "stars": 0,
-      "description": "A Python interactive fiction engine",
-      "url": "https://github.com/katelouie/bardic",
-      "topics": [
-        "bardic",
-        "domain-specific-language",
-        "dsl",
-        "game-development",
-        "game-engine",
-        "if",
-        "interactive-fiction",
-        "markup-language",
-        "python",
-        "python3"
-      ],
       "confidence": 0.9,
       "match_method": "direct_match"
     },
@@ -76480,6 +76502,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "seedling",
+      "full_name": null,
+      "owner": "latrokles",
+      "stars": 0,
+      "description": "?",
+      "url": "https://github.com/latrokles/seedling",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "imperfect",
       "full_name": null,
       "owner": "latrokles",
@@ -76871,6 +76904,17 @@
       "stars": 0,
       "description": null,
       "url": "https://github.com/saugatt/machineLearning",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "dsa",
+      "full_name": null,
+      "owner": "asefatesfay",
+      "stars": 0,
+      "description": null,
+      "url": "https://github.com/asefatesfay/dsa",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -83837,6 +83881,17 @@
       "stars": 0,
       "description": null,
       "url": "https://github.com/FaizanDhankwala/ChatBot",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "marimo",
+      "full_name": null,
+      "owner": "j23414",
+      "stars": 0,
+      "description": "Evaluate marimo notebooks as replacements for R's Sweave or Markdown notebooks",
+      "url": "https://github.com/j23414/marimo",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
@@ -93602,6 +93657,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "MiniLab",
+      "full_name": null,
+      "owner": "denniepatton",
+      "stars": 0,
+      "description": "My own team of scientific agents",
+      "url": "https://github.com/denniepatton/MiniLab",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "django-logger",
       "full_name": null,
       "owner": "GuardianBob",
@@ -97982,6 +98048,17 @@
       "match_method": "direct_match"
     },
     {
+      "name": "Tetris",
+      "full_name": null,
+      "owner": "twluo",
+      "stars": 0,
+      "description": "Tetris in pygame. ",
+      "url": "https://github.com/twluo/Tetris",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
       "name": "clgen",
       "full_name": null,
       "owner": "Sanghawk",
@@ -99241,6 +99318,17 @@
       "stars": 0,
       "description": null,
       "url": "https://github.com/deipkumar/mcp",
+      "topics": [],
+      "confidence": 0.9,
+      "match_method": "direct_match"
+    },
+    {
+      "name": "profiling",
+      "full_name": null,
+      "owner": "jefferson-lam",
+      "stars": 0,
+      "description": "Python scripts written using Locust to profile micro-services architecture against a monolithic architecture.",
+      "url": "https://github.com/jefferson-lam/profiling",
       "topics": [],
       "confidence": 0.9,
       "match_method": "direct_match"
