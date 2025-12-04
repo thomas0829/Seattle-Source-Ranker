@@ -27,7 +27,7 @@ celery_app.conf.update(
     task_routes={
         "workers.collection_worker.*": {"queue": "default"},
     },
-    
+
     # Task queues
     task_queues=(
         Queue("fetch", routing_key="fetch"),
@@ -35,33 +35,33 @@ celery_app.conf.update(
         Queue("pypi", routing_key="pypi"),
         Queue("default", routing_key="default"),
     ),
-    
+
     # Task execution
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
-    
+
     # Task timeouts - increased to handle rate limit waits (up to 1 hour)
     task_soft_time_limit=3300,  # 55 minutes (warn before hard limit)
     task_time_limit=3600,  # 60 minutes (allow for full rate limit wait)
-    
+
     # Task retries
     task_acks_late=True,
     task_reject_on_worker_lost=True,
-    
+
     # Worker settings
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,
-    
+
     # Result backend - store full results for recovery
     result_expires=86400,  # 24 hours (keep results for a day)
     result_extended=True,  # Store full task result in backend
     result_backend_transport_options={
         "master_name": "mymaster"
     },
-    
+
     # Monitoring
     worker_send_task_events=True,
     task_send_sent_event=True,

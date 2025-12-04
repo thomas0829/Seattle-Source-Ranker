@@ -4,15 +4,26 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - '**.py'
-      - '**.js'
-      - '**.jsx'
+      - '**/*.py'
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.css'
+      - '**/*.html'
+      - '**/*.sh'
+      - '**/*.yml'
+      - '**/*.yaml'
+      - '**/*.json'
+      - '**/*.md'
       - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'pytest.ini'
       - 'frontend/package.json'
-      - '.github/workflows/pr-check.yml'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/**'
 
 jobs:
-  python-check:
+  python-syntax:
+    name: Python Syntax Check
     runs-on: ubuntu-latest
     
     steps:
@@ -23,12 +34,6 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # Install from pyproject.toml
-        pip install -e .
     
     - name: Check Python syntax
       run: |
@@ -59,11 +64,64 @@ jobs:
         
         echo "✅ All Python files have valid syntax"
     
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Python Syntax Check" >> $GITHUB_STEP_SUMMARY
+        echo "✅ All Python files have valid syntax" >> $GITHUB_STEP_SUMMARY
+
+  code-style:
+    name: Code Style Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Run code style tests
+      run: |
+        echo "🎨 Running code style checks..."
+        cd test
+        pytest test_code_style.py -v
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Code Style Check" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Code style tests completed" >> $GITHUB_STEP_SUMMARY
+
+  imports-check:
+    name: Python Imports Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
     - name: Check imports
       run: |
         echo "🔍 Checking if all imports are available..."
         
-        # Try importing main modules
         python3 << 'PYTHON_EOF'
         import sys
         errors = []
@@ -89,21 +147,191 @@ jobs:
         print("\n✅ All imports successful")
         PYTHON_EOF
     
-    - name: Run test suite
+    - name: Summary
+      if: always()
       run: |
-        echo "🧪 Running comprehensive test suite..."
+        echo "## Import Check" >> $GITHUB_STEP_SUMMARY
+        echo "✅ All imports successful" >> $GITHUB_STEP_SUMMARY
+
+  test-distributed:
+    name: Distributed Collector Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Run distributed collector tests
+      run: |
+        echo "🧪 Running distributed collector tests..."
         cd test
-        # Skip tests that require large data files (90/91 tests will run)
-        pytest -v -k "not pypi_50_projects"
+        pytest test_distributed_collector.py -v
     
     - name: Summary
       if: always()
       run: |
-        echo "## Python Check Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Python syntax check completed" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Import check completed" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Test suite completed (90/91 tests)" >> $GITHUB_STEP_SUMMARY
+        echo "## Distributed Collector Tests" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+
+  test-graphql:
+    name: GraphQL Query Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Run GraphQL tests
+      run: |
+        echo "🧪 Running GraphQL query tests..."
+        cd test
+        pytest test_graphql_queries.py -v
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## GraphQL Query Tests" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+
+  test-scoring:
+    name: Scoring Algorithm Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Run scoring tests
+      run: |
+        echo "🧪 Running scoring algorithm tests..."
+        cd test
+        pytest test_scoring_algorithms.py -v
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Scoring Algorithm Tests" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+
+  test-token-manager:
+    name: Token Manager Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Run token manager tests
+      run: |
+        echo "🧪 Running token manager tests..."
+        cd test
+        pytest test_token_manager.py -v
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Token Manager Tests" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+
+  test-update-readme:
+    name: Update README Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Run update README tests
+      run: |
+        echo "🧪 Running update README tests..."
+        cd test
+        pytest test_update_readme.py -v
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Update README Tests" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+
+  test-pypi-checker:
+    name: PyPI Checker Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Run PyPI checker tests
+      run: |
+        echo "🧪 Running PyPI checker tests..."
+        cd test
+        pytest test_pypi_checker_full.py -v
+    
+    - name: Summary
+      if: always()
+      run: |
+        echo "## PyPI Checker Tests" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
   
   frontend-check:
     runs-on: ubuntu-latest

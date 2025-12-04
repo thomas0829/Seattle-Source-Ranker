@@ -405,19 +405,33 @@ export default function OverallRankingsPage() {
             return;
         }
 
+        // If we have the top10000 cached, use it directly
+        if (top10000Cache) {
+            const startIndex = (currentPage - 1) * pageSize;
+            const pageRepos = top10000Cache.slice(startIndex, startIndex + pageSize);
+            setRepos(pageRepos);
+            setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
+            setIsLoading(false);
+            return;
+        }
+
         // For first page: load minimal data (just 2 pages per language)
-        // For other pages: load more progressively
+        // For other pages: need to load enough to get all top 10000
         const allReposForLoad = [];
         const langsToLoad = showAll ? [...languages, 'Other'] : languages;
         
-        // Optimize for first page - load minimal data
-        const quickLoadPages = currentPage === 1 ? 2 : Math.max(3, Math.ceil((currentPage * pageSize + 100) / langsToLoad.length / 50));
+        // Calculate how many pages per language we need to ensure we get all top 10000
+        // Since we don't know the distribution, load at least 100 pages per language for later pages
+        const quickLoadPages = currentPage === 1 ? 2 : 100;
         
         // Load pages in parallel for better performance
         const loadPromises = langsToLoad.map(async (lang) => {
             const langRepos = [];
-            for (let page = 1; page <= quickLoadPages; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus");
+            const totalPagesForLang = metadata.languages[lang].pages;
+            const pagesToLoad = Math.min(quickLoadPages, totalPagesForLang);
+            
+            for (let page = 1; page <= pagesToLoad; page++) {
+                const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/#/g, "sharp").replace(/#/g, "sharp");
                 const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
 
                 try {
@@ -439,10 +453,18 @@ export default function OverallRankingsPage() {
         const results = await Promise.all(loadPromises);
         results.forEach(langRepos => allReposForLoad.push(...langRepos));
 
-        // Sort and display current page immediately
+        // Sort by global_rank and take only top 10000
         allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
+        const top10000 = allReposForLoad.filter(repo => repo.global_rank && repo.global_rank <= 10000);
+        
+        // Cache it for future use
+        if (quickLoadPages >= 100) {
+            setTop10000Cache(top10000);
+        }
+        
+        // Display current page from top 10000
         const startIndex = (currentPage - 1) * pageSize;
-        const pageRepos = allReposForLoad.slice(startIndex, startIndex + pageSize);
+        const pageRepos = top10000.slice(startIndex, startIndex + pageSize);
         
         setRepos(pageRepos);
         setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
@@ -476,7 +498,7 @@ export default function OverallRankingsPage() {
             const pagesToLoad = Math.min(maxPagesToLoadPerLang, totalPagesForLang);
 
             for (let page = 1; page <= pagesToLoad; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus");
+                const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/#/g, "sharp");
                 const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
 
                 try {
@@ -526,7 +548,7 @@ export default function OverallRankingsPage() {
             const pagesToLoad = Math.min(maxPagesToLoad, totalPagesForLang);
 
             for (let page = 1; page <= pagesToLoad; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus");
+                const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/#/g, "sharp");
                 const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
 
                 try {
@@ -543,14 +565,14 @@ export default function OverallRankingsPage() {
             }
         }
 
-        // Sort by score (for selected languages, we show top scored projects, not global rank)
-        allReposForLoad.sort((a, b) => b.score - a.score);
+        // Sort by global_rank (not score) to maintain consistent ranking
+        allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
         
-        // Limit to first 10000 projects
-        const limitedRepos = allReposForLoad.slice(0, MAX_PROJECTS);
+        // Filter to only show projects with global_rank <= 10000
+        const top10000 = allReposForLoad.filter(repo => repo.global_rank && repo.global_rank <= 10000);
         
         const startIndex = (currentPage - 1) * pageSize;
-        const pageRepos = limitedRepos.slice(startIndex, startIndex + pageSize);
+        const pageRepos = top10000.slice(startIndex, startIndex + pageSize);
 
         setRepos(pageRepos);
         setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
@@ -680,7 +702,7 @@ export default function OverallRankingsPage() {
 
                 for (let page = startPage; page <= endPage; page++) {
                     try {
-                        const langPath = lang.toLowerCase().replace(/\+/g, "plus");
+                        const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/#/g, "sharp").replace(/#/g, "sharp");
                         const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
                         const response = await fetch(pageUrl);
                         const pageData = await response.json();
@@ -814,36 +836,16 @@ export default function OverallRankingsPage() {
         const MAX_PROJECTS = 10000;
         const MAX_PAGES = Math.ceil(MAX_PROJECTS / 50); // 200 pages
         
-        if (showAll && !debouncedSearchQuery.trim()) {
-            // Mixed mode: calculate total from all languages, limited to 10000
-            let total = 0;
-            languages.forEach((lang) => {
-                if (metadata.languages[lang]) {
-                    total += metadata.languages[lang].total;
-                }
-            });
-            const calculatedPages = Math.ceil(total / 50);
-            return Math.min(calculatedPages, MAX_PAGES);
-        } else if (!debouncedSearchQuery.trim() && selectedLanguages.length > 0) {
-            // Selected languages mode: calculate from selected languages, limited to 10000
-            let total = 0;
-            selectedLanguages.forEach((lang) => {
-                if (metadata.languages[lang]) {
-                    total += metadata.languages[lang].total;
-                }
-            });
-            const calculatedPages = Math.ceil(total / 50);
-            return Math.min(calculatedPages, MAX_PAGES);
-        } else if (debouncedSearchQuery.trim()) {
-            // Search mode: no limit, show all search results
+        if (debouncedSearchQuery.trim()) {
+            // Search mode: show all search results
             const totalMatches = Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0);
             if (totalMatches === 0) {
-                // Still loading search results
                 return currentPage;
             }
             return Math.ceil(totalMatches / 50);
         } else {
-            return 1;
+            // All other modes: maximum 200 pages (10000 projects)
+            return MAX_PAGES;
         }
     };
 
@@ -1154,7 +1156,7 @@ export default function OverallRankingsPage() {
                     </thead>
                     <tbody>
                     {repos.map((repo, index) => {
-                        // Use global rank if available, otherwise calculate
+                        // Use global rank if available, otherwise calculate from page
                         const displayRank = repo.global_rank || ((currentPage - 1) * 50 + index + 1);
                         const barWidth = (repo.score / maxScore) * 100;
                         // Handle score display: remove "0.", e.g., 0.88 -> 88, 1.23 -> 123

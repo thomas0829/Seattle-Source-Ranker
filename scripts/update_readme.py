@@ -12,50 +12,50 @@ from zoneinfo import ZoneInfo
 def load_latest_data():
     """Load the latest collection data from user and project files"""
     data_dir = Path(__file__).parent.parent / "data"
-    
+
     # Find latest seattle_users_*.json file (this is what we commit to Git)
     user_files = list(data_dir.glob('seattle_users_*.json'))
     if not user_files:
         return None
-        
+
     latest_user_file = max(user_files)
-    print(f"📂 Loading user data from {latest_user_file.name}")
-    
-    with open(latest_user_file, 'r') as f:
+    print("📂 Loading user data from {latest_user_file.name}")
+
+    with open(latest_user_file, 'r', encoding='utf-8') as f:
         user_data = json.load(f)
-    
+
     # Try to find latest project file (will exist during workflow run)
     project_files = list(data_dir.glob('seattle_projects_*.json'))
     project_data = None
-    
+
     if project_files:
         latest_project_file = max(project_files)
         print(f"📂 Loading project data from {latest_project_file.name}")
-        
+
         try:
-            with open(latest_project_file, 'r') as f:
+            with open(latest_project_file, 'r', encoding='utf-8') as f:
                 project_data = json.load(f)
-            print(f"✅ Successfully loaded project data")
-        except Exception as e:
-            print(f"⚠️  Warning: Could not load project data: {e}")
+            print("✅ Successfully loaded project data")
+        except json.JSONDecodeError:
+            print("⚠️  Warning: Could not load project data")
     else:
-        print(f"⚠️  No project data found (will use user data only)")
-    
+        print("⚠️  No project data found (will use user data only)")
+
     # Try to find PyPI data
     pypi_file = data_dir / 'seattle_pypi_projects.json'
     pypi_data = None
-    
+
     if pypi_file.exists():
         print(f"📂 Loading PyPI data from {pypi_file.name}")
         try:
-            with open(pypi_file, 'r') as f:
+            with open(pypi_file, 'r', encoding='utf-8') as f:
                 pypi_data = json.load(f)
-            print(f"✅ Successfully loaded PyPI data")
-        except Exception as e:
-            print(f"⚠️  Warning: Could not load PyPI data: {e}")
+            print("✅ Successfully loaded PyPI data")
+        except json.JSONDecodeError:
+            print("⚠️  Warning: Could not load PyPI data")
     else:
-        print(f"⚠️  No PyPI data found (will skip PyPI statistics)")
-    
+        print("⚠️  No PyPI data found (will skip PyPI statistics)")
+
     return {
         'user_data': user_data,
         'project_data': project_data,
@@ -65,10 +65,10 @@ def load_latest_data():
 def update_readme(stats):
     """Update README.md with latest statistics"""
     readme_path = Path(__file__).parent.parent / "README.md"
-    
+
     with open(readme_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    
+
     # Extract statistics
     total_users = stats.get('total_users', 0)
     total_projects = stats.get('total_projects')
@@ -77,7 +77,7 @@ def update_readme(stats):
     pypi_total_python = stats.get('pypi_total_python')
     pypi_rate = stats.get('pypi_detection_rate')
     collected_at = stats.get('collected_at', '')
-    
+
     # Format date with Seattle timezone (auto PST/PDT)
     SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
     if collected_at:
@@ -87,7 +87,7 @@ def update_readme(stats):
             dt = dt.astimezone(SEATTLE_TZ)
             tz_name = dt.strftime('%Z')  # Will be "PST" or "PDT"
             date_str = dt.strftime(f'%Y-%m-%d %H:%M:%S {tz_name}')
-        except:
+        except (ValueError, AttributeError):
             now = datetime.now(SEATTLE_TZ)
             tz_name = now.strftime('%Z')
             date_str = now.strftime(f'%Y-%m-%d %H:%M:%S {tz_name}')
@@ -95,26 +95,26 @@ def update_readme(stats):
         now = datetime.now(SEATTLE_TZ)
         tz_name = now.strftime('%Z')
         date_str = now.strftime(f'%Y-%m-%d %H:%M:%S {tz_name}')
-    
+
     new_content = content
-    
+
     # Update project count if available
     if total_projects is not None:
         project_pattern = r'- \*\*[0-9,]+ projects\*\* tracked across Seattle.s developer community'
         project_text = f"- **{total_projects:,} projects** tracked across Seattle's developer community"
         new_content = re.sub(project_pattern, project_text, new_content)
-    
+
     # Update stars count if available
     if total_stars is not None:
         stars_pattern = r'- \*\*[0-9,]+ total stars\*\* accumulated by Seattle projects'
         stars_text = f"- **{total_stars:,} total stars** accumulated by Seattle projects"
         new_content = re.sub(stars_pattern, stars_text, new_content)
-    
+
     # Update user count (always available)
     user_pattern = r'- \*\*[0-9,]+ users\*\* collected in latest run'
     user_text = f"- **{total_users:,} users** collected in latest run"
     new_content = re.sub(user_pattern, user_text, new_content)
-    
+
     # Update PyPI statistics if available
     if pypi_projects is not None and pypi_total_python is not None:
         pypi_pattern = r'- \*\*[0-9,]+ Python projects\*\* published on PyPI \([0-9.]+% of Python projects\)'
@@ -122,7 +122,7 @@ def update_readme(stats):
             pypi_text = f"- **{pypi_projects:,} Python projects** published on PyPI ({pypi_rate} of Python projects)"
         else:
             pypi_text = f"- **{pypi_projects:,} Python projects** published on PyPI"
-        
+
         # If pattern exists, replace it
         if re.search(pypi_pattern, new_content):
             new_content = re.sub(pypi_pattern, pypi_text, new_content)
@@ -133,40 +133,40 @@ def update_readme(stats):
                 r'\1\n' + pypi_text,
                 new_content
             )
-    
+
     # Update the date line
     # Pattern: - Last updated: 2025-11-15 21:06:33 PST (or PDT)
     date_pattern = r'- Last updated: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} (PST|PDT)'
     date_text = f"- Last updated: {date_str}"
-    
+
     new_content = re.sub(date_pattern, date_text, new_content)
-    
+
     # Write back
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
-    
-    print(f"✅ README.md updated successfully!")
+
+    print("✅ README.md updated successfully!")
     if total_projects is not None:
-        print(f"   Total Projects: {total_projects:,}")
+        print("   Total Projects: {total_projects:,}")
     if total_stars is not None:
-        print(f"   Total Stars: {total_stars:,}")
-    print(f"   Total Users: {total_users:,}")
-    print(f"   Last Updated: {date_str}")
+        print("   Total Stars: {total_stars:,}")
+    print("   Total Users: {total_users:,}")
+    print("   Last Updated: {date_str}")
 
 def main():
     print("📝 Updating README.md with latest statistics...")
-    
+
     # Load data
     data = load_latest_data()
-    
+
     if not data:
         print("❌ No data file found!")
         return
-    
+
     user_data = data['user_data']
     project_data = data['project_data']
     pypi_data = data['pypi_data']
-    
+
     # Build statistics from user data
     # Check if it's the new format (with total_users field) or old format (dict of users)
     SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
@@ -178,49 +178,49 @@ def main():
         # Old format: dict of users
         total_users = len(user_data)
         collected_at = datetime.now(SEATTLE_TZ).isoformat()
-    
+
     stats = {
         'total_users': total_users,
         'collected_at': collected_at
     }
-    
+
     # Add project statistics if available
     if project_data:
         stats['total_projects'] = project_data.get('total_projects')
         stats['total_stars'] = project_data.get('total_stars')
-        print(f"✅ Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
-    
+        print("✅ Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
+
     # Add PyPI statistics if available
     if pypi_data:
         stats['pypi_projects'] = pypi_data.get('projects_on_pypi', 0)
         stats['pypi_total_python'] = pypi_data.get('total_python_projects', 0)
         stats['pypi_detection_rate'] = pypi_data.get('detection_rate', '0%')
-        print(f"✅ Found PyPI data with {stats['pypi_projects']:,} projects on PyPI")
-    
-    print(f"✅ Found {stats['total_users']:,} users in latest data")
-    
+        print("✅ Found PyPI data with {stats['pypi_projects']:,} projects on PyPI")
+
+    print("✅ Found {stats['total_users']:,} users in latest data")
+
     # Update README
     update_readme(stats)
-    
+
     # Cleanup old data files (keep only the latest)
     cleanup_old_files()
 
 def cleanup_old_files():
     """Remove old seattle_users_*.json and seattle_projects_*.json files, keeping only the latest"""
     data_dir = Path(__file__).parent.parent / "data"
-    
+
     for pattern in ['seattle_users_*.json', 'seattle_projects_*.json']:
         files = sorted(data_dir.glob(pattern))
         if len(files) > 1:
             # Keep the latest, delete the rest
-            latest = files[-1]
             old_files = files[:-1]
-            
-            print(f"\n🧹 Cleaning up old {pattern.replace('*.json', '')} files:")
+
+            pattern_name = pattern.replace('*.json', '')
+            print(f"\n🧹 Cleaning up old {pattern_name} files:")
             for old_file in old_files:
                 print(f"   Deleting: {old_file.name}")
                 old_file.unlink()
-            print(f"   ✅ Kept latest: {latest.name}")
+            print(f"   ✅ Kept latest: {files[-1].name}")
 
 if __name__ == "__main__":
     main()

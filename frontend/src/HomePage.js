@@ -20,7 +20,7 @@ export default function HomePage() {
                 </h1>
             </header>
 
-            {/* 卡片 1：總排行榜 */}
+            {/* Card 1: Overall Rankings */}
             <section className="home-card glass-card">
                 <div className="home-card-text">
                     <h2 className="home-card-title" style={{color: "white"}}>
@@ -53,7 +53,7 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* 卡片 2：Python 專屬排行榜 */}
+            {/* Card 2: Python Rankings */}
             <section className="home-card glass-card">
                 <div className="home-card-text">
                     <h2 className="home-card-title" style={{color: "white"}}>

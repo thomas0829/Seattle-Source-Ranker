@@ -299,18 +299,28 @@ jobs:
           exit 1
         fi
         
-        # Check if it contains important organizations (allenai, awslabs)
-        if ! grep -q '"allenai"' "$LATEST_FILE"; then
-          echo "⚠️  Warning: allenai not found in new file"
-          echo "Skipping old file removal for safety"
-        else
-          echo "✅ Verification passed: allenai found"
+        # Check user count in the new file
+        USER_COUNT=$(jq -r '.total_users // 0' "$LATEST_FILE" 2>/dev/null || echo "0")
+        echo "📊 New file contains: $USER_COUNT users"
+        
+        # Only remove old files if new file has sufficient users (at least 20,000)
+        if [ "$USER_COUNT" -ge 20000 ]; then
+          echo "✅ Verification passed: $USER_COUNT users (>= 20,000)"
           
           # Remove old user files (keep only the latest one)
           echo "🧹 Cleaning up old user files..."
           cd data
-          ls -t seattle_users_*.json | tail -n +2 | xargs -r rm -v
+          OLD_FILES=$(ls -t seattle_users_*.json | tail -n +2)
+          if [ -n "$OLD_FILES" ]; then
+            echo "$OLD_FILES" | xargs rm -v
+            echo "✅ Removed $(echo "$OLD_FILES" | wc -l) old user file(s)"
+          else
+            echo "ℹ️  No old files to remove"
+          fi
           cd ..
+        else
+          echo "⚠️  Warning: User count ($USER_COUNT) is below threshold (20,000)"
+          echo "   Keeping old user files for safety"
         fi
         
         # Only add user files (small enough for Git)
