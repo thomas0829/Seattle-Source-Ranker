@@ -43,8 +43,8 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 | Team Member | Role | Contributions |
 |------------|------|---------------|
-| **thomas0829** | Project Architecture & System Design Lead | • Frontend/Backend system architecture<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• Python rankings with PyPI integration<br>• Performance optimization<br>• GitHub Actions automation<br>• Frontend implementation & deployment |
-| **Wenshu0206** | UI/UX Designer | • Ranking page initial UI/UX design<br>• Homepage first version design<br>• Visual design concepts & layouts |
+| **thomas0829** | Project Lead & Developer | • Full-stack development (frontend/backend)<br>• System architecture & implementation<br>• All features except homepage initial design |
+| **Wenshu0206** | UI/UX Designer | • Homepage first version design<br>• Visual design concepts & layouts |
 | **Muwen320** | Scoring Algorithm & Interpretability Specialist | • SSR scoring algorithm design<br>• Multi-factor ranking system<br>• Language classification logic<br>• Algorithm documentation<br>• Transparent scoring methodology |
 | **Chase-Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing<br>• Error handling & recovery |
 
