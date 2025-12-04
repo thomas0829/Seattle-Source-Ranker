@@ -20,7 +20,7 @@ body {
   overflow-y: scroll;
 }
 
-/* 自定義滾動條樣式 - 隱蔽設計 */
+/* Custom scrollbar - minimalist design */
 ::-webkit-scrollbar {
   width: 8px;
 }
