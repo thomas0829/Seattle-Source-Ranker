@@ -95,7 +95,7 @@ class PyPIClient:
 
             return None
         except Exception as e:
-            print("  ⚠️ Failed to fetch PyPI stats for {package_name}: {e}")
+            print("  [WARNING] Failed to fetch PyPI stats for {package_name}: {e}")
             return None
 
     def get_package_info(self, repo_name: str) -> Dict:

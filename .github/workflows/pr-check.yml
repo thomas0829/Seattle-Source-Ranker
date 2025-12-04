@@ -37,13 +37,13 @@ jobs:
     
     - name: Check Python syntax
       run: |
-        echo "🔍 Checking Python syntax..."
+        echo "[SEARCH] Checking Python syntax..."
         
         # Find all Python files
         python_files=$(find . -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" -not -path "./env/*")
         
         if [ -z "$python_files" ]; then
-          echo "✅ No Python files found"
+          echo "[OK] No Python files found"
           exit 0
         fi
         
@@ -52,23 +52,23 @@ jobs:
         for file in $python_files; do
           echo "Checking: $file"
           if ! python3 -m py_compile "$file"; then
-            echo "❌ Syntax error in: $file"
+            echo "[ERROR] Syntax error in: $file"
             errors=$((errors + 1))
           fi
         done
         
         if [ $errors -gt 0 ]; then
-          echo "❌ Found $errors file(s) with syntax errors"
+          echo "[ERROR] Found $errors file(s) with syntax errors"
           exit 1
         fi
         
-        echo "✅ All Python files have valid syntax"
+        echo "[OK] All Python files have valid syntax"
     
     - name: Summary
       if: always()
       run: |
         echo "## Python Syntax Check" >> $GITHUB_STEP_SUMMARY
-        echo "✅ All Python files have valid syntax" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] All Python files have valid syntax" >> $GITHUB_STEP_SUMMARY
 
   code-style:
     name: Code Style Check
@@ -98,7 +98,7 @@ jobs:
       if: always()
       run: |
         echo "## Code Style Check" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Code style tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Code style tests completed" >> $GITHUB_STEP_SUMMARY
 
   imports-check:
     name: Python Imports Check
@@ -120,7 +120,7 @@ jobs:
     
     - name: Check imports
       run: |
-        echo "🔍 Checking if all imports are available..."
+        echo "[SEARCH] Checking if all imports are available..."
         
         python3 << 'PYTHON_EOF'
         import sys
@@ -135,23 +135,23 @@ jobs:
             try:
                 module = __import__(module_name, fromlist=[class_name])
                 getattr(module, class_name)
-                print(f"✅ {module_name}.{class_name}")
+                print(f"[OK] {module_name}.{class_name}")
             except Exception as e:
-                print(f"❌ {module_name}.{class_name}: {e}")
+                print(f"[ERROR] {module_name}.{class_name}: {e}")
                 errors.append(f"{module_name}.{class_name}")
         
         if errors:
-            print(f"\n❌ Failed to import: {', '.join(errors)}")
+            print(f"\n[ERROR] Failed to import: {', '.join(errors)}")
             sys.exit(1)
         
-        print("\n✅ All imports successful")
+        print("\n[OK] All imports successful")
         PYTHON_EOF
     
     - name: Summary
       if: always()
       run: |
         echo "## Import Check" >> $GITHUB_STEP_SUMMARY
-        echo "✅ All imports successful" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] All imports successful" >> $GITHUB_STEP_SUMMARY
 
   test-distributed:
     name: Distributed Collector Tests
@@ -173,7 +173,7 @@ jobs:
     
     - name: Run distributed collector tests
       run: |
-        echo "🧪 Running distributed collector tests..."
+        echo "[TEST] Running distributed collector tests..."
         cd test
         pytest test_distributed_collector.py -v
     
@@ -181,7 +181,7 @@ jobs:
       if: always()
       run: |
         echo "## Distributed Collector Tests" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Tests completed" >> $GITHUB_STEP_SUMMARY
 
   test-graphql:
     name: GraphQL Query Tests
@@ -203,7 +203,7 @@ jobs:
     
     - name: Run GraphQL tests
       run: |
-        echo "🧪 Running GraphQL query tests..."
+        echo "[TEST] Running GraphQL query tests..."
         cd test
         pytest test_graphql_queries.py -v
     
@@ -211,7 +211,7 @@ jobs:
       if: always()
       run: |
         echo "## GraphQL Query Tests" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Tests completed" >> $GITHUB_STEP_SUMMARY
 
   test-scoring:
     name: Scoring Algorithm Tests
@@ -233,7 +233,7 @@ jobs:
     
     - name: Run scoring tests
       run: |
-        echo "🧪 Running scoring algorithm tests..."
+        echo "[TEST] Running scoring algorithm tests..."
         cd test
         pytest test_scoring_algorithms.py -v
     
@@ -241,7 +241,7 @@ jobs:
       if: always()
       run: |
         echo "## Scoring Algorithm Tests" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Tests completed" >> $GITHUB_STEP_SUMMARY
 
   test-token-manager:
     name: Token Manager Tests
@@ -263,7 +263,7 @@ jobs:
     
     - name: Run token manager tests
       run: |
-        echo "🧪 Running token manager tests..."
+        echo "[TEST] Running token manager tests..."
         cd test
         pytest test_token_manager.py -v
     
@@ -271,7 +271,7 @@ jobs:
       if: always()
       run: |
         echo "## Token Manager Tests" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Tests completed" >> $GITHUB_STEP_SUMMARY
 
   test-update-readme:
     name: Update README Tests
@@ -293,7 +293,7 @@ jobs:
     
     - name: Run update README tests
       run: |
-        echo "🧪 Running update README tests..."
+        echo "[TEST] Running update README tests..."
         cd test
         pytest test_update_readme.py -v
     
@@ -301,7 +301,7 @@ jobs:
       if: always()
       run: |
         echo "## Update README Tests" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Tests completed" >> $GITHUB_STEP_SUMMARY
 
   test-pypi-checker:
     name: PyPI Checker Tests
@@ -323,7 +323,7 @@ jobs:
     
     - name: Run PyPI checker tests
       run: |
-        echo "🧪 Running PyPI checker tests..."
+        echo "[TEST] Running PyPI checker tests..."
         cd test
         pytest test_pypi_checker_full.py -v
     
@@ -331,7 +331,7 @@ jobs:
       if: always()
       run: |
         echo "## PyPI Checker Tests" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Tests completed" >> $GITHUB_STEP_SUMMARY
   
   frontend-check:
     runs-on: ubuntu-latest
@@ -355,10 +355,10 @@ jobs:
     - name: Check for syntax errors
       run: |
         cd frontend
-        echo "🔍 Checking JavaScript/React syntax..."
+        echo "[SEARCH] Checking JavaScript/React syntax..."
         
         # This will fail if there are syntax errors
-        npx eslint src --ext .js,.jsx --max-warnings 0 || echo "⚠️  ESLint not configured, skipping..."
+        npx eslint src --ext .js,.jsx --max-warnings 0 || echo "[WARNING]  ESLint not configured, skipping..."
     
     - name: Build frontend
       run: |
@@ -371,4 +371,4 @@ jobs:
       run: |
         echo "## Frontend Check Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Frontend build check completed" >> $GITHUB_STEP_SUMMARY
+        echo "[OK] Frontend build check completed" >> $GITHUB_STEP_SUMMARY

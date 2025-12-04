@@ -3,7 +3,7 @@
 
 cd "$(dirname "$0")"
 
-echo "🧪 Running Seattle Source Ranker Tests..."
+echo "[TEST] Running Seattle Source Ranker Tests..."
 echo ""
 
 # Set PYTHONPATH to project root
@@ -16,10 +16,10 @@ exit_code=$?
 
 if [ $exit_code -eq 0 ]; then
     echo ""
-    echo "✅ All tests passed!"
+    echo "[OK] All tests passed!"
 else
     echo ""
-    echo "❌ Some tests failed (exit code: $exit_code)"
+    echo "[ERROR] Some tests failed (exit code: $exit_code)"
 fi
 
 exit $exit_code

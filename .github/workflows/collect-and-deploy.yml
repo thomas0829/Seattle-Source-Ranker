@@ -66,7 +66,7 @@ jobs:
         
         # Count tokens
         TOKEN_COUNT=$(grep -c "^GITHUB_TOKEN_[0-9]=" .env.tokens)
-        echo "✅ Configured $TOKEN_COUNT GitHub tokens"
+        echo "[OK] Configured $TOKEN_COUNT GitHub tokens"
     
     - name: Check user data age
       id: check_user_data
@@ -84,7 +84,7 @@ jobs:
         user_files = glob.glob('data/seattle_users_*.json')
         
         if not user_files:
-            print("❌ No user data found")
+            print("[ERROR] No user data found")
             print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('skip_graphql=false\n')
@@ -118,24 +118,24 @@ jobs:
             print(f"⏱️  Hours since: {hours_since:.1f}")
             
             if hours_since < 0:
-                print("⚠️  Timestamp in future")
+                print("[WARNING]  Timestamp in future")
                 print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('skip_graphql=false\n')
             elif hours_since < 24:
-                print(f"✅ User data is fresh (< 24 hours)")
+                print(f"[OK] User data is fresh (< 24 hours)")
                 print("   → Skip GraphQL (reuse existing users)")
                 print("   → Only run REST API to collect projects")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('skip_graphql=true\n')
             else:
-                print(f"⏰ User data is old (≥ 24 hours)")
+                print(f"[TIME] User data is old (≥ 24 hours)")
                 print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('skip_graphql=false\n')
         
         except Exception as e:
-            print(f"❌ Error parsing filename: {e}")
+            print(f"[ERROR] Error parsing filename: {e}")
             print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('skip_graphql=false\n')
@@ -143,7 +143,7 @@ jobs:
     
     - name: Run distributed collection
       run: |
-        echo "🚀 Starting distributed collection..."
+        echo "[START] Starting distributed collection..."
         python3 << 'PYTHON_EOF'
         from distributed.distributed_collector import DistributedCollector
         import json
@@ -165,7 +165,7 @@ jobs:
             print("=" * 60)
         else:
             print("=" * 60)
-            print("🔄 FULL MODE: Running complete collection")
+            print("[RETRY] FULL MODE: Running complete collection")
             print("   Step 1: GraphQL user search")
             print("   Step 2: REST API project collection")
             print("=" * 60)
@@ -184,7 +184,7 @@ jobs:
         # The collector will automatically skip GraphQL if user file < 24h exists
         collector.collect(max_users=30000, output_file=output_file)
         
-        print(f"✅ Collection completed: {output_file}")
+        print(f"[OK] Collection completed: {output_file}")
         
         # Create success marker
         with open('data/.collection_success', 'w') as f:
@@ -196,16 +196,16 @@ jobs:
       run: |
         # Verify collected data
         if [ ! -f "data/.collection_success" ]; then
-          echo "❌ Collection failed - success marker not found"
+          echo "[ERROR] Collection failed - success marker not found"
           exit 1
         fi
         
         if [ ! -f "data/seattle_projects_"*.json ]; then
-          echo "❌ Collection failed - projects data not found"
+          echo "[ERROR] Collection failed - projects data not found"
           exit 1
         fi
         
-        echo "✅ Collection verification passed"
+        echo "[OK] Collection verification passed"
     
     - name: Clean temporary files
       run: |
@@ -218,7 +218,7 @@ jobs:
         # Note: Keep all seattle_projects_*.json and seattle_users_*.json files
         # They are not pushed to Git anyway (projects too large, users already in repo)
         
-        echo "✅ Old data files cleaned"
+        echo "[OK] Old data files cleaned"
         echo "📁 Remaining files:"
         ls -lh *.json
     
@@ -228,13 +228,13 @@ jobs:
     
     - name: Generate PyPI projects list
       run: |
-        echo "📦 Checking Python projects on PyPI..."
+        echo "[PKG] Checking Python projects on PyPI..."
         python3 scripts/generate_pypi_projects.py
-        echo "✅ PyPI projects list generated"
+        echo "[OK] PyPI projects list generated"
     
     - name: Update watchers data
       run: |
-        echo "👁️ Updating watchers data with GraphQL..."
+        echo "[WATCH] Updating watchers data with GraphQL..."
         LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json | head -1)
         echo "Processing: $LATEST_PROJECTS"
         # Start Celery workers
@@ -245,20 +245,20 @@ jobs:
         
         # Stop workers
         bash scripts/stop_workers.sh
-        echo "✅ Watchers data updated (validated and enriched)"
+        echo "[OK] Watchers data updated (validated and enriched)"
     
     - name: Generate frontend paginated data
       run: |
-        echo "📊 Generating frontend data with topics..."
+        echo "[STATS] Generating frontend data with topics..."
         python3 scripts/generate_frontend_data.py
-        echo "✅ Frontend data generated with topics support"
+        echo "[OK] Frontend data generated with topics support"
     
     - name: Copy PyPI data to frontend
       run: |
-        echo "📦 Copying PyPI data to frontend..."
+        echo "[PKG] Copying PyPI data to frontend..."
         mkdir -p frontend/public/data
         cp data/seattle_pypi_projects.json frontend/public/data/
-        echo "✅ PyPI data copied to frontend/public/data/"
+        echo "[OK] PyPI data copied to frontend/public/data/"
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -289,23 +289,23 @@ jobs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
         # Verify the new user file is valid
-        echo "🔍 Verifying new user file..."
+        echo "[SEARCH] Verifying new user file..."
         LATEST_FILE=$(ls -t data/seattle_users_*.json | head -1)
         echo "Latest file: $LATEST_FILE"
         
         # Check if file exists and is valid JSON
         if [ ! -f "$LATEST_FILE" ]; then
-          echo "❌ Error: Latest user file not found"
+          echo "[ERROR] Error: Latest user file not found"
           exit 1
         fi
         
         # Check user count in the new file
         USER_COUNT=$(jq -r '.total_users // 0' "$LATEST_FILE" 2>/dev/null || echo "0")
-        echo "📊 New file contains: $USER_COUNT users"
+        echo "[STATS] New file contains: $USER_COUNT users"
         
         # Only remove old files if new file has sufficient users (at least 20,000)
         if [ "$USER_COUNT" -ge 20000 ]; then
-          echo "✅ Verification passed: $USER_COUNT users (>= 20,000)"
+          echo "[OK] Verification passed: $USER_COUNT users (>= 20,000)"
           
           # Remove old user files (keep only the latest one)
           echo "🧹 Cleaning up old user files..."
@@ -313,13 +313,13 @@ jobs:
           OLD_FILES=$(ls -t seattle_users_*.json | tail -n +2)
           if [ -n "$OLD_FILES" ]; then
             echo "$OLD_FILES" | xargs rm -v
-            echo "✅ Removed $(echo "$OLD_FILES" | wc -l) old user file(s)"
+            echo "[OK] Removed $(echo "$OLD_FILES" | wc -l) old user file(s)"
           else
             echo "ℹ️  No old files to remove"
           fi
           cd ..
         else
-          echo "⚠️  Warning: User count ($USER_COUNT) is below threshold (20,000)"
+          echo "[WARNING]  Warning: User count ($USER_COUNT) is below threshold (20,000)"
           echo "   Keeping old user files for safety"
         fi
         
@@ -331,7 +331,7 @@ jobs:
         
         # Check if there are changes
         if git diff --staged --quiet; then
-          echo "✅ No changes to user data, PyPI data, or README"
+          echo "[OK] No changes to user data, PyPI data, or README"
         else
           echo "📤 Committing updated user data, PyPI data, and README"
           git commit -m "chore: Update user data, PyPI data, and README - $(date +'%Y-%m-%d')"
@@ -354,18 +354,18 @@ jobs:
           STARS=$(jq -r '.total_stars // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
           
           echo "- 👥 Users: **$USERS**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
+          echo "- [PKG] Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
           echo "- ⭐ Stars: **$STARS**" >> $GITHUB_STEP_SUMMARY
           echo "- 📁 File: \`$(basename $LATEST_PROJECTS)\`" >> $GITHUB_STEP_SUMMARY
         else
-          echo "⚠️ Projects data file not found" >> $GITHUB_STEP_SUMMARY
+          echo "[WARNING] Projects data file not found" >> $GITHUB_STEP_SUMMARY
         fi
         
         # Also show user data info
         LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
         if [ -f "$LATEST_USERS" ]; then
           USER_COUNT=$(jq -r '.total_users // 0' "$LATEST_USERS" 2>/dev/null || echo "0")
-          echo "- 📋 User accounts collected: **$USER_COUNT**" >> $GITHUB_STEP_SUMMARY
+          echo "- [INFO] User accounts collected: **$USER_COUNT**" >> $GITHUB_STEP_SUMMARY
           echo "- 📄 User file: \`$(basename $LATEST_USERS)\`" >> $GITHUB_STEP_SUMMARY
         fi
         
@@ -375,7 +375,7 @@ jobs:
           TOTAL_PYTHON=$(jq -r '.total_python_projects // 0' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0")
           DETECTION_RATE=$(jq -r '.detection_rate // "0%"' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0%")
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 PyPI Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "### [PKG] PyPI Statistics" >> $GITHUB_STEP_SUMMARY
           echo "- 🐍 Total Python projects: **$TOTAL_PYTHON**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 On PyPI: **$PYPI_COUNT** ($DETECTION_RATE)" >> $GITHUB_STEP_SUMMARY
+          echo "- [PKG] On PyPI: **$PYPI_COUNT** ($DETECTION_RATE)" >> $GITHUB_STEP_SUMMARY
         fi

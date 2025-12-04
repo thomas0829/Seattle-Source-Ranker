@@ -33,7 +33,7 @@ class TokenManager:
         # Only print in main process (not in worker processes)
         import multiprocessing
         if multiprocessing.current_process().name == 'MainProcess':
-            print("✅ TokenManager initialized with {len(self._tokens)} tokens")
+            print("[OK] TokenManager initialized with {len(self._tokens)} tokens")
 
     def _load_tokens_from_env(self) -> List[str]:
         """Load tokens from environment variables"""

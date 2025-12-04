@@ -43,7 +43,7 @@ Seattle-Source-Ranker supports multi-token rotation to bypass GitHub API rate li
 ### 3 Tokens (Recommended)
 - API Limit: 15,000 requests/hour (3× improvement)
 - Collection Speed: ~150 users/minute
-- Large collection (30,000 users): **~3.5 hours** ✅
+- Large collection (30,000 users): **~3.5 hours** [OK]
 - Suitable for GitHub Actions (6-hour limit)
 
 ### Real Performance (481,323 Projects)
@@ -152,10 +152,10 @@ tail -f logs/worker*.log  # All workers
 ### Monitor Collection Progress
 
 The collector shows real-time progress:
-- ✅ Completed batches
-- 📊 Total projects collected
+- [OK] Completed batches
+- [STATS] Total projects collected
 - ⏱️ Elapsed time and ETA
-- 🔄 Success/failure rates
+- [RETRY] Success/failure rates
 
 ### Stop Workers
 
