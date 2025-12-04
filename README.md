@@ -44,7 +44,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 | Team Member | Role | Contributions |
 |------------|------|---------------|
 | **thomas0829** | Project Lead & Full-Stack Developer | • System architecture & distributed processing<br>• Frontend/Backend implementation<br>• GitHub API integration & optimization<br>• PyPI integration & Python rankings<br>• Automated deployment & CI/CD |
-| **Wenshu0206** | UI/UX Designer | • Homepage first version design<br>• Visual design concepts & layouts |
+| **Wenshu0206** | UI/UX Designer | • Mobile version design<br>• Homepage first version design |
 | **Muwen320** | Scoring Algorithm Specialist | • SSR scoring algorithm design<br>• Algorithm documentation |
 | **Chase-Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing |
 
