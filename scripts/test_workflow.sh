@@ -4,7 +4,7 @@
 
 set -e  # Exit immediately on error
 
-echo "🧪 Testing GitHub Actions workflow locally..."
+echo "[TEST] Testing GitHub Actions workflow locally..."
 echo "=============================================="
 
 # Color definitions
@@ -16,9 +16,9 @@ NC='\033[0m' # No Color
 # Check Redis
 echo -e "\n${YELLOW}1. Checking Redis...${NC}"
 if pgrep -x "redis-server" > /dev/null; then
-    echo -e "${GREEN}✅ Redis is running${NC}"
+    echo -e "${GREEN}[OK] Redis is running${NC}"
 else
-    echo -e "${RED}❌ Redis is not running${NC}"
+    echo -e "${RED}[ERROR] Redis is not running${NC}"
     echo "Please start Redis: redis-server &"
     exit 1
 fi
@@ -27,18 +27,18 @@ fi
 echo -e "\n${YELLOW}2. Checking .env.tokens...${NC}"
 if [ -f ".env.tokens" ]; then
     TOKEN_COUNT=$(grep -c "GITHUB_TOKEN_" .env.tokens || true)
-    echo -e "${GREEN}✅ Found .env.tokens with $TOKEN_COUNT tokens${NC}"
+    echo -e "${GREEN}[OK] Found .env.tokens with $TOKEN_COUNT tokens${NC}"
 else
-    echo -e "${RED}❌ .env.tokens not found${NC}"
+    echo -e "${RED}[ERROR] .env.tokens not found${NC}"
     exit 1
 fi
 
 # Check Python dependencies
 echo -e "\n${YELLOW}3. Checking Python dependencies...${NC}"
 if python3 -c "import celery, redis, requests, dotenv" 2>/dev/null; then
-    echo -e "${GREEN}✅ All Python dependencies installed${NC}"
+    echo -e "${GREEN}[OK] All Python dependencies installed${NC}"
 else
-    echo -e "${RED}❌ Missing dependencies${NC}"
+    echo -e "${RED}[ERROR] Missing dependencies${NC}"
     echo "Please run: pip install -r requirements.txt"
     exit 1
 fi
@@ -59,17 +59,17 @@ try:
     
     print("Starting test collection...")
     collector.collect(max_users=100)
-    print("\n✅ Test collection completed successfully!")
+    print("\n[OK] Test collection completed successfully!")
     
 except Exception as e:
-    print(f"\n❌ Test collection failed: {e}", file=sys.stderr)
+    print(f"\n[ERROR] Test collection failed: {e}", file=sys.stderr)
     sys.exit(1)
 PYTHON_EOF
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Collection test passed${NC}"
+    echo -e "${GREEN}[OK] Collection test passed${NC}"
 else
-    echo -e "${RED}❌ Collection test failed${NC}"
+    echo -e "${RED}[ERROR] Collection test failed${NC}"
     exit 1
 fi
 
@@ -89,36 +89,36 @@ if [ -n "$OLD_PROJECTS" ] || [ -n "$OLD_USERS" ]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         [ -n "$OLD_PROJECTS" ] && echo "$OLD_PROJECTS" | xargs rm -v
         [ -n "$OLD_USERS" ] && echo "$OLD_USERS" | xargs rm -v
-        echo -e "${GREEN}✅ Old files cleaned${NC}"
+        echo -e "${GREEN}[OK] Old files cleaned${NC}"
     else
-        echo -e "${YELLOW}⚠️  Skipped cleaning${NC}"
+        echo -e "${YELLOW}[WARNING]  Skipped cleaning${NC}"
     fi
 else
-    echo -e "${GREEN}✅ No old files to clean${NC}"
+    echo -e "${GREEN}[OK] No old files to clean${NC}"
 fi
 cd ..
 
 # Test README update
 echo -e "\n${YELLOW}6. Testing README update...${NC}"
 if python3 scripts/update_readme.py; then
-    echo -e "${GREEN}✅ README update test passed${NC}"
+    echo -e "${GREEN}[OK] README update test passed${NC}"
 else
-    echo -e "${RED}❌ README update test failed${NC}"
+    echo -e "${RED}[ERROR] README update test failed${NC}"
     exit 1
 fi
 
 # Check output files
 echo -e "\n${YELLOW}7. Checking output files...${NC}"
 if [ -f "data/ranked_project_local_seattle.json" ]; then
-    echo -e "${GREEN}✅ ranked_project_local_seattle.json exists${NC}"
+    echo -e "${GREEN}[OK] ranked_project_local_seattle.json exists${NC}"
 else
-    echo -e "${YELLOW}⚠️  ranked_project_local_seattle.json not found${NC}"
+    echo -e "${YELLOW}[WARNING]  ranked_project_local_seattle.json not found${NC}"
 fi
 
 if [ -f "data/ranked_by_language_seattle.json" ]; then
-    echo -e "${GREEN}✅ ranked_by_language_seattle.json exists${NC}"
+    echo -e "${GREEN}[OK] ranked_by_language_seattle.json exists${NC}"
 else
-    echo -e "${YELLOW}⚠️  ranked_by_language_seattle.json not found${NC}"
+    echo -e "${YELLOW}[WARNING]  ranked_by_language_seattle.json not found${NC}"
 fi
 
 # Test frontend build (optional)
@@ -128,16 +128,16 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "\n${YELLOW}8. Building frontend...${NC}"
     cd frontend
     if npm ci && npm run build; then
-        echo -e "${GREEN}✅ Frontend build successful${NC}"
+        echo -e "${GREEN}[OK] Frontend build successful${NC}"
     else
-        echo -e "${RED}❌ Frontend build failed${NC}"
+        echo -e "${RED}[ERROR] Frontend build failed${NC}"
         exit 1
     fi
     cd ..
 fi
 
 echo -e "\n${GREEN}=============================================="
-echo "🎉 All tests passed! Workflow is ready."
+echo "[DONE] All tests passed! Workflow is ready."
 echo -e "==============================================${NC}"
 echo ""
 echo "Next steps:"

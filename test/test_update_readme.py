@@ -89,7 +89,7 @@ class TestUpdateReadme:
         # Create a test README
         readme_content = """# Test Project
 
-## 📊 Latest Statistics
+## [STATS] Latest Statistics
 
 - **1,000 projects** tracked across Seattle's developer community
 - **5,000 total stars** accumulated by Seattle projects
@@ -135,7 +135,7 @@ class TestUpdateReadme:
         """Test updating README with only user statistics"""
         readme_content = """# Test Project
 
-## 📊 Latest Statistics
+## [STATS] Latest Statistics
 
 - **1,000 projects** tracked across Seattle's developer community
 - **5,000 total stars** accumulated by Seattle projects

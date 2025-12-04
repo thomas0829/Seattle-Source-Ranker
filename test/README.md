@@ -2,9 +2,9 @@
 
 This directory contains comprehensive tests for the Seattle Source Ranker project.
 
-## 📊 Test Statistics
+## [STATS] Test Statistics
 
-- **91 tests** - All passing ✅
+- **91 tests** - All passing [OK]
 - **8 test files** covering core functionality
 - **12 skipped** (require Celery/Redis)
 - **Execution time**: ~23 seconds
@@ -50,7 +50,7 @@ test/
 └── test_pypi_checker_full.py           # PyPI checker complete (14 tests) 🆕
 ```
 
-## 🎯 Test Categories
+## [TARGET] Test Categories
 
 ### Core Functionality (91 tests)
 
@@ -60,7 +60,7 @@ test/
    - Case insensitivity
    - Unknown project handling
 
-2. **GraphQL Queries** (4 tests) ⚠️ Critical
+2. **GraphQL Queries** (4 tests) [WARNING] Critical
    - **Organization fragment inclusion** (prevents missing orgs like allenai, awslabs)
    - User fragment inclusion
    - Query structure validation
@@ -102,7 +102,7 @@ test/
 
 ## 🔑 Critical Tests
 
-### 1. Organization Fragment Test ⚠️ MUST PASS
+### 1. Organization Fragment Test [WARNING] MUST PASS
 **Why**: Ensures Seattle organizations (allenai, awslabs, FredHutch) are included in results.
 
 ```python
@@ -112,7 +112,7 @@ def test_distributed_collector_has_organization_fragment():
 
 Without this, organizations appear as empty objects and are excluded from the 464K projects.
 
-### 2. SSR Scoring Algorithm Tests 🎯
+### 2. SSR Scoring Algorithm Tests [TARGET]
 **Why**: Validates that the ranking algorithm correctly scores projects.
 
 - Projects aged 2-8 years get highest scores (peak maturity)
@@ -127,19 +127,19 @@ Without this, organizations appear as empty objects and are excluded from the 46
 - Tests rate limit caching (reduces API calls)
 - Ensures thread-safe access
 
-## 📂 Data Dependencies
+## [DIR] Data Dependencies
 
-### ⚠️ Important: Test Data Paths
+### [WARNING] Important: Test Data Paths
 
 Tests use **project root `data/` directory**, not test-local data:
 
 ```python
-# Correct ✅
+# Correct [OK]
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / 'data'
 checker = PyPIChecker(cache_dir=str(DATA_DIR))
 
-# Wrong ❌ - creates test/data/
+# Wrong [ERROR] - creates test/data/
 checker = PyPIChecker()  # Uses CWD
 ```
 
@@ -148,7 +148,7 @@ checker = PyPIChecker()  # Uses CWD
 - `seattle_projects_*.json` - Project data (for test_pypi_50_projects.py)
 - `seattle_users_*.json` - User data (optional)
 
-## 🚀 Running Tests
+## [START] Running Tests
 
 ### All Tests
 ```bash
@@ -198,12 +198,12 @@ class TestFeature:
 ```
 
 ### Best Practices
-- ✅ Use descriptive test names (`test_age_factor_peak_range` not `test_1`)
-- ✅ Add docstrings explaining what's tested
-- ✅ Group related tests in classes
-- ✅ Use `@pytest.mark.skip` for tests requiring external services
-- ✅ Mock external API calls to avoid rate limits
-- ✅ Test edge cases (None, empty, negative values)
+- [OK] Use descriptive test names (`test_age_factor_peak_range` not `test_1`)
+- [OK] Add docstrings explaining what's tested
+- [OK] Group related tests in classes
+- [OK] Use `@pytest.mark.skip` for tests requiring external services
+- [OK] Mock external API calls to avoid rate limits
+- [OK] Test edge cases (None, empty, negative values)
 
 ## 🔧 Troubleshooting
 
@@ -238,18 +238,18 @@ sudo systemctl start redis-server
 # Subsequent runs use cache (fast)
 ```
 
-## 📈 Test Coverage Summary
+## [CHART] Test Coverage Summary
 
 | Module | Tests | Status |
 |--------|-------|--------|
-| `classify_languages.py` | 6 | ✅ 100% |
-| `graphql queries` | 4 | ✅ 100% |
-| `update_readme.py` | 5 | ✅ 100% |
-| `pypi_checker.py` | 15 | ✅ 90% |
-| `token_manager.py` | 21 | ✅ 85% |
-| `scoring algorithms` | 40 | ✅ 95% |
-| `distributed_collector.py` | 12 | ⏭️ Skipped |
-| **Total** | **91** | **✅ All Pass** |
+| `classify_languages.py` | 6 | [OK] 100% |
+| `graphql queries` | 4 | [OK] 100% |
+| `update_readme.py` | 5 | [OK] 100% |
+| `pypi_checker.py` | 15 | [OK] 90% |
+| `token_manager.py` | 21 | [OK] 85% |
+| `scoring algorithms` | 40 | [OK] 95% |
+| `distributed_collector.py` | 12 | [SKIP] Skipped |
+| **Total** | **91** | **[OK] All Pass** |
 
 ## 🎓 Understanding Test Output
 
@@ -264,16 +264,16 @@ test_scoring_algorithms.py::TestCalculateGithubScore::test_score_range PASSED [7
 ...
 
 ============================= 91 passed in 23.15s ==============================
-✅ All tests passed!
+[OK] All tests passed!
 ```
 
 ### Status Indicators:
-- ✅ `PASSED` - Test succeeded
-- ❌ `FAILED` - Test failed (see error details)
-- ⏭️ `SKIPPED` - Test skipped (requires Celery/Redis)
-- ⚠️ Warning - Non-critical issue (e.g., deprecation)
+- [OK] `PASSED` - Test succeeded
+- [ERROR] `FAILED` - Test failed (see error details)
+- [SKIP] `SKIPPED` - Test skipped (requires Celery/Redis)
+- [WARNING] Warning - Non-critical issue (e.g., deprecation)
 
-## 🔄 Continuous Integration
+## [RETRY] Continuous Integration
 
 Add to `.github/workflows/test.yml`:
 

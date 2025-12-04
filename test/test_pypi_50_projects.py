@@ -23,11 +23,11 @@ def load_real_projects(limit=50):
     project_files = glob.glob(str(data_dir / 'seattle_projects_*.json'))
     
     if not project_files:
-        print("❌ No project data found. Using sample projects instead.")
+        print("[ERROR] No project data found. Using sample projects instead.")
         return get_sample_projects()
     
     latest_file = max(project_files)
-    print(f"📂 Loading projects from {latest_file}")
+    print(f"[DIR] Loading projects from {latest_file}")
     
     with open(latest_file) as f:
         data = json.load(f)
@@ -38,7 +38,7 @@ def load_real_projects(limit=50):
     elif isinstance(data, list):
         all_projects = data
     else:
-        print("❌ Unexpected data format")
+        print("[ERROR] Unexpected data format")
         return get_sample_projects()
     
     # Filter Python projects
@@ -103,13 +103,13 @@ def get_sample_projects():
 def test_50_projects():
     """Test PyPI checker with 50 projects"""
     print("=" * 80)
-    print("🧪 Testing PyPI Checker with 50 Real Projects")
+    print("[TEST] Testing PyPI Checker with 50 Real Projects")
     print("=" * 80)
     print()
     
     # Load projects
     projects = load_real_projects(50)
-    print(f"\n📊 Testing {len(projects)} projects\n")
+    print(f"\n[STATS] Testing {len(projects)} projects\n")
     
     # Initialize checker with project data directory
     checker = PyPIChecker(cache_dir=str(DATA_DIR))
@@ -124,7 +124,7 @@ def test_50_projects():
         'uncertain': []        # Need manual review
     }
     
-    print("🔍 Checking projects...\n")
+    print("[SEARCH] Checking projects...\n")
     print(f"{'#':<4} {'Project':<35} {'Stars':<8} {'Match':<8} {'Conf':<6} {'Method':<25}")
     print("-" * 95)
     
@@ -132,7 +132,7 @@ def test_50_projects():
         is_on_pypi, confidence, method = checker.check_project(project)
         
         # Display result
-        status = "✅" if is_on_pypi else "❌"
+        status = "[OK]" if is_on_pypi else "[ERROR]"
         name = project.get('name', 'unknown')[:30]
         stars = project.get('stars', 0)
         
@@ -162,16 +162,16 @@ def test_50_projects():
     
     # Summary
     print("\n" + "=" * 80)
-    print("📊 RESULTS SUMMARY")
+    print("[STATS] RESULTS SUMMARY")
     print("=" * 80)
     
     total_detected = sum(1 for p in projects if p['check_result']['on_pypi'])
     total_not_detected = len(projects) - total_detected
     
-    print(f"\n✅ Detected on PyPI: {total_detected} ({total_detected/len(projects)*100:.1f}%)")
-    print(f"❌ Not on PyPI: {total_not_detected} ({total_not_detected/len(projects)*100:.1f}%)")
+    print(f"\n[OK] Detected on PyPI: {total_detected} ({total_detected/len(projects)*100:.1f}%)")
+    print(f"[ERROR] Not on PyPI: {total_not_detected} ({total_not_detected/len(projects)*100:.1f}%)")
     
-    print(f"\n🎯 Confidence Distribution:")
+    print(f"\n[TARGET] Confidence Distribution:")
     high_conf = sum(1 for p in projects if p['check_result']['confidence'] > 0.8)
     med_conf = sum(1 for p in projects if 0.4 < p['check_result']['confidence'] <= 0.8)
     low_conf = sum(1 for p in projects if p['check_result']['confidence'] <= 0.4)
@@ -180,7 +180,7 @@ def test_50_projects():
     print(f"   Medium (0.4-0.8): {med_conf} projects")
     print(f"   Low (<0.4): {low_conf} projects")
     
-    print(f"\n📈 Match Methods:")
+    print(f"\n[CHART] Match Methods:")
     methods = {}
     for p in projects:
         method = p['check_result']['method']
@@ -190,19 +190,19 @@ def test_50_projects():
         print(f"   {method}: {count}")
     
     print("\n" + "=" * 80)
-    print("💡 MANUAL VERIFICATION NEEDED")
+    print("[TIP] MANUAL VERIFICATION NEEDED")
     print("=" * 80)
     print("\nPlease verify these results by checking PyPI manually:")
     print("Visit: https://pypi.org/project/<package-name>/\n")
     
     # Show a few high-confidence positives for manual check
-    print("🔍 High-confidence matches (should be on PyPI):")
+    print("[SEARCH] High-confidence matches (should be on PyPI):")
     high_conf_positive = [p for p in projects if p['check_result']['on_pypi'] and p['check_result']['confidence'] > 0.85][:10]
     for p in high_conf_positive:
         name = p.get('name', 'unknown')
         print(f"   • {name} - https://pypi.org/project/{name}/")
     
-    print("\n🔍 Projects marked as NOT on PyPI (verify they shouldn't be):")
+    print("\n[SEARCH] Projects marked as NOT on PyPI (verify they shouldn't be):")
     high_conf_negative = [p for p in projects if not p['check_result']['on_pypi']][:10]
     for p in high_conf_negative:
         name = p.get('name', 'unknown')

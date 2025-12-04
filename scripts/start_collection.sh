@@ -9,16 +9,16 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 cd "$PROJECT_ROOT"
 
 echo "=========================================="
-echo "🚀 Safe Distributed Collection Starter"
+echo "[START] Safe Distributed Collection Starter"
 echo "=========================================="
 
 # Activate conda environment (if exists)
 if [ -f ~/anaconda3/etc/profile.d/conda.sh ]; then
-    echo "📦 Activating conda environment..."
+    echo "[PKG] Activating conda environment..."
     source ~/anaconda3/etc/profile.d/conda.sh
-    conda activate ssr 2>/dev/null || echo "⚠️  ssr environment not found, using system Python"
+    conda activate ssr 2>/dev/null || echo "[WARNING]  ssr environment not found, using system Python"
 else
-    echo "📦 Using system Python (conda not found)"
+    echo "[PKG] Using system Python (conda not found)"
 fi
 
 # Get date and timestamp
@@ -34,7 +34,7 @@ echo ""
 echo "🧹 Step 1: Cleaning up old data..."
 echo "   Clearing Redis..."
 redis-cli FLUSHDB
-echo "   ✅ Redis cleared"
+echo "   [OK] Redis cleared"
 
 echo "   Note: Old logs are kept in logs/<date> directories"
 
@@ -45,14 +45,14 @@ pkill -9 -f "celery.*worker" 2>/dev/null || true
 sleep 2
 WORKER_COUNT=$(ps aux | grep "celery.*worker" | grep -v grep | wc -l)
 if [ "$WORKER_COUNT" -eq 0 ]; then
-    echo "   ✅ All workers stopped"
+    echo "   [OK] All workers stopped"
 else
-    echo "   ⚠️  Warning: $WORKER_COUNT workers still running"
+    echo "   [WARNING]  Warning: $WORKER_COUNT workers still running"
 fi
 
 # Step 3: Start collection in background with nohup
 echo ""
-echo "🚀 Step 3: Starting collection in background..."
+echo "[START] Step 3: Starting collection in background..."
 echo "   Parameters:"
 echo "      - Max users: 30000"
 echo "      - Batch size: 50"
@@ -69,7 +69,7 @@ nohup python3 -u distributed/distributed_collector.py \
 
 COLLECTOR_PID=$!
 
-echo "   ✅ Collection started!"
+echo "   [OK] Collection started!"
 echo "   PID: $COLLECTOR_PID"
 echo "   Log: $LOG_FILE"
 echo ""
@@ -88,13 +88,13 @@ if ps -p $COLLECTOR_PID > /dev/null; then
     echo "   pkill -f distributed_collector"
     echo ""
 else
-    echo "❌ Collection failed to start!"
+    echo "[ERROR] Collection failed to start!"
     echo "   Check log: $LOG_FILE"
     exit 1
 fi
 
 echo "=========================================="
-echo "✅ Setup Complete!"
+echo "[OK] Setup Complete!"
 echo "=========================================="
 echo ""
 echo "Collection is now running in the background."

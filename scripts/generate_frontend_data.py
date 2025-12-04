@@ -210,23 +210,23 @@ def main():
         import glob
         files = glob.glob('data/seattle_projects_*.json')
         if not files:
-            print("❌ No project data files found in data/")
+            print("[ERROR] No project data files found in data/")
             return
         data_file = max(files)  # Get the latest file
 
-    print(f"📂 Loading data from {data_file}...")
+    print(f"[DIR] Loading data from {data_file}...")
     with open(data_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     projects = data.get('projects', [])
-    print(f"📦 Loaded {len(projects):,} projects")
+    print(f"[PKG] Loaded {len(projects):,} projects")
 
     # Find max values for normalization
     max_stars = max((p.get('stars', 0) for p in projects), default=1)
     max_forks = max((p.get('forks', 0) for p in projects), default=1)
     max_watchers = max((p.get('watchers', 0) for p in projects), default=1)
 
-    print(f"📊 Max values: stars={max_stars:,}, forks={max_forks:,}, watchers={max_watchers:,}")
+    print(f"[STATS] Max values: stars={max_stars:,}, forks={max_forks:,}, watchers={max_watchers:,}")
 
     # Calculate scores and classify by language
     by_language = defaultdict(list)
@@ -286,7 +286,7 @@ def main():
         'last_updated': last_updated
     }
 
-    print("\n📊 Generating paginated data:")
+    print("\n[STATS] Generating paginated data:")
 
     for language, lang_projects in sorted(by_language.items(), key=lambda x: len(x[1]), reverse=True):
         total_projects = len(lang_projects)
@@ -322,7 +322,7 @@ def main():
                 json.dump(page_data, f, separators=(',', ':'))
 
         percentage = (total_projects / sum(len(p) for p in by_language.values()) * 100)
-        print(f"  ✅ {language}: {total_projects:,} projects ({percentage:.1f}%) → {total_pages} pages")
+        print(f"  [OK] {language}: {total_projects:,} projects ({percentage:.1f}%) → {total_pages} pages")
 
     # Save metadata
     metadata_file = 'frontend/public/metadata.json'
@@ -333,10 +333,10 @@ def main():
     with open('frontend/build/metadata.json', 'w', encoding='utf-8') as f:
         json.dump(metadata, f, indent=2)
 
-    print(f"\n✅ Saved metadata to {metadata_file}")
+    print(f"\n[OK] Saved metadata to {metadata_file}")
 
     # Generate owner index for fast user searches (split into chunks)
-    print("\n📋 Generating owner index...")
+    print("\n[INFO] Generating owner index...")
     owner_index = defaultdict(list)
 
     for language, lang_projects in by_language.items():
@@ -389,11 +389,11 @@ def main():
             json.dump(owners, f, separators=(',', ':'))
 
         total_owners += len(owners)
-        print(f"  ✅ {char}.json: {len(owners):,} owners")
+        print(f"  [OK] {char}.json: {len(owners):,} owners")
 
-    print(f"✅ Generated split owner index with {total_owners:,} unique owners")
+    print(f"[OK] Generated split owner index with {total_owners:,} unique owners")
 
-    print(f"\n🎉 Done! Generated {sum(m['pages'] for m in metadata['languages'].values())} page files")
+    print(f"\n[DONE] Done! Generated {sum(m['pages'] for m in metadata['languages'].values())} page files")
     print(f"   Each page contains up to {PAGE_SIZE} projects")
     print(f"   Total size: ~{sum(m['total'] for m in metadata['languages'].values()):,} projects")
 

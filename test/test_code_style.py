@@ -69,7 +69,7 @@ class TestCodeStyle:
                 f"Run 'pylint {' '.join(self.FILES_TO_CHECK)}' to see details"
             )
 
-            print(f"\n✅ Code quality score: {score:.2f}/10 (minimum: {self.MIN_PYLINT_SCORE}/10)")
+            print(f"\n[OK] Code quality score: {score:.2f}/10 (minimum: {self.MIN_PYLINT_SCORE}/10)")
 
         except FileNotFoundError:
             pytest.skip("pylint not installed - run: pip install pylint")
@@ -127,7 +127,7 @@ class TestCodeStyle:
                     '\n'.join(error_lines[:5])  # Show first 5
                 )
 
-            print(f"✅ No critical errors found")
+            print(f"[OK] No critical errors found")
 
         except FileNotFoundError:
             pytest.skip("pylint not installed")

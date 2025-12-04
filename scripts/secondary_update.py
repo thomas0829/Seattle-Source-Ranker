@@ -27,6 +27,8 @@ import json
 import os
 import sys
 import time
+import signal
+import atexit
 from pathlib import Path
 from celery import group
 
@@ -35,8 +37,56 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from distributed.workers.collection_worker import update_watchers_batch_task
 
+# Global flag for cleanup
+_workers_started_by_script = False
 
-def secondary_update(input_file=None, batch_size=100):
+def cleanup_workers():
+    """Stop workers if they were started by this script"""
+    global _workers_started_by_script
+    if _workers_started_by_script:
+        print("\n[CLEANUP] Stopping workers...")
+        import subprocess
+        stop_script = Path(__file__).parent / 'stop_workers.sh'
+        if stop_script.exists():
+            try:
+                subprocess.run(['bash', str(stop_script)], check=False)
+            except:
+                pass
+
+def signal_handler(signum, frame):
+    """Handle Ctrl+C and other signals"""
+    print("\n[INTERRUPT] Received signal, cleaning up...")
+    global _workers_started_by_script
+    if _workers_started_by_script:
+        print("[CLEANUP] Stopping workers...")
+        import subprocess
+        stop_script = Path(__file__).parent / 'stop_workers.sh'
+        if stop_script.exists():
+            try:
+                # Run and wait for workers to stop
+                result = subprocess.run(['bash', str(stop_script)], 
+                                      check=False, 
+                                      capture_output=True, 
+                                      text=True,
+                                      timeout=30)
+                print(result.stdout)
+                if result.returncode == 0:
+                    print("[OK] Workers stopped successfully")
+                else:
+                    print(f"[WARNING] Workers may not have stopped cleanly: {result.stderr}")
+            except subprocess.TimeoutExpired:
+                print("[WARNING] Worker shutdown timed out")
+            except Exception as e:
+                print(f"[ERROR] Failed to stop workers: {e}")
+    sys.exit(1)
+
+# Register cleanup handlers
+atexit.register(cleanup_workers)
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
+
+def secondary_update(input_file=None, batch_size=50):
     """
     Main function to orchestrate secondary data update using Celery workers.
 
@@ -49,24 +99,24 @@ def secondary_update(input_file=None, batch_size=100):
         data_dir = Path(__file__).parent.parent / 'data'
         json_files = sorted(data_dir.glob('seattle_projects_*.json'))
         if not json_files:
-            print("❌ No project files found in data/")
+            print("[ERROR] No project files found in data/")
             return
         input_file = json_files[-1]
-        print("📂 Using latest file: {input_file.name}")
+        print(f"[DIR] Using latest file: {input_file.name}")
     else:
         input_file = Path(input_file)
 
     if not input_file.exists():
-        print("❌ File not found: {input_file}")
+        print(f"[ERROR] File not found: {input_file}")
         return
 
     # Load projects
-    print("📥 Loading projects from {input_file.name}...")
+    print(f"📥 Loading projects from {input_file.name}...")
     with open(input_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     projects = data.get('projects', [])
-    print(f"✅ Loaded {len(projects):,} projects")
+    print(f"[OK] Loaded {len(projects):,} projects")
     print()
 
     # Prepare batches
@@ -76,8 +126,8 @@ def secondary_update(input_file=None, batch_size=100):
         batches.append(batch)
 
     total_batches = len(batches)
-    print("📦 Split into {total_batches:,} batches ({batch_size} repos each)")
-    print("🚀 Dispatching tasks to Celery workers...")
+    print(f"[PKG] Split into {total_batches:,} batches ({batch_size} repos each)")
+    print("[START] Dispatching tasks to Celery workers...")
     print()
 
     # Create task group
@@ -88,7 +138,7 @@ def secondary_update(input_file=None, batch_size=100):
     result = job.apply_async()
 
     # Monitor progress
-    print("⏳ Processing batches...")
+    print("[WAIT] Processing batches...")
     print()
 
     last_completed = 0
@@ -111,7 +161,7 @@ def secondary_update(input_file=None, batch_size=100):
 
     # Get results
     print()
-    print("📊 Collecting results...")
+    print("[STATS] Collecting results...")
     batch_results = result.get()
 
     # Aggregate results
@@ -149,12 +199,12 @@ def secondary_update(input_file=None, batch_size=100):
     # Remove deleted repos
     if repos_to_remove:
         print()
-        print("🗑️  Removing {len(repos_to_remove)} inaccessible repos...")
+        print(f"[DELETE] Removing {len(repos_to_remove)} inaccessible repos...")
         for idx in sorted(set(repos_to_remove), reverse=True):
             if idx < len(projects):
                 removed = projects.pop(idx)
                 owner = removed['owner']['login'] if isinstance(removed['owner'], dict) else removed['owner']
-                print("   ❌ {owner}/{removed['name']}")
+                print(f"   [ERROR] {owner}/{removed['name']}")
 
         # Update metadata
         data['total_projects'] = len(projects)
@@ -178,13 +228,13 @@ def secondary_update(input_file=None, batch_size=100):
     print()
 
     # Save updated data
-    print("💾 Saving updated data to {input_file.name}...")
+    print(f"[SAVE] Saving updated data to {input_file.name}...")
     with open(input_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    print("✅ Successfully saved!")
+    print("[OK] Successfully saved!")
     print()
-    print("🎉 Secondary update complete! {len(projects):,} verified repos remain.")
+    print(f"[DONE] Secondary update complete! {len(projects):,} verified repos remain.")
 
 
 def main():
@@ -204,8 +254,8 @@ def main():
     print(" Seattle Source Ranker - Secondary Data Update")
     print("=" * 70)
     print()
-    print("⚙️  Using Celery + Redis for distributed processing")
-    print("📋 This will update watchers and remove invalid repos")
+    print("[CONFIG]  Using Celery + Redis for distributed processing")
+    print("[INFO] This will update watchers and remove invalid repos")
     print()
 
     # Check if Redis and workers are running
@@ -219,14 +269,15 @@ def main():
             check=False
         )
         if result.stdout.strip() != 'PONG':
-            print("❌ Redis is not running!")
+            print("[ERROR] Redis is not running!")
             print("   Start it with: redis-server --daemonize yes")
             return
-        print("✅ Redis is running")
+        print("[OK] Redis is running")
     except (FileNotFoundError, TimeoutError):
-        print("⚠️  Could not check Redis status")
+        print("[WARNING]  Could not check Redis status")
 
     # Check Celery workers
+    workers_running = False
     try:
         result = subprocess.run(
             ['python3', '-m', 'celery', '-A', 'distributed.workers.collection_worker', 'inspect', 'active'],
@@ -235,12 +286,39 @@ def main():
         )
         if 'worker' in result.stdout:
             count = result.stdout.count('@')
-            print(f"✅ {count} Celery workers detected")
+            print(f"[OK] {count} Celery workers detected")
+            workers_running = True
         else:
-            print("⚠️  No active Celery workers found!")
-            print("   Start them with: bash scripts/start_workers.sh")
+            print("[WARNING] No active Celery workers found!")
+            print("[AUTO] Starting workers automatically...")
+            # Auto-start workers
+            global _workers_started_by_script
+            start_script = Path(__file__).parent / 'start_workers.sh'
+            if start_script.exists():
+                subprocess.run(['bash', str(start_script)], check=True)
+                print("[OK] Workers started successfully")
+                workers_running = True
+            else:
+                print("[ERROR] start_workers.sh not found!")
+                print("   Please start manually: bash scripts/start_workers.sh")
+                return
     except (FileNotFoundError, TimeoutError):
-        print("⚠️  Could not check Celery worker status")
+        print("[WARNING] Could not check Celery worker status")
+        print("[AUTO] Attempting to start workers...")
+        start_script = Path(__file__).parent / 'start_workers.sh'
+        if start_script.exists():
+            try:
+                subprocess.run(['bash', str(start_script)], check=True)
+                print("[OK] Workers started successfully")
+                workers_running = True
+                _workers_started_by_script = True
+            except Exception as e:
+                print(f"[ERROR] Failed to start workers: {e}")
+                return
+
+    if not workers_running:
+        print("[ERROR] Cannot proceed without workers!")
+        return
 
     print()
 

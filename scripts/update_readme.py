@@ -19,7 +19,7 @@ def load_latest_data():
         return None
 
     latest_user_file = max(user_files)
-    print("📂 Loading user data from {latest_user_file.name}")
+    print("[DIR] Loading user data from {latest_user_file.name}")
 
     with open(latest_user_file, 'r', encoding='utf-8') as f:
         user_data = json.load(f)
@@ -30,31 +30,31 @@ def load_latest_data():
 
     if project_files:
         latest_project_file = max(project_files)
-        print(f"📂 Loading project data from {latest_project_file.name}")
+        print(f"[DIR] Loading project data from {latest_project_file.name}")
 
         try:
             with open(latest_project_file, 'r', encoding='utf-8') as f:
                 project_data = json.load(f)
-            print("✅ Successfully loaded project data")
+            print("[OK] Successfully loaded project data")
         except json.JSONDecodeError:
-            print("⚠️  Warning: Could not load project data")
+            print("[WARNING]  Warning: Could not load project data")
     else:
-        print("⚠️  No project data found (will use user data only)")
+        print("[WARNING]  No project data found (will use user data only)")
 
     # Try to find PyPI data
     pypi_file = data_dir / 'seattle_pypi_projects.json'
     pypi_data = None
 
     if pypi_file.exists():
-        print(f"📂 Loading PyPI data from {pypi_file.name}")
+        print(f"[DIR] Loading PyPI data from {pypi_file.name}")
         try:
             with open(pypi_file, 'r', encoding='utf-8') as f:
                 pypi_data = json.load(f)
-            print("✅ Successfully loaded PyPI data")
+            print("[OK] Successfully loaded PyPI data")
         except json.JSONDecodeError:
-            print("⚠️  Warning: Could not load PyPI data")
+            print("[WARNING]  Warning: Could not load PyPI data")
     else:
-        print("⚠️  No PyPI data found (will skip PyPI statistics)")
+        print("[WARNING]  No PyPI data found (will skip PyPI statistics)")
 
     return {
         'user_data': user_data,
@@ -145,7 +145,7 @@ def update_readme(stats):
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
 
-    print("✅ README.md updated successfully!")
+    print("[OK] README.md updated successfully!")
     if total_projects is not None:
         print("   Total Projects: {total_projects:,}")
     if total_stars is not None:
@@ -160,7 +160,7 @@ def main():
     data = load_latest_data()
 
     if not data:
-        print("❌ No data file found!")
+        print("[ERROR] No data file found!")
         return
 
     user_data = data['user_data']
@@ -188,16 +188,16 @@ def main():
     if project_data:
         stats['total_projects'] = project_data.get('total_projects')
         stats['total_stars'] = project_data.get('total_stars')
-        print("✅ Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
+        print("[OK] Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
 
     # Add PyPI statistics if available
     if pypi_data:
         stats['pypi_projects'] = pypi_data.get('projects_on_pypi', 0)
         stats['pypi_total_python'] = pypi_data.get('total_python_projects', 0)
         stats['pypi_detection_rate'] = pypi_data.get('detection_rate', '0%')
-        print("✅ Found PyPI data with {stats['pypi_projects']:,} projects on PyPI")
+        print("[OK] Found PyPI data with {stats['pypi_projects']:,} projects on PyPI")
 
-    print("✅ Found {stats['total_users']:,} users in latest data")
+    print("[OK] Found {stats['total_users']:,} users in latest data")
 
     # Update README
     update_readme(stats)
@@ -220,7 +220,7 @@ def cleanup_old_files():
             for old_file in old_files:
                 print(f"   Deleting: {old_file.name}")
                 old_file.unlink()
-            print(f"   ✅ Kept latest: {files[-1].name}")
+            print(f"   [OK] Kept latest: {files[-1].name}")
 
 if __name__ == "__main__":
     main()

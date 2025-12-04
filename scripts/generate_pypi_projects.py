@@ -20,11 +20,11 @@ def main():
     # Find the latest projects file
     project_files = glob.glob('data/seattle_projects_*.json')
     if not project_files:
-        print("❌ No project data files found in data/")
+        print("[ERROR] No project data files found in data/")
         return
 
     data_file = max(project_files)
-    print("📂 Loading data from {data_file}...")
+    print("[DIR] Loading data from {data_file}...")
 
     with open(data_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -35,7 +35,7 @@ def main():
     elif isinstance(data, list):
         all_projects = data
     else:
-        print("❌ Unexpected data format")
+        print("[ERROR] Unexpected data format")
         return
 
     # Filter Python projects
@@ -43,12 +43,12 @@ def main():
     print("🐍 Found {len(python_projects):,} Python projects")
 
     # Initialize PyPI checker
-    print("\n📦 Initializing PyPI checker...")
+    print("\n[PKG] Initializing PyPI checker...")
     checker = PyPIChecker()
     print()
 
     # Check all Python projects
-    print("🔍 Checking which projects are on PyPI...")
+    print("[SEARCH] Checking which projects are on PyPI...")
     print("   This may take a few seconds...")
 
     pypi_projects = []
@@ -109,7 +109,7 @@ def main():
         else:
             stats['not_on_pypi'] += 1
 
-    print("   Processed {len(python_projects):,}/{len(python_projects):,} ✓")
+    print("   Processed {len(python_projects):,}/{len(python_projects):,} [OK]")
 
     # Sort by stars (most popular first)
     pypi_projects.sort(key=lambda x: x['stars'], reverse=True)
@@ -128,11 +128,11 @@ def main():
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2)
 
-    print("\n✅ Generated {output_file}")
+    print("\n[OK] Generated {output_file}")
 
     # Print summary
     print("\n" + "=" * 80)
-    print("📊 SUMMARY")
+    print("[STATS] SUMMARY")
     print("=" * 80)
 
     print("\n🐍 Python Projects:")
@@ -140,13 +140,13 @@ def main():
     print("   On PyPI: {len(pypi_projects):,} ({len(pypi_projects) / len(python_projects) * 100:.2f}%)")
     print("   Not on PyPI: {stats['not_on_pypi']:,} ({stats['not_on_pypi'] / len(python_projects) * 100:.2f}%)")
 
-    print("\n📈 Confidence Distribution:")
+    print("\n[CHART] Confidence Distribution:")
     print("   Very High (>0.9): {stats['by_confidence']['very_high']:,}")
     print("   High (0.8-0.9):   {stats['by_confidence']['high']:,}")
     print("   Medium (0.7-0.8): {stats['by_confidence']['medium']:,}")
     print("   Low (0.4-0.7):    {stats['by_confidence']['low']:,}")
 
-    print("\n🔍 Top Match Methods:")
+    print("\n[SEARCH] Top Match Methods:")
     for method, method_count in sorted(
         stats['by_method'].items(), key=lambda x: -x[1]
     )[:5]:

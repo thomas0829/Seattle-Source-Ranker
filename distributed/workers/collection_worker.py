@@ -42,14 +42,14 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
 
     try:
         tm = get_token_manager()
-        print("✅ Using TokenManager with {tm.get_token_count()} tokens (dynamic selection)")
+        print("[OK] Using TokenManager with {tm.get_token_count()} tokens (dynamic selection)")
         use_token_manager = True
     except Exception:
         # Fallback to single token
-        print("⚠️  TokenManager not available, falling back to single token")
+        print("[WARNING]  TokenManager not available, falling back to single token")
         fallback_token = os.getenv("GITHUB_TOKEN")
         if not fallback_token:
-            print("❌ GITHUB_TOKEN not found in worker environment!")
+            print("[ERROR] GITHUB_TOKEN not found in worker environment!")
             return {
                 "batch_size": len(usernames),
                 "successful_users": 0,
@@ -58,7 +58,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                 "repos": [],
                 "completed_at": datetime.utcnow().isoformat()
             }
-        print("✅ Using single token (length: {len(fallback_token)})")
+        print("[OK] Using single token (length: {len(fallback_token)})")
 
     # Track failure reasons
     failure_reasons = {
@@ -74,13 +74,13 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
     filtered = 0  # Users filtered out due to criteria
     checked = 0  # Total users checked (for statistics)
 
-    print("🔄 Processing batch of {len(usernames)} users...")
+    print("[RETRY] Processing batch of {len(usernames)} users...")
 
     # Process each user in this batch sequentially using REST API
     for idx, username in enumerate(usernames, 1):
         checked += 1  # Count all users we attempt to check
         try:
-            print(f"📦 [{idx}/{len(usernames)}] Fetching repos for: {username}", flush=True)
+            print(f"[PKG] [{idx}/{len(usernames)}] Fetching repos for: {username}", flush=True)
 
             # Get best available token dynamically
             if use_token_manager:
@@ -145,17 +145,17 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                                     elif token_reset < min_reset_time:
                                         min_reset_time = token_reset
                             except Exception as e:
-                                print("⚠️  Failed to check token {i+1}: {e}")
+                                print("[WARNING]  Failed to check token {i+1}: {e}")
 
                         if min_reset_time == 0:
                             # Found available token, refresh and continue immediately
-                            print("✅ Found available token, continuing... ({', '.join(token_status)})")
+                            print("[OK] Found available token, continuing... ({', '.join(token_status)})")
                             token = tm.get_token(force_check=True)
                             headers["Authorization"] = f"token {token}"
                         elif min_reset_time != float('inf'):
                             # Wait for earliest token recovery + 60s buffer
                             wait_time = max(min_reset_time - time.time(), 0) + 60
-                            print("⏳ All tokens low, waiting {wait_time:.0f}s for earliest recovery...")
+                            print("[WAIT] All tokens low, waiting {wait_time:.0f}s for earliest recovery...")
                             print("   Status: {', '.join(token_status)}")
                             time.sleep(wait_time)
                             # After sleep, force refresh to get the recovered token
@@ -165,18 +165,18 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                             # Fallback: use current token's reset time
                             reset_time = int(response.headers.get('X-RateLimit-Reset', 0))
                             wait_time = max(reset_time - time.time(), 0) + 60
-                            print("⏳ Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
+                            print("[WAIT] Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
                             time.sleep(wait_time)
                     else:
                         # Fallback for single token mode
                         reset_time = int(response.headers.get('X-RateLimit-Reset', 0))
                         wait_time = max(reset_time - time.time(), 0) + 60
-                        print("⏳ Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
+                        print("[WAIT] Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
                         time.sleep(wait_time)
                     continue
 
                 if response.status_code == 403:
-                    print("⚠️  403 Forbidden for {username}, waiting...")
+                    print("[WARNING]  403 Forbidden for {username}, waiting...")
                     failure_reasons["rate_limit"] += 1
                     time.sleep(10)
                     failed += 1
@@ -191,7 +191,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                     break
 
                 if response.status_code != 200:
-                    print("❌ API error for {username}: Status {response.status_code}")
+                    print("[ERROR] API error for {username}: Status {response.status_code}")
                     failed += 1
                     user_fetch_failed = True
                     failure_reasons["api_error"] += 1
@@ -214,8 +214,17 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
 
                 # Process repos
                 for repo in repos:
-                    # Skip forks and archived
+                    # Skip forks, archived, disabled, and empty repos
                     if repo.get("fork") or repo.get("archived"):
+                        continue
+                    
+                    # Skip disabled repos
+                    if repo.get("disabled", False):
+                        continue
+                    
+                    # Skip empty repos (size = 0 usually means no commits)
+                    repo_size = repo.get("size", 0)
+                    if repo_size == 0:
                         continue
 
                     user_repos.append({
@@ -262,31 +271,31 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
 
                             # Criteria: 1-9 repos need followers >= 5
                             if non_fork_repos_count > 0 and followers_count < 5:
-                                print(f"   ⏭️  Filtered {username}: {non_fork_repos_count} repos but only {followers_count} followers (need >= 5)", flush=True)
+                                print(f"   [SKIP]  Filtered {username}: {non_fork_repos_count} repos but only {followers_count} followers (need >= 5)", flush=True)
                                 filtered += 1
                                 failure_reasons["filtered_criteria"] += 1
                                 continue
                             if non_fork_repos_count == 0:
                                 # No valid repos at all (all were forks/archived)
-                                print(f"   ⏭️  Filtered {username}: no non-fork repos (followers: {followers_count})", flush=True)
+                                print(f"   [SKIP]  Filtered {username}: no non-fork repos (followers: {followers_count})", flush=True)
                                 filtered += 1
                                 failure_reasons["filtered_criteria"] += 1
                                 continue
                         else:
                             # Can't verify followers, but already have repos, so accept
                             if non_fork_repos_count > 0:
-                                print(f"   ⚠️  Couldn't verify followers for {username}, accepting anyway ({non_fork_repos_count} repos)", flush=True)
+                                print(f"   [WARNING]  Couldn't verify followers for {username}, accepting anyway ({non_fork_repos_count} repos)", flush=True)
                             else:
                                 # No repos and can't verify
-                                print(f"   ⏭️  Filtered {username}: no repos and couldn't verify followers", flush=True)
+                                print(f"   [SKIP]  Filtered {username}: no repos and couldn't verify followers", flush=True)
                                 filtered += 1
                                 failure_reasons["filtered_criteria"] += 1
                                 continue
                     except Exception as e:
                         if non_fork_repos_count > 0:
-                            print(f"   ⚠️  Error checking followers for {username}: {e}, accepting anyway ({non_fork_repos_count} repos)", flush=True)
+                            print(f"   [WARNING]  Error checking followers for {username}: {e}, accepting anyway ({non_fork_repos_count} repos)", flush=True)
                         else:
-                            print(f"   ⏭️  Filtered {username}: no repos and error checking followers: {e}", flush=True)
+                            print(f"   [SKIP]  Filtered {username}: no repos and error checking followers: {e}", flush=True)
                             filtered += 1
                             failure_reasons["filtered_criteria"] += 1
                             continue
@@ -294,17 +303,17 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                 # User meets criteria
                 all_repos.extend(user_repos)
                 successful += 1
-                print(f"   ✅ Got {len(user_repos)} repos from {username}", flush=True)
+                print(f"   [OK] Got {len(user_repos)} repos from {username}", flush=True)
 
         except Exception as e:
-            print("❌ Exception fetching repos for {username}: {type(e).__name__}: {e}")
+            print("[ERROR] Exception fetching repos for {username}: {type(e).__name__}: {e}")
             failed += 1
             failure_reasons["exception"] += 1
             continue
 
     # Print summary for this batch
     if failed > 0 or filtered > 0:
-        print("\n📊 Batch Summary:")
+        print("\n[STATS] Batch Summary:")
         print("   Checked: {checked}, Successful: {successful}, Filtered: {filtered}, Failed: {failed}")
         if failed > 0:
             print("   Failed (errors):")
@@ -355,7 +364,7 @@ def search_seattle_users_task(max_users: int = 1000) -> List[str]:
     page = 1
     per_page = 100
 
-    print(f"🔍 Searching for Seattle developers (target: {max_users})...")
+    print(f"[SEARCH] Searching for Seattle developers (target: {max_users})...")
 
     while len(usernames) < max_users:
         url = f"https://api.github.com/search/users"
@@ -370,7 +379,7 @@ def search_seattle_users_task(max_users: int = 1000) -> List[str]:
         response = requests.get(url, headers=headers, params=params, timeout=10)
 
         if response.status_code != 200:
-            print("❌ Error searching users: {response.status_code}")
+            print("[ERROR] Error searching users: {response.status_code}")
             break
 
         data = response.json()
@@ -386,7 +395,7 @@ def search_seattle_users_task(max_users: int = 1000) -> List[str]:
 
         page += 1
 
-    print("✅ Found {len(usernames)} Seattle developers")
+    print("[OK] Found {len(usernames)} Seattle developers")
     return usernames
 
 
@@ -413,7 +422,7 @@ def collect_seattle_projects_task(
     """
     from celery import group
 
-    print("🚀 Starting distributed collection")
+    print("[START] Starting distributed collection")
     print("   Target: {target_projects} projects")
     print("   Max users: {max_users}")
     print("   Batch size: {batch_size} users/batch")
@@ -434,7 +443,7 @@ def collect_seattle_projects_task(
         for i in range(0, len(usernames), batch_size)
     ]
 
-    print("📦 Split {len(usernames)} users into {len(user_batches)} batches")
+    print("[PKG] Split {len(usernames)} users into {len(user_batches)} batches")
 
     # Step 3: Distribute batches to workers (parallel)
     job = group(fetch_users_batch_task.s(batch) for batch in user_batches)
@@ -456,7 +465,7 @@ def collect_seattle_projects_task(
 
     total_stars = sum(p["stars"] for p in all_projects)
 
-    print("\n✅ Collection complete!")
+    print("\n[OK] Collection complete!")
     print("   Total projects: {len(all_projects)}")
     print("   Total stars: {total_stars:,}")
 
@@ -475,19 +484,22 @@ def collect_seattle_projects_task(
 def update_watchers_batch_task(self, repos_batch):
     """
     Celery task to update watchers for a batch of repos.
+    Uses GraphQL for batch query, then REST API only for suspicious repos.
 
     Args:
         repos_batch: List of dicts with 'owner' and 'name' keys
 
     Returns:
-        Dict with results: {repo_key: watchers_count or None if deleted}
+        Dict with results: {repo_key: watchers_count or None if deleted/empty}
     """
     import requests
     from utils.token_manager import TokenManager
+    import time
 
     token_manager = TokenManager()
+    token = token_manager.get_token()
 
-    # Build GraphQL query
+    # Step 1: Build GraphQL batch query for all repos
     aliases = []
     repo_keys = []
 
@@ -499,10 +511,9 @@ def update_watchers_batch_task(self, repos_batch):
 
         aliases.append(f'''
     {safe_alias}: repository(owner: "{owner}", name: "{repo_name}") {{
-        nameWithOwner
         isEmpty
         isLocked
-        isDisabled
+        isArchived
         watchers {{
             totalCount
         }}
@@ -510,25 +521,24 @@ def update_watchers_batch_task(self, repos_batch):
 
     query = "{" + "".join(aliases) + "\n}"
 
-    token = token_manager.get_token()
-    headers = {
+    headers_graphql = {
         'Authorization': f'bearer {token}',
         'Content-Type': 'application/json',
     }
 
-    payload = {'query': query}
+    results = {}
 
     try:
+        # Execute GraphQL query
         response = requests.post(
             'https://api.github.com/graphql',
-            headers=headers,
-            json=payload,
+            headers=headers_graphql,
+            json={'query': query},
             timeout=30
         )
 
         if response.status_code == 200:
             data = response.json()
-            results = {}
 
             if 'data' in data:
                 for idx, repo_key in enumerate(repo_keys):
@@ -536,42 +546,40 @@ def update_watchers_batch_task(self, repos_batch):
                     repo_data = data['data'].get(safe_alias)
 
                     if repo_data:
-                        # Check if repo is empty, locked, or disabled
-                        is_empty = repo_data.get('isEmpty', False)
-                        is_locked = repo_data.get('isLocked', False)
-                        is_disabled = repo_data.get('isDisabled', False)
-                        
-                        if is_empty or is_locked or is_disabled:
-                            # Mark as deleted/invalid
+                        # Check if repo should be filtered
+                        if repo_data.get('isEmpty') or repo_data.get('isLocked') or repo_data.get('isArchived'):
+                            # Mark for deletion
                             results[repo_key] = None
                         elif repo_data.get('watchers'):
                             results[repo_key] = repo_data['watchers']['totalCount']
                         else:
-                            # No watchers data
+                            # Repo exists but no watchers data
                             results[repo_key] = None
                     else:
                         # Repo deleted or inaccessible
                         results[repo_key] = None
 
-            return results
-
-        elif response.status_code == 403:
-            # Rate limit - retry once
-            if self.request.retries < 1:
-                raise self.retry(countdown=60)
             else:
-                # Give up and return empty to avoid blocking
-                return {}
+                # GraphQL error - mark all as needing retry
+                print(f"[ERROR] GraphQL error in batch: {data.get('errors', 'Unknown')}")
+                for repo_key in repo_keys:
+                    results[repo_key] = None
         else:
-            return {}
+            # HTTP error - mark all as needing retry
+            print(f"[ERROR] HTTP {response.status_code} in batch")
+            for repo_key in repo_keys:
+                results[repo_key] = None
+
+        return results
 
     except requests.exceptions.Timeout:
-        # Timeout - return empty to avoid blocking
-        return {}
+        print(f"[ERROR] Timeout in batch of {len(repos_batch)} repos")
+        # Mark all as None to trigger retry or manual check
+        return {repo_key: None for repo_key in repo_keys}
     except Exception as e:
-        # Only retry once for other errors
+        print(f"[ERROR] Exception in batch: {type(e).__name__}: {e}")
         if self.request.retries < 1:
             raise self.retry(exc=e, countdown=10)
         else:
-            # Give up and return empty
-            return {}
+            # Final failure - mark all as None
+            return {repo_key: None for repo_key in repo_keys}

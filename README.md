@@ -257,6 +257,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 *Statistics automatically updated by GitHub Actions.*
 
-Made with ❤️ for Seattle's tech community
+Made with <3 for Seattle's tech community
 
 </div>

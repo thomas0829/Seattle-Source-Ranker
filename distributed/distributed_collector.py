@@ -169,10 +169,10 @@ class DistributedCollector:
         active_workers = self.check_workers()
 
         if active_workers >= self.num_workers:
-            print("✅ Found {active_workers} active workers (target: {self.num_workers})")
+            print("[OK] Found {active_workers} active workers (target: {self.num_workers})")
             return
 
-        print("🚀 Starting {self.num_workers} Celery workers...")
+        print("[START] Starting {self.num_workers} Celery workers...")
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -216,7 +216,7 @@ class DistributedCollector:
             time.sleep(0.5)
             active = self.check_workers()
             if active >= self.num_workers:
-                print(" ✅ {active} workers ready!")
+                print(" [OK] {active} workers ready!")
                 return
             if i % 10 == 0 and i > 0:  # Every 5 seconds
                 print(f"\n   ({active}/{self.num_workers} workers registered, waiting...)", end="", flush=True)
@@ -224,10 +224,10 @@ class DistributedCollector:
 
         final_count = self.check_workers()
         if final_count > 0:
-            print("\n   ⚠️  Only {final_count} workers registered (expected {self.num_workers})")
+            print("\n   [WARNING]  Only {final_count} workers registered (expected {self.num_workers})")
             print("   Continuing with {final_count} workers...")
         else:
-            print("\n   ❌ No workers registered after 30 seconds!")
+            print("\n   [ERROR] No workers registered after 30 seconds!")
             raise RuntimeError("Failed to start workers")
 
     def cleanup_workers(self):
@@ -254,7 +254,7 @@ class DistributedCollector:
                     pass
 
         self.worker_processes = []
-        print("✅ All workers stopped")
+        print("[OK] All workers stopped")
 
     def find_recent_user_file(self, min_users: int = 20000) -> str:
         """
@@ -353,16 +353,16 @@ class DistributedCollector:
                 now = datetime.now(SEATTLE_TZ)
                 age_hours = (now - file_time).total_seconds() / 3600
             except Exception as e:
-                print("   ⚠️  Failed to parse timestamp from filename: {e}")
+                print("   [WARNING]  Failed to parse timestamp from filename: {e}")
                 print("   Falling back to user search...")
                 return self.search_users(max_users, start_user)
 
             if age_hours < 24:  # Less than 1 day
-                print("🔍 Step 1: Loading existing user data...")
+                print("[SEARCH] Step 1: Loading existing user data...")
                 print("   File: {filename}")
                 print("   Users: {user_count:,}")
                 print("   Age: {age_hours:.1f} hours")
-                print("   ✅ Using cached user list (skip user search)")
+                print("   [OK] Using cached user list (skip user search)")
 
                 try:
                     with open(filepath, 'r', encoding='utf-8') as f:
@@ -378,13 +378,13 @@ class DistributedCollector:
                     return usernames
 
                 except Exception as e:
-                    print("   ⚠️  Failed to load file: {e}")
+                    print("   [WARNING]  Failed to load file: {e}")
                     print("   Falling back to user search...")
             else:
-                print("🔍 Step 1: Found user file but it's too old ({age_hours:.1f} hours)")
+                print("[SEARCH] Step 1: Found user file but it's too old ({age_hours:.1f} hours)")
                 print("   Performing fresh user search...")
         else:
-            print("🔍 Step 1: No recent user file found (need >20K users)")
+            print("[SEARCH] Step 1: No recent user file found (need >20K users)")
             print("   Performing user search...")
 
         # Fall back to search
@@ -403,7 +403,7 @@ class DistributedCollector:
         """
         import requests
 
-        print("🔍 Step 1: Searching for Seattle developers (GraphQL)...")
+        print("[SEARCH] Step 1: Searching for Seattle developers (GraphQL)...")
         print("   Target: {max_users} users (starting from index {start_user})")
         print("   Strategy: GraphQL Search API (5000 req/hour limit)")
 
@@ -414,7 +414,7 @@ class DistributedCollector:
             print("   Using multi-token rotation ({tm.get_token_count()} tokens)")
             use_token_manager = True
         except Exception as e:
-            print("   ⚠️  TokenManager not available: {e}")
+            print("   [WARNING]  TokenManager not available: {e}")
             token = os.getenv("GITHUB_TOKEN")
             if not token:
                 raise ValueError("GITHUB_TOKEN environment variable not set")
@@ -529,11 +529,11 @@ class DistributedCollector:
                                             if reset_timestamp < min_reset_time:
                                                 min_reset_time = reset_timestamp
                             except Exception as e:
-                                print("      ⚠️ Failed to check token {i+1}: {e}")
+                                print("      [WARNING] Failed to check token {i+1}: {e}")
 
                         if best_remaining > 100:
                             # Found a token with good quota
-                            print("      ✅ Switched to better token ({', '.join(token_status)})")
+                            print("      [OK] Switched to better token ({', '.join(token_status)})")
                             current_token = best_token
                             headers["Authorization"] = f"bearer {current_token}"
                             # Force update TokenManager to use this token next
@@ -541,14 +541,14 @@ class DistributedCollector:
                         elif min_reset_time != float('inf'):
                             # All tokens exhausted, wait for earliest recovery
                             wait_time = max(min_reset_time - time.time(), 0) + 60
-                            print("      ⏳ All tokens low, waiting {wait_time:.0f}s for earliest recovery...")
+                            print("      [WAIT] All tokens low, waiting {wait_time:.0f}s for earliest recovery...")
                             print("         Status: {', '.join(token_status)}")
                             time.sleep(wait_time)
                             current_token = tm.get_token(force_check=True)
                             headers["Authorization"] = f"bearer {current_token}"
                         else:
                             # Fallback: wait 60s
-                            print("      ⏳ Rate limit low ({remaining}), waiting 60s...")
+                            print("      [WAIT] Rate limit low ({remaining}), waiting 60s...")
                             time.sleep(60)
                     else:
                         # Single token mode - just wait
@@ -557,7 +557,7 @@ class DistributedCollector:
                             wait_time = max(int(reset_at) - time.time(), 0) + 60
                         else:
                             wait_time = 60
-                        print("      ⏳ Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
+                        print("      [WAIT] Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
                         time.sleep(wait_time)
                     continue
 
@@ -566,24 +566,24 @@ class DistributedCollector:
                         # Secondary rate limit or token issue
                         if use_token_manager:
                             # Try to find another token
-                            print("      ⚠️ 403 error, checking other tokens...")
+                            print("      [WARNING] 403 error, checking other tokens...")
                             current_token = tm.get_token(force_check=True)
                             headers["Authorization"] = f"bearer {current_token}"
                             time.sleep(10)  # Brief wait
                             continue
                         else:
                             wait_time = 60
-                            print("      ⚠️ Rate limit (403) - waiting {wait_time}s...")
+                            print("      [WARNING] Rate limit (403) - waiting {wait_time}s...")
                             time.sleep(wait_time)
                             continue
                     else:
-                        print("      ⚠️ API returned status {response.status_code}, moving to next filter")
+                        print("      [WARNING] API returned status {response.status_code}, moving to next filter")
                         break
 
                 data = response.json()
 
                 if 'errors' in data:
-                    print("      ⚠️ GraphQL errors: {data['errors'][0]['message']}")
+                    print("      [WARNING] GraphQL errors: {data['errors'][0]['message']}")
                     break
 
                 search_result = data.get('data', {}).get('search', {})
@@ -615,7 +615,7 @@ class DistributedCollector:
         # Convert set to list and truncate
         usernames = list(usernames_set)[:max_users]
 
-        print("✅ Found {len(usernames)} unique developers (requested: {max_users})")
+        print("[OK] Found {len(usernames)} unique developers (requested: {max_users})")
 
         # Save to file
         timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
@@ -632,7 +632,7 @@ class DistributedCollector:
                 "usernames": usernames
             }, f, indent=2, ensure_ascii=False)
 
-        print("💾 Saved usernames to: {usernames_file}")
+        print("[SAVE] Saved usernames to: {usernames_file}")
 
         return usernames
 
@@ -651,7 +651,7 @@ class DistributedCollector:
             for i in range(0, len(usernames), self.batch_size)
         ]
 
-        print("\n📦 Step 2: Created {len(batches)} batches")
+        print("\n[PKG] Step 2: Created {len(batches)} batches")
         print("   Batch size: {self.batch_size} users/batch")
         print("   Total users: {len(usernames)}")
 
@@ -674,7 +674,7 @@ class DistributedCollector:
         job = group(fetch_users_batch_task.s(batch) for batch in batches)
         result = job.apply_async()
 
-        print("✅ Tasks submitted to queue")
+        print("[OK] Tasks submitted to queue")
         return result
 
     def monitor_progress(self, result: GroupResult, total_batches: int):
@@ -685,7 +685,7 @@ class DistributedCollector:
             result: Celery GroupResult
             total_batches: Total number of batches
         """
-        print("\n📊 Step 4: Monitoring progress...")
+        print("\n[STATS] Step 4: Monitoring progress...")
         print("   Total batches: {total_batches}")
         print("   Waiting for workers...\n")
 
@@ -709,19 +709,19 @@ class DistributedCollector:
 
             # Timeout check - only timeout when no real progress
             if idle_time > max_idle_time:
-                print(f"\n⚠️  No progress for {idle_time:.0f}s (max idle: {max_idle_time}s)", flush=True)
+                print(f"\n[WARNING]  No progress for {idle_time:.0f}s (max idle: {max_idle_time}s)", flush=True)
                 print(f"   Completed so far: {completed}/{total_batches}", flush=True)
                 print(f"   Tasks may have stalled, stopping...", flush=True)
                 break
 
             if elapsed > max_total_time:
-                print(f"\n⚠️  Total timeout after {elapsed:.1f}s", flush=True)
+                print(f"\n[WARNING]  Total timeout after {elapsed:.1f}s", flush=True)
                 print(f"   Completed so far: {completed}/{total_batches}", flush=True)
                 break
 
             # If all tasks completed, force exit
             if completed >= total_batches:
-                print(f"\n✅ All {total_batches} tasks completed!", flush=True)
+                print(f"\n[OK] All {total_batches} tasks completed!", flush=True)
                 break
 
             # Check for failures
@@ -733,9 +733,9 @@ class DistributedCollector:
                     if task_id not in shown_errors:
                         try:
                             error = task_result.result
-                            print(f"   ❌ Task {task_id[:8]} failed: {error}", flush=True)
+                            print(f"   [ERROR] Task {task_id[:8]} failed: {error}", flush=True)
                         except Exception as e:
-                            print(f"   ❌ Task {task_id[:8]} failed: {str(e)}", flush=True)
+                            print(f"   [ERROR] Task {task_id[:8]} failed: {str(e)}", flush=True)
                         shown_errors.add(task_id)
 
             if completed != last_completed or failed_count > 0:
@@ -752,7 +752,7 @@ class DistributedCollector:
             time.sleep(2)
 
         elapsed = time.time() - start_time
-        print(f"\n✅ All tasks completed in {elapsed:.1f}s", flush=True)
+        print(f"\n[OK] All tasks completed in {elapsed:.1f}s", flush=True)
 
     def retry_failed_tasks(self, result: GroupResult, original_batches: List[List[str]]) -> GroupResult:
         """
@@ -775,10 +775,10 @@ class DistributedCollector:
                 failed_batch_indices.append(idx)
 
         if not failed_tasks:
-            print("✅ No failed tasks to retry")
+            print("[OK] No failed tasks to retry")
             return result
 
-        print("\n🔄 Retrying {len(failed_tasks)} failed tasks...")
+        print("\n[RETRY] Retrying {len(failed_tasks)} failed tasks...")
 
         # Create retry batches
         retry_batches = [original_batches[idx] for idx in failed_batch_indices]
@@ -804,11 +804,11 @@ class DistributedCollector:
             elapsed = time.time() - start_time
 
             if completed >= len(retry_batches):
-                print("\n✅ All retry tasks completed!")
+                print("\n[OK] All retry tasks completed!")
                 break
 
             if elapsed > 3600:  # 1 hour timeout for retries
-                print("\n⚠️  Retry timeout after {elapsed:.1f}s")
+                print("\n[WARNING]  Retry timeout after {elapsed:.1f}s")
                 break
 
             # Check for failures
@@ -820,7 +820,7 @@ class DistributedCollector:
                     if task_id not in shown_errors:
                         try:
                             error = task_result.result
-                            print(f"   ❌ Retry task {task_id[:8]} failed: {error}", flush=True)
+                            print(f"   [ERROR] Retry task {task_id[:8]} failed: {error}", flush=True)
                         except Exception:
                             pass
                         shown_errors.add(task_id)
@@ -837,7 +837,7 @@ class DistributedCollector:
             time.sleep(2)
 
         # Merge retry results with original results
-        print("\n📦 Merging retry results with original...")
+        print("\n[PKG] Merging retry results with original...")
 
         # Replace failed results with retry results
         for i, retry_idx in enumerate(failed_batch_indices):
@@ -895,11 +895,11 @@ class DistributedCollector:
         print("   Failed users: {total_users_failed}")
 
         if total_users_filtered > 0:
-            print("\n   📊 Filtered Analysis:")
+            print("\n   [STATS] Filtered Analysis:")
             print("      Doesn't meet criteria (repos/followers): {aggregated_failures.get('filtered_criteria', 0)}")
 
         if total_users_failed > 0:
-            print("\n   📊 Failure Analysis:")
+            print("\n   [STATS] Failure Analysis:")
             print("      User not found/inaccessible: {aggregated_failures['user_not_found']} ({aggregated_failures['user_not_found']/total_users_failed*100:.1f}%)")
             print("      Rate limit hits: {aggregated_failures['rate_limit']} ({aggregated_failures['rate_limit']/total_users_failed*100:.1f}%)")
             print("      API errors: {aggregated_failures['api_error']} ({aggregated_failures['api_error']/total_users_failed*100:.1f}%)")
@@ -937,14 +937,14 @@ class DistributedCollector:
             results: Aggregated results
             output_file: Output file path
         """
-        print("\n💾 Step 6: Saving results...")
+        print("\n[SAVE] Step 6: Saving results...")
 
         os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
 
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
 
-        print("✅ Saved to: {output_file}")
+        print("[OK] Saved to: {output_file}")
 
     def collect(
         self,
@@ -963,7 +963,7 @@ class DistributedCollector:
         Returns:
             Collection results
         """
-        print("🚀 Starting Distributed Collection with Multi-Token Support")
+        print("[START] Starting Distributed Collection with Multi-Token Support")
         print(f"=" * 60)
         print("Max Users: {max_users}")
         print("Start User: {start_user}")
@@ -980,10 +980,10 @@ class DistributedCollector:
             else:
                 active_workers = self.check_workers()
                 if active_workers == 0:
-                    print("⚠️  Warning: No workers detected!")
+                    print("[WARNING]  Warning: No workers detected!")
                     print("   Please start workers manually or enable auto-manage-workers")
                     raise ValueError("No workers available")
-                print("✅ Found {active_workers} active workers")
+                print("[OK] Found {active_workers} active workers")
 
             # Step 1: Check for existing user data or search users
             usernames = self.load_or_search_users(max_users, start_user)
@@ -1013,7 +1013,7 @@ class DistributedCollector:
             # Summary
             elapsed = time.time() - start_time
             print(f"\n" + "=" * 60)
-            print("✅ Collection Complete!")
+            print("[OK] Collection Complete!")
             print(f"=" * 60)
             print("Total Time: {elapsed:.1f}s ({elapsed/60:.1f} minutes)")
             print("Projects: {aggregated['total_projects']}")
@@ -1026,7 +1026,7 @@ class DistributedCollector:
             return aggregated
 
         except Exception as e:
-            print("\n❌ Error during collection: {e}")
+            print("\n[ERROR] Error during collection: {e}")
             raise
 
 
@@ -1086,7 +1086,7 @@ def main():
 
     # Check environment
     if not os.getenv("GITHUB_TOKEN"):
-        print("❌ Error: GITHUB_TOKEN environment variable not set")
+        print("[ERROR] Error: GITHUB_TOKEN environment variable not set")
         sys.exit(1)
 
     # Determine auto-manage workers
@@ -1096,11 +1096,11 @@ def main():
         print("\n✨ Auto-manage workers: ENABLED")
         print("   Will automatically start {args.workers} workers if needed")
     else:
-        print("\n⚠️  Auto-manage workers: DISABLED")
+        print("\n[WARNING]  Auto-manage workers: DISABLED")
         print("   Make sure {args.workers} Celery workers are running!")
         print("   Use: python3 -m celery -A distributed.workers.collection_worker worker --loglevel=info --concurrency=2 -n workerN@%h")
 
-    print("\n🚀 Starting collection now...\n")
+    print("\n[START] Starting collection now...\n")
 
     # Run collection with auto-worker management
     collector = DistributedCollector(
@@ -1117,13 +1117,13 @@ def main():
             output_file=args.output
         )
 
-        print("\n✅ Success! Results saved to: {args.output}")
+        print("\n[OK] Success! Results saved to: {args.output}")
 
     except KeyboardInterrupt:
-        print("\n⚠️  Collection interrupted by user")
+        print("\n[WARNING]  Collection interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print("\n❌ Collection failed: {e}")
+        print("\n[ERROR] Collection failed: {e}")
         sys.exit(1)
 
 

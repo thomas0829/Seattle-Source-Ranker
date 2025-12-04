@@ -1,7 +1,7 @@
 // src/PythonProjectsPage.js
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import "./App.css";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 // Scoring configuration - Multiplicative bonus approach
 const GITHUB_WEIGHT = 1.0;       // 100% of base score
@@ -11,6 +11,7 @@ const PYPI_BONUS = 0.1;          // +10% multiplier for PyPI projects
 // Future: Can change to weighted average by using separate weights for GitHub/PyPI components
 
 export default function PythonRankingsPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [projects, setProjects] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -25,11 +26,56 @@ export default function PythonRankingsPage() {
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
     const [pageInput, setPageInput] = useState(null);
     const [isScrolling, setIsScrolling] = useState(false);
+    const [activeOwner, setActiveOwner] = useState(null);
+    const [updatingRows, setUpdatingRows] = useState(false);
     const timeoutRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const searchWrapperRef = useRef(null);
     const scrollTimeoutRef = useRef(null);
     const projectsPerPage = 50;
+
+    // Use refs to track current values without causing re-renders
+    const currentPageRef = useRef(currentPage);
+    const debouncedSearchQueryRef = useRef(debouncedSearchQuery);
+    const pageBeforeSearchRef = useRef(1); // Remember page before owner search
+    
+    useEffect(() => {
+        currentPageRef.current = currentPage;
+    }, [currentPage]);
+    
+    useEffect(() => {
+        debouncedSearchQueryRef.current = debouncedSearchQuery;
+    }, [debouncedSearchQuery]);
+
+    // Restore state from URL parameters on mount and when URL changes
+    useEffect(() => {
+        const searchParam = searchParams.get('search');
+        const pageParam = searchParams.get('page');
+        
+        // Restore search state
+        if (searchParam !== null) {
+            if (searchParam !== debouncedSearchQueryRef.current) {
+                setSearchQuery(searchParam);
+                setDebouncedSearchQuery(searchParam);
+                setActiveOwner(searchParam);
+            }
+        } else {
+            // Clear search if no search param in URL
+            if (debouncedSearchQueryRef.current !== '') {
+                setSearchQuery('');
+                setDebouncedSearchQuery('');
+                setActiveOwner(null);
+            }
+        }
+        
+        // Restore page number
+        if (pageParam) {
+            const page = parseInt(pageParam, 10);
+            if (!isNaN(page) && page > 0 && page !== currentPageRef.current) {
+                setCurrentPage(page);
+            }
+        }
+    }, [searchParams]);
 
     // Detect scrolling to pause background loading
     useEffect(() => {
@@ -293,15 +339,74 @@ export default function PythonRankingsPage() {
         setDebouncedSearchQuery(searchQuery);
         setCurrentPage(1);
         setShowSuggestions(false);
+        // Update URL with search
+        const newParams = new URLSearchParams(searchParams);
+        if (searchQuery.trim()) {
+            newParams.set('search', searchQuery);
+        } else {
+            newParams.delete('search');
+        }
+        newParams.set('page', '1');
+        setSearchParams(newParams);
     };
 
-    // Handle owner click - search without showing suggestions
+    // Helper function to update page in URL
+    const updatePage = (newPage) => {
+        setCurrentPage(newPage);
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('page', newPage.toString());
+        setSearchParams(newParams);
+    };
+
+    // Handle owner click - search without showing suggestions, click again to clear
     const handleOwnerClick = (ownerName) => {
         setShowSuggestions(false);
         setSearchSuggestions([]);
-        setSearchQuery(ownerName);
-        setDebouncedSearchQuery(ownerName);
-        setCurrentPage(1);
+        
+        // If clicking the same owner, clear search and return to previous page
+        if (activeOwner === ownerName) {
+            setSearchQuery('');
+            setDebouncedSearchQuery('');
+            setActiveOwner(null);
+            // Return to the page we were on before the search
+            const returnPage = pageBeforeSearchRef.current;
+            setCurrentPage(returnPage);
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('search');
+            newParams.set('page', returnPage.toString());
+            setSearchParams(newParams);
+        } else {
+            // Remember current page before starting new owner search
+            pageBeforeSearchRef.current = currentPage;
+            // New owner search - reset to page 1
+            setSearchQuery(ownerName);
+            setDebouncedSearchQuery(ownerName);
+            setActiveOwner(ownerName);
+            setCurrentPage(1);
+            // Update URL with search parameter
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set('search', ownerName);
+            newParams.set('page', '1');
+            setSearchParams(newParams);
+        }
+        
+        // Scroll to position between header and search bar after data loads
+        setTimeout(() => {
+            const headerElement = document.querySelector('header');
+            if (headerElement) {
+                const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                // Use requestAnimationFrame for smoother scroll
+                requestAnimationFrame(() => {
+                    window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                });
+            }
+        }, 500);
+        
+        // Trigger table update animation after a tiny delay to let data prepare
+        setTimeout(() => {
+            setUpdatingRows(true);
+            setTimeout(() => setUpdatingRows(false), 600);
+        }, 50);
     };
 
     // Close suggestions when clicking outside
@@ -338,7 +443,7 @@ export default function PythonRankingsPage() {
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
+            updatePage(page);
             // Scroll to position between header and search bar
             setTimeout(() => {
                 const headerElement = document.querySelector('header');
@@ -418,6 +523,7 @@ export default function PythonRankingsPage() {
                                 setDebouncedSearchQuery('');
                                 setCurrentPage(1);
                                 setShowSuggestions(false);
+                                setActiveOwner(null);
                             }}
                             title="Clear search"
                         >
@@ -444,8 +550,13 @@ export default function PythonRankingsPage() {
                                     }}
                                     onMouseEnter={() => setSelectedSuggestionIndex(index)}
                                 >
-                                    <span className="suggestion-icon">{suggestion.icon}</span>
-                                    <span className="suggestion-text">{suggestion.text}</span>
+                                    <div className="suggestion-left">
+                                        <span className="suggestion-icon">{suggestion.icon}</span>
+                                        <span className="suggestion-text">{suggestion.text}</span>
+                                    </div>
+                                    {suggestion.type === 'owner' && (
+                                        <span className="suggestion-badge">User</span>
+                                    )}
                                     {suggestion.type === 'topic' && (
                                         <span className="suggestion-badge">Topic</span>
                                     )}
@@ -482,13 +593,17 @@ export default function PythonRankingsPage() {
                                         : 15;
 
                                     return (
-                                        <tr key={project.full_name}>
+                                        <tr 
+                                            key={project.full_name} 
+                                            className={updatingRows ? 'row-updating' : ''}
+                                            style={updatingRows ? { animationDelay: `${index * 0.03}s` } : {}}
+                                        >
                                             <td className="rank-col">#{displayRank}</td>
                                             <td className="owner-col">
                                                 <span
-                                                    className="owner-link"
+                                                    className={`owner-link ${activeOwner === project.owner ? 'owner-active' : ''}`}
                                                     onClick={() => handleOwnerClick(project.owner)}
-                                                    title={`Search for ${project.owner}`}
+                                                    title={activeOwner === project.owner ? `Click to clear search` : `Search for ${project.owner}`}
                                                 >
                                                     {project.owner}
                                                 </span>
@@ -615,7 +730,7 @@ export default function PythonRankingsPage() {
                             <button
                                 className="pagination-btn pagination-edge"
                                 onClick={() => {
-                                    setCurrentPage(1);
+                                    updatePage(1);
                                     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
                                 }}
                                 disabled={currentPage === 1}

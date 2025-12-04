@@ -82,10 +82,10 @@ class PyPIChecker:
                 if package_name:
                     packages.add(package_name)
 
-            print(f"✅ Found {len(packages):,} packages on PyPI")
+            print(f"[OK] Found {len(packages):,} packages on PyPI")
             return packages
         except requests.RequestException:
-            print("❌ Failed to download PyPI index")
+            print("[ERROR] Failed to download PyPI index")
             return set()
 
     def load_or_download_index(self):
@@ -97,7 +97,7 @@ class PyPIChecker:
             age_days = (time.time() - cache_file.stat().st_mtime) / 86400
 
             if age_days < 7:
-                print(f"📦 Loading PyPI cache ({age_days:.1f} days old)")
+                print(f"[PKG] Loading PyPI cache ({age_days:.1f} days old)")
                 with open(cache_file, encoding='utf-8') as f:
                     self.pypi_packages = set(json.load(f))
                 print(f"   Loaded {len(self.pypi_packages):,} packages")
@@ -110,7 +110,7 @@ class PyPIChecker:
             # Save to cache
             with open(cache_file, 'w', encoding='utf-8') as f:
                 json.dump(sorted(self.pypi_packages), f)
-            print(f"💾 Saved cache to {cache_file}")
+            print(f"[SAVE] Saved cache to {cache_file}")
 
     def check_project(self, repo: Dict) -> Tuple[bool, float, str]:
         """
@@ -240,7 +240,7 @@ class PyPIChecker:
             fetch_readme: If True, fetch README from GitHub for better accuracy (slower)
             github_token: GitHub token for API access (if fetch_readme=True)
         """
-        print(f"🔍 Checking {len(repos):,} projects against PyPI...")
+        print(f"[SEARCH] Checking {len(repos):,} projects against PyPI...")
 
         if fetch_readme and github_token:
             print("   Fetching README files from GitHub for higher accuracy...")
@@ -255,7 +255,7 @@ class PyPIChecker:
         on_pypi_count = sum(1 for r in results if r.get('on_pypi'))
         percentage = on_pypi_count / len(results) * 100
         print(
-            f"✅ Found {on_pypi_count:,} projects on PyPI "
+            f"[OK] Found {on_pypi_count:,} projects on PyPI "
             f"({percentage:.1f}%)"
         )
 
@@ -302,7 +302,7 @@ class PyPIChecker:
 
 def main():
     """Test the PyPI checker"""
-    print("🧪 Testing PyPI Checker\n")
+    print("[TEST] Testing PyPI Checker\n")
 
     checker = PyPIChecker()
 
@@ -315,7 +315,7 @@ def main():
 
     for project in test_projects:
         is_on_pypi, confidence, method = checker.check_project(project)
-        status = "✅" if is_on_pypi else "❌"
+        status = "[OK]" if is_on_pypi else "[ERROR]"
         print(
             f"{status} {project['name']}: {is_on_pypi} "
             f"(confidence: {confidence:.2f}, method: {method})"
