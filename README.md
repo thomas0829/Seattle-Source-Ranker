@@ -15,10 +15,10 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 ## Latest Statistics
 
-- **465,600 projects** tracked across Seattle's developer community
-- **2,832,801 total stars** accumulated by Seattle projects
+- **457,212 projects** tracked across Seattle's developer community
+- **2,476,436 total stars** accumulated by Seattle projects
 - **28,256 users** collected in latest run
-- **10,011 Python projects** published on PyPI (18.08% of Python projects)
+- **10,019 Python projects** published on PyPI (18.09% of Python projects)
 - Last updated: 2025-12-02 09:30:38 PST
 
 ---
@@ -43,8 +43,8 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 | Team Member | Role | Contributions |
 |------------|------|---------------|
-| **thomas0829** | Project Architecture & System Design Lead | • Frontend/Backend system architecture<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• Python rankings with PyPI integration<br>• Performance optimization<br>• GitHub Actions automation |
-| **Wenshu0206** | Frontend Developer & UI/UX Designer | • React frontend development<br>• Component design & implementation<br>• User experience optimization<br>• Responsive layout design<br>• UI/UX testing & refinement |
+| **thomas0829** | Project Architecture & System Design Lead | • Frontend/Backend system architecture<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• Python rankings with PyPI integration<br>• Performance optimization<br>• GitHub Actions automation<br>• Frontend implementation & deployment |
+| **Wenshu0206** | UI/UX Designer | • Ranking page initial UI/UX design<br>• Homepage first version design<br>• Visual design concepts & layouts |
 | **Muwen320** | Scoring Algorithm & Interpretability Specialist | • SSR scoring algorithm design<br>• Multi-factor ranking system<br>• Language classification logic<br>• Algorithm documentation<br>• Transparent scoring methodology |
 | **Chase-Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing<br>• Error handling & recovery |
 
