@@ -39,7 +39,7 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Firefox 滾動條樣式 */
+/* Firefox scrollbar style */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
