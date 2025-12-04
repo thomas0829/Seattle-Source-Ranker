@@ -1161,15 +1161,13 @@ tbody td {
   border-bottom-color: #7dd3fc;
 }
 
-/* ============= 手机端优化（不会影响电脑端） ============= */
+/* ============= mobile side - homepage ============= */
 @media screen and (max-width: 768px) {
 
-  /* 整个容器内边距缩小，不再两侧溢出 */
   .home-container {
     padding: 12px;
   }
 
-  /* 让卡片从左右两列 → 变成纵向排列 */
   .home-card {
     display: flex;
     flex-direction: column;
@@ -1177,13 +1175,11 @@ tbody td {
     gap: 16px;
   }
 
-  /* 文字区域占满整行 */
   .home-card-text {
     width: 100%;
     text-align: left;
   }
 
-  /* 图片在手机端自动变成 100% 宽度 */
   .home-card-image {
     width: 100%;
     display: flex;
@@ -1196,7 +1192,6 @@ tbody td {
     object-fit: contain;
   }
 
-  /* 按钮适配 */
   .home-card-actions .primary-btn,
   .home-card-actions .glass-btn {
     width: 100%;
@@ -1205,7 +1200,6 @@ tbody td {
     font-size: 16px;
   }
 
-  /* Info Links 垂直排版 */
   .home-info-links {
     display: flex;
     flex-direction: column;
@@ -1224,9 +1218,7 @@ tbody td {
   }
 }
 
-/* ============================================================
-   FINAL MOBILE FIX — combine both styles + restore true bar ratio
-   ============================================================ */
+/* mobile side*/
 @media screen and (max-width: 768px) {
 
   /* TABLE: keep proportional bar */
@@ -1317,7 +1309,6 @@ tbody td {
 
   .bar {
     height: 22px !important;
-    /*transform: scaleX(0.70) !important;*/
   }
 
   th.owner-col,
@@ -1337,18 +1328,15 @@ tbody td {
 }
 
 @media screen and (max-width: 768px) {
-  /* OWNER列 - 强制所有情况 */
   th.owner-col,
   td.owner-col {
     width: 28% !important;
     font-size: 13px !important;
-    /* 确保单元格本身 */
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
 
-  /* 确保单元格内所有内容都应用省略号 */
   td.owner-col span,
   td.owner-col div,
   td.owner-col a {
@@ -1360,8 +1348,7 @@ tbody td {
     vertical-align: middle !important;
   }
 
-  /* 移除其他可能的冲突 */
   td.owner-col {
-    overflow: hidden !important; /* 确保不会被其他规则覆盖 */
+    overflow: hidden !important;
   }
 }
