@@ -16,7 +16,7 @@ class TestGraphQLQueries:
     
     def test_distributed_collector_has_organization_fragment(self):
         """Test that distributed collector includes Organization fragment"""
-        collector_file = Path(__file__).parent.parent / "distributed" / "distributed_collector.py"
+        collector_file = Path(__file__).parent.parent / "src" / "seattle_source_ranker" / "collector" / "distributed_collector.py"
         
         with open(collector_file, 'r') as f:
             content = f.read()
@@ -37,7 +37,7 @@ class TestGraphQLQueries:
     
     def test_query_includes_both_user_types(self):
         """Verify query handles both User and Organization types"""
-        collector_file = Path(__file__).parent.parent / "distributed" / "distributed_collector.py"
+        collector_file = Path(__file__).parent.parent / "src" / "seattle_source_ranker" / "collector" / "distributed_collector.py"
         
         with open(collector_file, 'r') as f:
             content = f.read()

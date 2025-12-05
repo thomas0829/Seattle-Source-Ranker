@@ -12,7 +12,7 @@ import math
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from scripts.generate_frontend_data import (
+from seattle_source_ranker.scoring import (
     normalize,
     log_normalize,
     age_factor,
@@ -159,6 +159,14 @@ class TestActivityFactor:
         score = activity_factor(pushed, created)
         # Should handle gracefully
         assert 0 <= score <= 1
+    
+    def test_activity_6_months_old(self):
+        """Test activity score for 6-month old push (180-365 days range)"""
+        created_2y = (datetime.now(timezone.utc) - timedelta(days=2*365)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        pushed_6m = (datetime.now(timezone.utc) - timedelta(days=180)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        score = activity_factor(pushed_6m, created_2y)
+        assert 0.5 <= score <= 0.7, f"6-month old push should score 0.5-0.7, got {score}"
 
 
 class TestHealthFactor:
@@ -194,6 +202,11 @@ class TestHealthFactor:
         """Test edge case with more issues than stars"""
         score = health_factor(1000, 100)
         assert score < 0.5, f"More issues than stars should score low, got {score}"
+    
+    def test_health_moderate_issue_ratio(self):
+        """Test 10-20% issue ratio (boundary case for 0.6 score)"""
+        score = health_factor(150, 1000)  # 15% issue rate
+        assert 0.5 <= score <= 0.7, f"15% issue ratio should score 0.5-0.7, got {score}"
 
 
 class TestCalculateGithubScore:

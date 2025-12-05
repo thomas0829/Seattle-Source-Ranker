@@ -8,10 +8,10 @@ import sys
 import glob
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add src directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from utils.pypi_checker import PyPIChecker
+from seattle_source_ranker.pypi import PyPIChecker
 
 
 def main():

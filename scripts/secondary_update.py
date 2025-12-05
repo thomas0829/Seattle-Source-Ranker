@@ -28,6 +28,12 @@ import os
 import sys
 import time
 import signal
+from pathlib import Path
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+
+from seattle_source_ranker.tokens import TokenManager
 import atexit
 from pathlib import Path
 from celery import group
@@ -35,7 +41,7 @@ from celery import group
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from distributed.workers.collection_worker import update_watchers_batch_task
+from seattle_source_ranker.collector.collection_worker import update_watchers_batch_task
 
 # Global flag for cleanup
 _workers_started_by_script = False

@@ -12,7 +12,7 @@ import requests
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils.celery_config import celery_app
+from seattle_source_ranker.celery_config import celery_app
 
 
 @celery_app.task(
@@ -36,7 +36,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
     failed = 0
 
     # Use TokenManager for dynamic token selection
-    from utils.token_manager import get_token_manager
+    from seattle_source_ranker.tokens import get_token_manager
     use_token_manager = False
     tm = None
 
@@ -493,7 +493,7 @@ def update_watchers_batch_task(self, repos_batch):
         Dict with results: {repo_key: watchers_count or None if deleted/empty}
     """
     import requests
-    from utils.token_manager import TokenManager
+    from seattle_source_ranker.tokens import TokenManager
     import time
 
     token_manager = TokenManager()

@@ -20,8 +20,8 @@
 
 ### Frontend Enhancements
 - **Watchers display** added to both Overall and Python rankings pages
-- **Icon update**: Changed forks icon from 🍴 to 🔀 (Git fork symbol)
-- Display format: ⭐ stars | [WATCH] watchers | 🔀 forks | 🐛 issues
+- **Icon update**: Changed forks icon from fork-and-knife to git-fork symbol
+- Display format: [STAR] stars | [WATCH] watchers | [FORK] forks | [BUG] issues
 - Fallback handling for missing watchers data
 
 ### Automation Improvements
