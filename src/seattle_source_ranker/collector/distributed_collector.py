@@ -207,7 +207,7 @@ class DistributedCollector:
                 )
                 self.worker_processes.append(process)
 
-            print("   Worker {i} started (PID: {process.pid}, log: {log_file})")
+            print(f"   Worker {i} started (PID: {process.pid}, log: {log_file})")
 
         # Wait for workers to register
         print("   Waiting for workers to register...", end="", flush=True)
