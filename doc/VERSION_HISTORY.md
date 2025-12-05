@@ -1,5 +1,56 @@
 # Version History
 
+## Beta-v4.1 (2025-12-05) - Python Page Optimization & Ranking Fix
+
+### Highlights
+- **Fixed ranking system** - Python projects now preserve global ranks during filtering/search
+- **Performance boost** - Owner search ~100× faster (<0.1s vs 10+ seconds)
+- **Enhanced search** - 12 suggestions (8 owners + 4 topics) with lazy loading
+- **UI consistency** - All animations aligned with Overall page
+- **Improved UX** - Better scroll behavior and loading indicators
+
+### Ranking System Fix
+- **Global rank preservation** - Added `python_rank` field (1-39,067) to all Python projects
+- **Consistent ordering** - Rankings remain stable during owner filtering or search
+- **Example**: chriskiehl/Gooey always shows #7 (global rank), not #1 when filtering by owner
+- **Data structure**: Both page files and owner index include `python_rank`
+
+### Performance Optimizations
+- **python_owner_index** - 10,254 unique Python owners split by first character (a-z, 0-9, other)
+- **Owner search speed**: ~100× faster (loads 1 index file vs 782 pages)
+- **Search suggestions**: On-demand loading by first character, can suggest from all 10K+ owners
+- **Page caching**: <0.5s load time with intelligent cache management
+
+### UI/UX Improvements
+- **Animation consistency**:
+  - Added `tableFlash` state for scan animations
+  - Added `skipScanAnimationRef` to control animation types
+  - Row animations (`updatingRows`) triggered correctly on all interactions
+- **Loading behavior**: Spinner shows below search bar (matches Overall page)
+- **Scroll behavior**: Returns to top when navigating to page 1
+- **Hover effects**: Removed distracting translateY and pulse animations
+- **Search suggestions**: Increased limit from 8 to 12 (more space without language filters)
+
+### Frontend Enhancements
+- **Search suggestion improvements**:
+  - Owner suggestions: Load from python_owner_index (not limited to current page)
+  - Topic suggestions: 35+ Python-specific topics (ML, data science, web frameworks, etc.)
+  - Smart limits: Max 8 owners, 4 topics for balanced display
+- **Animation timing**: Matches Overall page (50ms delay for updatingRows, 2s tableFlash)
+- **Pagination fix**: Buttons no longer disappear after clearing owner search
+
+### Build & Deployment
+- **Optimized build script**: `rm -rf build/data` before copying to exclude large files
+- **Symlink handling**: Dev uses symlink, CI/CD copies actual files
+- **Size reduction**: Only seattle_pypi_projects.json (378KB) deployed, not full dataset (178MB)
+- **Deployment success**: Fixed GitHub Pages 100MB file size limit issue
+
+### Technical Details
+- **GITHUB_WEIGHT**: Unified to 1.0 across frontend and backend
+- **PYPI_BONUS**: 0.1 (multiplicative: final_score = base_score × 1.1)
+- **Data generation**: python_rank added during sorting, preserved through pipeline
+- **Caching strategy**: pageCache for loaded pages, lazy loading for owner index
+
 ## Beta-v4.0 (2025-12-01) - Watchers Validation & Documentation Overhaul
 
 ### Highlights
