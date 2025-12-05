@@ -27,8 +27,8 @@ from celery.result import GroupResult
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from distributed.workers.collection_worker import fetch_users_batch_task
-from utils.celery_config import celery_app
+from seattle_source_ranker.collector.collection_worker import fetch_users_batch_task
+from seattle_source_ranker.celery_config import celery_app
 
 
 class DistributedCollector:
@@ -408,7 +408,7 @@ class DistributedCollector:
         print("   Strategy: GraphQL Search API (5000 req/hour limit)")
 
         # Use TokenManager for multi-token support
-        from utils.token_manager import get_token_manager
+        from seattle_source_ranker.tokens import get_token_manager
         try:
             tm = get_token_manager()
             print("   Using multi-token rotation ({tm.get_token_count()} tokens)")

@@ -7,96 +7,15 @@ Uses enhanced SSR scoring algorithm with multiple factors.
 """
 import json
 import os
-import math
+import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime
+from pathlib import Path
 
-def normalize(value, max_value):
-    """Normalize value to 0-1 range"""
-    return value / max_value if max_value > 0 else 0
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-def log_normalize(value, base=10):
-    """Logarithmic normalization for better score distribution"""
-    return math.log10(value + 1) / math.log10(base)
-
-def age_factor(created_at):
-    """
-    Calculate age factor (0-1 range)
-    Mature projects (2-8 years) get higher scores
-    """
-    try:
-        created_time = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        years = (datetime.now(timezone.utc) - created_time).days / 365.25
-
-        # Peak score at 3-5 years, decrease for too old/new
-        if years < 0.5:
-            return 0.3  # Too new
-        if years < 2:
-            return 0.6 + (years - 0.5) * 0.2  # Growing: 0.6-0.9
-        if years < 5:
-            return 0.9 + (years - 2) * 0.033  # Peak: 0.9-1.0
-        if years < 8:
-            return 1.0 - (years - 5) * 0.05  # Mature: 1.0-0.85
-        return 0.7 - min((years - 8) * 0.03, 0.4)  # Declining: 0.7-0.3
-    except (ValueError, TypeError):
-        return 0.5
-
-def activity_factor(pushed_at, created_at):
-    """
-    Calculate recent activity factor (0-1 range)
-    Recent updates indicate active maintenance
-    """
-    try:
-        pushed_time = datetime.strptime(pushed_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        created_time = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-
-        days_since_push = (datetime.now(timezone.utc) - pushed_time).days
-        project_age_days = (datetime.now(timezone.utc) - created_time).days
-
-        # Avoid division by zero
-        if project_age_days < 1:
-            return 1.0
-
-        # Recent activity is good
-        if days_since_push < 7:
-            return 1.0
-        if days_since_push < 30:
-            return 0.95
-        if days_since_push < 90:
-            return 0.85
-        if days_since_push < 180:
-            return 0.7
-        if days_since_push < 365:
-            return 0.5
-        # Check if abandoned (no update in years)
-        return max(0.2, 0.5 - (days_since_push - 365) / 3650)
-    except (ValueError, TypeError):
-        return 0.5
-
-def health_factor(open_issues, stars):
-    """
-    Calculate project health (0-1 range)
-    Issues relative to popularity
-    """
-    if stars < 10:
-        return 1.0 if open_issues < 5 else 0.8
-
-    # Issue ratio relative to stars
-    issue_ratio = open_issues / (stars + 1)
-
-    if issue_ratio < 0.01:
-        return 1.0
-    if issue_ratio < 0.05:
-        return 0.9
-    if issue_ratio < 0.1:
-        return 0.8
-    if issue_ratio < 0.2:
-        return 0.6
-    return 0.4
-
-def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watchers=None):
-    """
-    Enhanced SSR Algorithm:
+from seattle_source_ranker.scoring import calculate_github_score
 
     Base Metrics (70%):
       - Stars: 40% (primary popularity indicator)

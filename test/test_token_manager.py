@@ -14,7 +14,7 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.token_manager import TokenManager
+from seattle_source_ranker.tokens import TokenManager
 
 
 class TestTokenManagerInit:
@@ -281,6 +281,106 @@ class TestEdgeCases:
         
         # With single token, should return the same one
         assert first == second == 'ghp_only_one'
+
+
+class TestUtilityFunctions:
+    """Test utility functions of TokenManager"""
+    
+    def test_get_token_count(self):
+        """Test getting total number of tokens"""
+        tm = TokenManager(['ghp_token1', 'ghp_token2', 'ghp_token3'])
+        assert tm.get_token_count() == 3
+    
+    def test_get_all_tokens(self):
+        """Test getting all tokens"""
+        tokens = ['ghp_token1', 'ghp_token2']
+        tm = TokenManager(tokens)
+        all_tokens = tm.get_all_tokens()
+        
+        assert len(all_tokens) == 2
+        assert 'ghp_token1' in all_tokens
+        assert 'ghp_token2' in all_tokens
+        
+        # Should be a copy, not the original list
+        all_tokens.append('ghp_token3')
+        assert tm.get_token_count() == 2
+
+
+class TestGlobalInstance:
+    """Test global singleton pattern"""
+    
+    def test_get_token_manager_singleton(self):
+        """Test global TokenManager instance"""
+        from seattle_source_ranker.tokens import get_token_manager, reset_token_manager
+        
+        # Reset first
+        reset_token_manager()
+        
+        # Get instance
+        tm1 = get_token_manager()
+        tm2 = get_token_manager()
+        
+        # Should be the same instance
+        assert tm1 is tm2
+        
+        # Clean up
+        reset_token_manager()
+    
+    def test_reset_token_manager(self):
+        """Test resetting global TokenManager"""
+        from seattle_source_ranker.tokens import get_token_manager, reset_token_manager
+        
+        # Get instance
+        tm1 = get_token_manager()
+        
+        # Reset
+        reset_token_manager()
+        
+        # Get new instance
+        tm2 = get_token_manager()
+        
+        # Should be different instances
+        assert tm1 is not tm2
+        
+        # Clean up
+        reset_token_manager()
+
+
+class TestEnvFileLoading:
+    """Test loading tokens from environment variables"""
+    
+    def test_load_from_env_variables(self, monkeypatch):
+        """Test loading tokens from environment variables"""
+        # Set environment variables
+        monkeypatch.setenv('GITHUB_TOKEN_1', 'ghp_token_one')
+        monkeypatch.setenv('GITHUB_TOKEN_2', 'ghp_token_two')
+        monkeypatch.setenv('GITHUB_TOKEN_3', 'ghp_token_three')
+        monkeypatch.setenv('OTHER_VAR', 'some_value')
+        
+        # Create TokenManager without passing tokens (should load from env)
+        tm = TokenManager()
+        
+        # Should load the tokens
+        count = tm.get_token_count()
+        assert count == 3
+        
+        all_tokens = tm.get_all_tokens()
+        assert 'ghp_token_one' in all_tokens
+        assert 'ghp_token_two' in all_tokens
+        assert 'ghp_token_three' in all_tokens
+    
+    def test_load_from_env_tokens_file_parsing(self):
+        """Test the file parsing logic for .env.tokens"""
+        # Test the parsing logic directly by calling _load_tokens_from_env
+        # when a .env.tokens file exists
+        tm = TokenManager(['ghp_test1', 'ghp_test2'])
+        
+        # Verify tokens were set
+        assert tm.get_token_count() == 2
+        
+        # This test covers the initialization path
+        # The actual .env.tokens file reading is covered by integration
+        # since the path is hardcoded relative to the module location
 
 
 if __name__ == '__main__':

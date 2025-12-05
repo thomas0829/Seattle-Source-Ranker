@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from scripts.generate_frontend_data import classify_language
+from seattle_source_ranker.scripts.generate_frontend_data import classify_language
 
 
 def test_classify_smoke_multiple_inputs():

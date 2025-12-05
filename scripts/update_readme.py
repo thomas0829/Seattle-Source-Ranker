@@ -64,6 +64,7 @@ def load_latest_data():
 
 def update_readme(stats):
     """Update README.md with latest statistics"""
+    # README is at project root, scripts/ is at root level
     readme_path = Path(__file__).parent.parent / "README.md"
 
     with open(readme_path, 'r', encoding='utf-8') as f:
