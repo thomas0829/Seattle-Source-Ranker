@@ -91,7 +91,7 @@ jobs:
             exit(0)
         
         latest_user_file = max(user_files)
-        print(f"📁 Found user data: {latest_user_file}")
+        print(f"[FILE] Found user data: {latest_user_file}")
         
         # Parse timestamp from filename (format: seattle_users_YYYYMMDD_HHMMSS.json)
         import os
@@ -114,8 +114,8 @@ jobs:
             now = datetime.now(SEATTLE_TZ)
             hours_since = (now - file_time).total_seconds() / 3600
             
-            print(f"📅 File timestamp: {file_time.isoformat()}")
-            print(f"⏱️  Hours since: {hours_since:.1f}")
+            print(f"[DATE] File timestamp: {file_time.isoformat()}")
+            print(f"[TIME] Hours since: {hours_since:.1f}")
             
             if hours_since < 0:
                 print("[WARNING]  Timestamp in future")
@@ -159,13 +159,13 @@ jobs:
         
         if skip_graphql:
             print("=" * 60)
-            print("⚡ FAST MODE: Skipping GraphQL user search")
+            print("[FAST] FAST MODE: Skipping GraphQL user search")
             print("   Using existing user data from repository")
             print("   Only collecting projects via REST API")
             print("=" * 60)
         else:
             print("=" * 60)
-            print("[RETRY] FULL MODE: Running complete collection")
+            print("[FULL] FULL MODE: Running complete collection")
             print("   Step 1: GraphQL user search")
             print("   Step 2: REST API project collection")
             print("=" * 60)
@@ -209,7 +209,7 @@ jobs:
     
     - name: Clean temporary files
       run: |
-        echo "🧹 Cleaning temporary files..."
+        echo "[CLEAN] Cleaning temporary files..."
         cd data
         
         # Only delete success marker (temporary file)
@@ -219,7 +219,7 @@ jobs:
         # They are not pushed to Git anyway (projects too large, users already in repo)
         
         echo "[OK] Old data files cleaned"
-        echo "📁 Remaining files:"
+        echo "[FILES] Remaining files:"
         ls -lh *.json
     
     - name: Update README with latest stats
@@ -249,7 +249,7 @@ jobs:
     
     - name: Generate frontend paginated data
       run: |
-        echo "[STATS] Generating frontend data with topics..."
+        echo "[DATA] Generating frontend data with topics..."
         python3 scripts/generate_frontend_data.py
         echo "[OK] Frontend data generated with topics support"
     
@@ -308,14 +308,14 @@ jobs:
           echo "[OK] Verification passed: $USER_COUNT users (>= 20,000)"
           
           # Remove old user files (keep only the latest one)
-          echo "🧹 Cleaning up old user files..."
+          echo "[CLEAN] Cleaning up old user files..."
           cd data
           OLD_FILES=$(ls -t seattle_users_*.json | tail -n +2)
           if [ -n "$OLD_FILES" ]; then
             echo "$OLD_FILES" | xargs rm -v
             echo "[OK] Removed $(echo "$OLD_FILES" | wc -l) old user file(s)"
           else
-            echo "ℹ️  No old files to remove"
+            echo "[INFO] No old files to remove"
           fi
           cd ..
         else
@@ -333,7 +333,7 @@ jobs:
         if git diff --staged --quiet; then
           echo "[OK] No changes to user data, PyPI data, or README"
         else
-          echo "📤 Committing updated user data, PyPI data, and README"
+          echo "[COMMIT] Committing updated user data, PyPI data, and README"
           git commit -m "chore: Update user data, PyPI data, and README - $(date +'%Y-%m-%d')"
           git push
         fi
@@ -353,10 +353,10 @@ jobs:
           PROJECTS=$(jq -r '.total_projects // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
           STARS=$(jq -r '.total_stars // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
           
-          echo "- 👥 Users: **$USERS**" >> $GITHUB_STEP_SUMMARY
-          echo "- [PKG] Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
-          echo "- ⭐ Stars: **$STARS**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📁 File: \`$(basename $LATEST_PROJECTS)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- [USERS] Users: **$USERS**" >> $GITHUB_STEP_SUMMARY
+          echo "- [PROJECTS] Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
+          echo "- [STARS] Stars: **$STARS**" >> $GITHUB_STEP_SUMMARY
+          echo "- [FILE] File: \`$(basename $LATEST_PROJECTS)\`" >> $GITHUB_STEP_SUMMARY
         else
           echo "[WARNING] Projects data file not found" >> $GITHUB_STEP_SUMMARY
         fi
@@ -366,7 +366,7 @@ jobs:
         if [ -f "$LATEST_USERS" ]; then
           USER_COUNT=$(jq -r '.total_users // 0' "$LATEST_USERS" 2>/dev/null || echo "0")
           echo "- [INFO] User accounts collected: **$USER_COUNT**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📄 User file: \`$(basename $LATEST_USERS)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- [FILE] User file: \`$(basename $LATEST_USERS)\`" >> $GITHUB_STEP_SUMMARY
         fi
         
         # Show PyPI data info
@@ -375,7 +375,7 @@ jobs:
           TOTAL_PYTHON=$(jq -r '.total_python_projects // 0' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0")
           DETECTION_RATE=$(jq -r '.detection_rate // "0%"' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0%")
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### [PKG] PyPI Statistics" >> $GITHUB_STEP_SUMMARY
-          echo "- 🐍 Total Python projects: **$TOTAL_PYTHON**" >> $GITHUB_STEP_SUMMARY
+          echo "### [PYPI] PyPI Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- [PYTHON] Total Python projects: **$TOTAL_PYTHON**" >> $GITHUB_STEP_SUMMARY
           echo "- [PKG] On PyPI: **$PYPI_COUNT** ($DETECTION_RATE)" >> $GITHUB_STEP_SUMMARY
         fi
