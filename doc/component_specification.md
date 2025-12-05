@@ -71,9 +71,9 @@
 - `seattle_pypi_projects.json`: Detected PyPI packages
   ```json
   {
-    "total_python_projects": 55432,
-    "pypi_projects": 10019,
-    "detection_rate": "18.09%",
+    "total_python_projects": 54188,
+    "pypi_projects": 1025,
+    "detection_rate": "1.89%",
     "projects": [
       {
         "name": "requests",
@@ -188,7 +188,7 @@ Final Score = Base Score × 1.1  (if Python + on PyPI)
     "projects_per_page": 50,
     "last_updated": "2025-12-02T09:30:38",
     "languages": {
-      "Python": 55432,
+      "Python": 54188,
       "JavaScript": 89234,
       ...
     }

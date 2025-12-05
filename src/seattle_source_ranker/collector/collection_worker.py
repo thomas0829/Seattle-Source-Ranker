@@ -17,7 +17,7 @@ from seattle_source_ranker.celery_config import celery_app
 
 @celery_app.task(
     bind=True,
-    name="workers.collection_worker.fetch_users_batch",
+    name="seattle_source_ranker.collector.collection_worker.search_seattle_users",
     max_retries=3,
 )
 def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
@@ -338,7 +338,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
 
 
 @celery_app.task(
-    name="workers.collection_worker.search_seattle_users",
+    name="seattle_source_ranker.collector.collection_worker.search_seattle_users",
 )
 def search_seattle_users_task(max_users: int = 1000) -> List[str]:
     """
@@ -400,7 +400,7 @@ def search_seattle_users_task(max_users: int = 1000) -> List[str]:
 
 
 @celery_app.task(
-    name="workers.collection_worker.collect_seattle_projects",
+    name="seattle_source_ranker.collector.collection_worker.collect_seattle_projects",
     bind=True,
 )
 def collect_seattle_projects_task(
@@ -480,7 +480,7 @@ def collect_seattle_projects_task(
     }
 
 
-@celery_app.task(bind=True, max_retries=3, name="workers.collection_worker.update_watchers_batch")
+@celery_app.task(bind=True, max_retries=3, name="seattle_source_ranker.collector.collection_worker.update_watchers_batch")
 def update_watchers_batch_task(self, repos_batch):
     """
     Celery task to update watchers for a batch of repos.
@@ -495,9 +495,14 @@ def update_watchers_batch_task(self, repos_batch):
     import requests
     from seattle_source_ranker.tokens import TokenManager
     import time
+    import random
 
     token_manager = TokenManager()
     token = token_manager.get_token()
+    
+    # Add random delay (0.5-2.0s) to avoid all workers hitting API simultaneously
+    # This prevents secondary rate limit from burst traffic with 16 concurrent workers
+    time.sleep(random.uniform(0.5, 2.0))
 
     # Step 1: Build GraphQL batch query for all repos
     aliases = []
@@ -564,8 +569,78 @@ def update_watchers_batch_task(self, repos_batch):
                 print(f"[ERROR] GraphQL error in batch: {data.get('errors', 'Unknown')}")
                 for repo_key in repo_keys:
                     results[repo_key] = None
+        elif response.status_code == 403:
+            # Rate limit hit - check if we should retry
+            
+            # Check rate limit from headers
+            remaining = response.headers.get('X-RateLimit-Remaining', '0')
+            reset_time = response.headers.get('X-RateLimit-Reset', '0')
+            resource = response.headers.get('X-RateLimit-Resource', 'unknown')
+            
+            # Check for secondary rate limit
+            retry_after = response.headers.get('Retry-After')
+            
+            try:
+                remaining = int(remaining)
+                reset_time = int(reset_time)
+                current_time = int(time.time())
+                wait_time = max(0, reset_time - current_time)
+                
+                print(f"[RATE_LIMIT] HTTP 403 - Resource: {resource}, Remaining: {remaining}, Reset: {wait_time}s")
+                
+                if retry_after:
+                    # Secondary rate limit
+                    retry_seconds = int(retry_after)
+                    print(f"[SECONDARY_LIMIT] Retry-After: {retry_seconds}s, switching token")
+                    
+                    # Try different token immediately
+                    new_token = token_manager.get_token()
+                    if new_token != token:
+                        print(f"[TOKEN] Switched token, retrying immediately")
+                        raise self.retry(countdown=1, max_retries=3)
+                    else:
+                        # Wait briefly then retry
+                        print(f"[WAIT] Waiting {min(retry_seconds, 10)}s before retry")
+                        time.sleep(min(retry_seconds, 10))
+                        raise self.retry(countdown=1, max_retries=3)
+                
+                elif remaining == 0 and wait_time > 0:
+                    # Primary rate limit exhausted
+                    print(f"[TOKEN] Primary rate limit hit, switching token")
+                    new_token = token_manager.get_token()
+                    
+                    if new_token != token:
+                        print(f"[TOKEN] Switched to different token, retrying")
+                        raise self.retry(countdown=1, max_retries=3)
+                    else:
+                        # All tokens exhausted
+                        if wait_time < 300:  # Only wait if less than 5 minutes
+                            print(f"[WAIT] All tokens exhausted, waiting {wait_time}s")
+                            time.sleep(wait_time + 1)
+                            raise self.retry(countdown=1, max_retries=3)
+                        else:
+                            print(f"[SKIP] Wait time too long ({wait_time}s), marking batch as None")
+                            for repo_key in repo_keys:
+                                results[repo_key] = None
+                else:
+                    # Other 403 error (permissions, abuse detection, etc.)
+                    print(f"[403_ERROR] Resource: {resource}, Remaining: {remaining}, not rate limit")
+                    
+                    # Try switching token once in case it's a token-specific issue
+                    new_token = token_manager.get_token()
+                    if new_token != token and self.request.retries < 1:
+                        print(f"[TOKEN] Trying different token")
+                        raise self.retry(countdown=2, max_retries=3)
+                    else:
+                        print(f"[SKIP] Marking batch as None")
+                        for repo_key in repo_keys:
+                            results[repo_key] = None
+            except ValueError as e:
+                print(f"[ERROR] Could not parse headers: {e}")
+                for repo_key in repo_keys:
+                    results[repo_key] = None
         else:
-            # HTTP error - mark all as needing retry
+            # Other HTTP error - mark all as needing retry
             print(f"[ERROR] HTTP {response.status_code} in batch")
             for repo_key in repo_keys:
                 results[repo_key] = None

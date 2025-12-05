@@ -74,43 +74,39 @@ jobs:
         python3 << 'PYTHON_EOF'
         import os
         import json
-        import glob
+        from pathlib import Path
         from datetime import datetime
         from zoneinfo import ZoneInfo
         
         SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
         
-        # Check user data file (small, committed to Git)
-        user_files = glob.glob('data/seattle_users_*.json')
+        # Check for seattle_users.json
+        user_file = Path('data/seattle_users.json')
         
-        if not user_files:
-            print("[ERROR] No user data found")
+        if not user_file.exists():
+            print("[ERROR] seattle_users.json not found")
             print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('skip_graphql=false\n')
             exit(0)
         
-        latest_user_file = max(user_files)
-        print(f"[FILE] Found user data: {latest_user_file}")
-        
-        # Parse timestamp from filename (format: seattle_users_YYYYMMDD_HHMMSS.json)
-        import os
-        filename = os.path.basename(latest_user_file)
+        print(f"[FILE] Found user data: {user_file.name}")
         
         try:
-            timestamp_str = filename.replace('seattle_users_', '').replace('.json', '')
-            date_part, time_part = timestamp_str.split('_')
+            # Read collected_at from file content
+            with open(user_file, 'r') as f:
+                data = json.load(f)
             
-            # Parse date and time from filename
-            year = int(date_part[0:4])
-            month = int(date_part[4:6])
-            day = int(date_part[6:8])
-            hour = int(time_part[0:2])
-            minute = int(time_part[2:4])
-            second = int(time_part[4:6])
+            collected_at = data.get('collected_at')
+            if not collected_at:
+                print("[WARNING] No collected_at timestamp in file")
+                print("   → Need full collection (GraphQL + REST API)")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('skip_graphql=false\n')
+                exit(0)
             
-            # Create datetime with Seattle timezone
-            file_time = datetime(year, month, day, hour, minute, second, tzinfo=SEATTLE_TZ)
+            # Parse ISO format timestamp
+            file_time = datetime.fromisoformat(collected_at)
             now = datetime.now(SEATTLE_TZ)
             hours_since = (now - file_time).total_seconds() / 3600
             
@@ -118,7 +114,7 @@ jobs:
             print(f"[TIME] Hours since: {hours_since:.1f}")
             
             if hours_since < 0:
-                print("[WARNING]  Timestamp in future")
+                print("[WARNING] Timestamp in future")
                 print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('skip_graphql=false\n')
@@ -135,7 +131,7 @@ jobs:
                     f.write('skip_graphql=false\n')
         
         except Exception as e:
-            print(f"[ERROR] Error parsing filename: {e}")
+            print(f"[ERROR] Error reading timestamp: {e}")
             print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('skip_graphql=false\n')
@@ -145,7 +141,7 @@ jobs:
       run: |
         echo "[START] Starting distributed collection..."
         python3 << 'PYTHON_EOF'
-        from distributed.distributed_collector import DistributedCollector
+        from seattle_source_ranker.collector.distributed_collector import DistributedCollector
         import json
         import os
         import sys

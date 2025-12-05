@@ -115,13 +115,18 @@ class PyPIChecker:
     def check_project(self, repo: Dict) -> Tuple[bool, float, str]:
         """
         Check if a project is on PyPI with STRICT matching to avoid false positives
+        
+        Now uses PyPI API to verify the GitHub repo URL matches the package metadata.
 
         Returns:
             (is_on_pypi, confidence_score, match_method)
         """
         repo_name = repo.get('name', '').lower()
+        owner = repo.get('owner', '')
+        if isinstance(owner, dict):
+            owner = owner.get('login', '')
 
-        if not repo_name:
+        if not repo_name or not owner:
             return (False, 0.0, 'no_name')
 
         # 1. Check exclude patterns first
@@ -129,43 +134,42 @@ class PyPIChecker:
             if re.search(pattern, repo_name):
                 return (False, 0.0, 'excluded_pattern')
 
-        # 2. Check manual mappings (highest confidence)
+        # 2. Check manual mappings (highest confidence) - still verify ownership
         if repo_name in self.MANUAL_MAPPINGS:
             mapped_name = self.MANUAL_MAPPINGS[repo_name].lower()
             if mapped_name in self.pypi_packages:
-                return (True, 0.95, 'manual_mapping')
+                # Verify ownership via PyPI
+                if self._verify_pypi_ownership(mapped_name, owner, repo_name):
+                    return (True, 0.95, 'manual_mapping_verified')
 
-        # 3. Direct match (high confidence)
+        # 3. Direct match - MUST verify ownership
         if repo_name in self.pypi_packages:
-            # But exclude if it's a generic name without strong signals
-            if self._has_strong_pypi_signals(repo):
+            # Verify this repo is the actual publisher
+            if self._verify_pypi_ownership(repo_name, owner, repo_name):
                 return (True, 0.95, 'direct_match_verified')
-            if repo_name not in self.GENERIC_NAMES:
-                return (True, 0.90, 'direct_match')
-            # Generic name - need strong signals
-            return (False, 0.0, 'generic_name_excluded')
+            # Name matches but different owner - likely coincidence
+            return (False, 0.0, 'name_collision')
 
-        # 4. Underscore/hyphen conversion (medium confidence)
+        # 4. Underscore/hyphen conversion - MUST verify ownership
         dash_to_underscore = repo_name.replace('-', '_')
         if (
             dash_to_underscore in self.pypi_packages
             and dash_to_underscore not in self.GENERIC_NAMES
         ):
-            if self._has_strong_pypi_signals(repo):
+            if self._verify_pypi_ownership(dash_to_underscore, owner, repo_name):
                 return (True, 0.90, 'dash_to_underscore_verified')
-            return (True, 0.85, 'dash_to_underscore')
+            return (False, 0.0, 'name_collision')
 
         underscore_to_dash = repo_name.replace('_', '-')
         if (
             underscore_to_dash in self.pypi_packages
             and underscore_to_dash not in self.GENERIC_NAMES
         ):
-            if self._has_strong_pypi_signals(repo):
+            if self._verify_pypi_ownership(underscore_to_dash, owner, repo_name):
                 return (True, 0.90, 'underscore_to_dash_verified')
-            return (True, 0.85, 'underscore_to_dash')
+            return (False, 0.0, 'name_collision')
 
-        # 5. Remove common prefixes (lower confidence - STRICT)
-        # Only if we have strong signals OR the cleaned name is specific enough
+        # 5. Remove common prefixes - MUST verify ownership
         prefixes = ['python-', 'py-', 'django-', 'flask-', 'pytest-']
         for prefix in prefixes:
             if repo_name.startswith(prefix):
@@ -176,23 +180,96 @@ class PyPIChecker:
                     continue
 
                 if clean_name in self.pypi_packages:
-                    # REQUIRE strong signals for prefix removal matches
-                    if self._has_strong_pypi_signals(repo):
+                    if self._verify_pypi_ownership(clean_name, owner, repo_name):
                         return (True, 0.80, f'removed_prefix_{prefix}_verified')
-                    # Otherwise, skip this match to avoid false positives
 
                 # Also try underscore version
                 clean_underscore = clean_name.replace('-', '_')
                 if clean_underscore in self.pypi_packages and len(clean_underscore) >= 4:
-                    if self._has_strong_pypi_signals(repo):
+                    if self._verify_pypi_ownership(clean_underscore, owner, repo_name):
                         return (True, 0.75, f'removed_prefix_{prefix}_underscore_verified')
 
-        # 6. Check for VERY strong signals only
-        # Only mark as on_pypi if we have explicit mentions
-        if self._has_very_strong_pypi_signals(repo):
-            return (True, 0.70, 'very_strong_signals')
-
         return (False, 0.0, 'no_match')
+
+    def _verify_pypi_ownership(self, package_name: str, github_owner: str, repo_name: str) -> bool:
+        """
+        Verify that a GitHub repo is the actual publisher of a PyPI package.
+        
+        Checks PyPI metadata to see if the package's source URL points to this GitHub repo.
+        
+        Args:
+            package_name: PyPI package name
+            github_owner: GitHub repository owner
+            repo_name: GitHub repository name
+            
+        Returns:
+            True if this repo is the actual PyPI publisher, False otherwise
+        """
+        try:
+            response = requests.get(
+                f'https://pypi.org/pypi/{package_name}/json',
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                return False
+                
+            data = response.json()
+            info = data.get('info', {})
+            
+            # Normalize for comparison
+            github_owner = github_owner.lower()
+            repo_name = repo_name.lower()
+            expected_repo = f"{github_owner}/{repo_name}"
+            
+            # Check project_urls (most common)
+            project_urls = info.get('project_urls', {})
+            for key, url in project_urls.items():
+                if url and 'github.com' in url.lower():
+                    normalized = self._normalize_github_url(url)
+                    if normalized == expected_repo:
+                        return True
+            
+            # Check home_page
+            home_page = info.get('home_page', '')
+            if home_page and 'github.com' in home_page.lower():
+                normalized = self._normalize_github_url(home_page)
+                if normalized == expected_repo:
+                    return True
+            
+            # Check package_url (rare but possible)
+            package_url = info.get('package_url', '')
+            if package_url and 'github.com' in package_url.lower():
+                normalized = self._normalize_github_url(package_url)
+                if normalized == expected_repo:
+                    return True
+                    
+            return False
+            
+        except Exception:
+            # On error, be conservative - don't claim it's on PyPI
+            return False
+    
+    def _normalize_github_url(self, url: str) -> str:
+        """Normalize a GitHub URL to owner/repo format."""
+        if not url:
+            return ""
+            
+        url = url.lower().strip().rstrip('/')
+        
+        # Remove protocol
+        url = url.replace('https://', '').replace('http://', '')
+        url = url.replace('www.', '')
+        
+        # Extract github.com/owner/repo
+        if 'github.com/' in url:
+            parts = url.split('github.com/')[1].split('/')
+            if len(parts) >= 2:
+                owner = parts[0]
+                repo = parts[1].rstrip('.git')
+                return f"{owner}/{repo}"
+        
+        return ""
 
     def _has_strong_pypi_signals(self, repo: Dict) -> bool:
         """Check if repo has strong signals of being a PyPI package"""

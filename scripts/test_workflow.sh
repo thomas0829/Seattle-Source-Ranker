@@ -47,7 +47,7 @@ fi
 echo -e "\n${YELLOW}4. Running test collection (100 users)...${NC}"
 python3 << 'PYTHON_EOF'
 import sys
-from distributed.distributed_collector import DistributedCollector
+from seattle_source_ranker.collector.distributed_collector import DistributedCollector
 
 try:
     collector = DistributedCollector(

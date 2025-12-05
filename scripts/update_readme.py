@@ -13,33 +13,33 @@ def load_latest_data():
     """Load the latest collection data from user and project files"""
     data_dir = Path(__file__).parent.parent / "data"
 
-    # Find latest seattle_users_*.json file (this is what we commit to Git)
-    user_files = list(data_dir.glob('seattle_users_*.json'))
-    if not user_files:
+    # Load seattle_users.json
+    user_file = data_dir / 'seattle_users.json'
+    if not user_file.exists():
+        print("[ERROR] seattle_users.json not found")
         return None
+    
+    print(f"[DIR] Loading user data from {user_file.name}")
 
-    latest_user_file = max(user_files)
-    print("[DIR] Loading user data from {latest_user_file.name}")
-
-    with open(latest_user_file, 'r', encoding='utf-8') as f:
+    with open(user_file, 'r', encoding='utf-8') as f:
         user_data = json.load(f)
 
-    # Try to find latest project file (will exist during workflow run)
-    project_files = list(data_dir.glob('seattle_projects_*.json'))
+    # Load seattle_projects.json
+    project_file = data_dir / 'seattle_projects.json'
     project_data = None
 
-    if project_files:
-        latest_project_file = max(project_files)
-        print(f"[DIR] Loading project data from {latest_project_file.name}")
+    if project_file.exists():
+        print(f"[DIR] Loading project data from {project_file.name}")
 
+    if project_file.exists():
         try:
-            with open(latest_project_file, 'r', encoding='utf-8') as f:
+            with open(project_file, 'r', encoding='utf-8') as f:
                 project_data = json.load(f)
             print("[OK] Successfully loaded project data")
         except json.JSONDecodeError:
-            print("[WARNING]  Warning: Could not load project data")
+            print("[WARNING] Could not load project data")
     else:
-        print("[WARNING]  No project data found (will use user data only)")
+        print("[WARNING] No project data found (will use user data only)")
 
     # Try to find PyPI data
     pypi_file = data_dir / 'seattle_pypi_projects.json'
