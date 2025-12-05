@@ -204,10 +204,6 @@ jobs:
         
         echo "[OK] Collection verification passed: $LATEST_PROJECTS"
     
-    - name: Update README with latest stats
-      run: |
-        python3 scripts/update_readme.py
-    
     - name: Generate PyPI projects list
       run: |
         echo "[PKG] Checking Python projects on PyPI..."
@@ -290,6 +286,12 @@ jobs:
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
         commit_message: 'Deploy: Update with latest data'
+    
+    - name: Update README with latest stats
+      run: |
+        echo "[README] Updating README.md with collection statistics..."
+        python3 scripts/update_readme.py
+        echo "[OK] README.md updated"
     
     - name: Commit user data and PyPI data
       run: |
