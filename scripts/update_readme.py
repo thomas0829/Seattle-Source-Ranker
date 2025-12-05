@@ -181,10 +181,17 @@ def main():
     if isinstance(user_data, dict) and 'total_users' in user_data:
         # New format: has metadata
         total_users = user_data.get('total_users', 0)
-        collected_at = user_data.get('collected_at', datetime.now(SEATTLE_TZ).isoformat())
     else:
         # Old format: dict of users
         total_users = len(user_data)
+
+    # Use collected_at from project_data (most recent), fallback to user_data
+    collected_at = None
+    if project_data and 'collected_at' in project_data:
+        collected_at = project_data.get('collected_at')
+    elif isinstance(user_data, dict) and 'collected_at' in user_data:
+        collected_at = user_data.get('collected_at')
+    else:
         collected_at = datetime.now(SEATTLE_TZ).isoformat()
 
     stats = {
