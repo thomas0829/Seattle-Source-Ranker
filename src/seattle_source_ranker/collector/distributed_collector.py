@@ -169,10 +169,10 @@ class DistributedCollector:
         active_workers = self.check_workers()
 
         if active_workers >= self.num_workers:
-            print("[OK] Found {active_workers} active workers (target: {self.num_workers})")
+            print(f"[OK] Found {active_workers} active workers (target: {self.num_workers})")
             return
 
-        print("[START] Starting {self.num_workers} Celery workers...")
+        print(f"[START] Starting {self.num_workers} Celery workers...")
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -216,7 +216,7 @@ class DistributedCollector:
             time.sleep(0.5)
             active = self.check_workers()
             if active >= self.num_workers:
-                print(" [OK] {active} workers ready!")
+                print(f" [OK] {active} workers ready!")
                 return
             if i % 10 == 0 and i > 0:  # Every 5 seconds
                 print(f"\n   ({active}/{self.num_workers} workers registered, waiting...)", end="", flush=True)
@@ -615,7 +615,7 @@ class DistributedCollector:
         # Convert set to list and truncate
         usernames = list(usernames_set)[:max_users]
 
-        print("[OK] Found {len(usernames)} unique developers (requested: {max_users})")
+        print(f"[OK] Found {len(usernames)} unique developers (requested: {max_users})")
 
         # Save to file
         timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
@@ -686,7 +686,7 @@ class DistributedCollector:
             total_batches: Total number of batches
         """
         print("\n[STATS] Step 4: Monitoring progress...")
-        print("   Total batches: {total_batches}")
+        print(f"   Total batches: {total_batches}")
         print("   Waiting for workers...\n")
 
         start_time = time.time()
@@ -778,7 +778,7 @@ class DistributedCollector:
             print("[OK] No failed tasks to retry")
             return result
 
-        print("\n[RETRY] Retrying {len(failed_tasks)} failed tasks...")
+        print(f"\n[RETRY] Retrying {len(failed_tasks)} failed tasks...")
 
         # Create retry batches
         retry_batches = [original_batches[idx] for idx in failed_batch_indices]
@@ -791,7 +791,7 @@ class DistributedCollector:
 
         retry_result = retry_jobs.apply_async()
 
-        print("   Submitted {len(retry_batches)} retry tasks")
+        print(f"   Submitted {len(retry_batches)} retry tasks")
         print("   Monitoring retry progress...")
 
         # Monitor retry progress
@@ -808,7 +808,7 @@ class DistributedCollector:
                 break
 
             if elapsed > 3600:  # 1 hour timeout for retries
-                print("\n[WARNING]  Retry timeout after {elapsed:.1f}s")
+                print(f"\n[WARNING]  Retry timeout after {elapsed:.1f}s")
                 break
 
             # Check for failures
@@ -944,7 +944,7 @@ class DistributedCollector:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
 
-        print("[OK] Saved to: {output_file}")
+        print(f"[OK] Saved to: {output_file}")
 
     def collect(
         self,
@@ -983,7 +983,7 @@ class DistributedCollector:
                     print("[WARNING]  Warning: No workers detected!")
                     print("   Please start workers manually or enable auto-manage-workers")
                     raise ValueError("No workers available")
-                print("[OK] Found {active_workers} active workers")
+                print(f"[OK] Found {active_workers} active workers")
 
             # Step 1: Check for existing user data or search users
             usernames = self.load_or_search_users(max_users, start_user)
