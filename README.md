@@ -1,6 +1,6 @@
 # Seattle Source Ranker
 
-[![Beta Version](https://img.shields.io/badge/version-Beta--v4.0-orange)](https://github.com/thomas0829/Seattle-Source-Ranker/releases/tag/Beta-v4.0)
+[![Beta Version](https://img.shields.io/badge/version-Beta--v4.1-orange)](https://github.com/thomas0829/Seattle-Source-Ranker/releases/tag/Beta-v4.1)
 [![Last Updated](https://img.shields.io/badge/auto--update-daily-brightgreen.svg)](https://github.com/thomas0829/Seattle-Source-Ranker/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
