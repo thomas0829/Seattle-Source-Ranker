@@ -39,8 +39,11 @@ class TokenManager:
         """Load tokens from environment variables"""
         tokens = []
 
-        # Try to load from .env.tokens file first
-        env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env.tokens')
+        # Try to load from .env.tokens file first (in project root)
+        # __file__ is in src/seattle_source_ranker/tokens.py
+        # Project root is 2 levels up
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        env_file = os.path.join(project_root, '.env.tokens')
         if os.path.exists(env_file):
             with open(env_file, 'r', encoding='utf-8') as f:
                 for line in f:

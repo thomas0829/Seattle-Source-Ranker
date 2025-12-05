@@ -33,52 +33,52 @@ else
     export GITHUB_TOKEN
 fi
 
-# Set PYTHONPATH to project root so workers can import utils/
-export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+# Set PYTHONPATH to project root so workers can import modules
+export PYTHONPATH="$PROJECT_ROOT:$PROJECT_ROOT/src:$PYTHONPATH"
 
 # Create logs directory in project root
 mkdir -p "$PROJECT_ROOT/logs"
 
-# Change to distributed directory for worker imports
-cd distributed
+# Stay in project root for worker imports
+cd "$PROJECT_ROOT"
 
 # Start 8 workers in background
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker1@%h \
     > "$PROJECT_ROOT/logs/worker1.log" 2>&1 &
 echo "[OK] Worker 1 started (PID: $!)"
 
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker2@%h \
     > "$PROJECT_ROOT/logs/worker2.log" 2>&1 &
 echo "[OK] Worker 2 started (PID: $!)"
 
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker3@%h \
     > "$PROJECT_ROOT/logs/worker3.log" 2>&1 &
 echo "[OK] Worker 3 started (PID: $!)"
 
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker4@%h \
     > "$PROJECT_ROOT/logs/worker4.log" 2>&1 &
 echo "[OK] Worker 4 started (PID: $!)"
 
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker5@%h \
     > "$PROJECT_ROOT/logs/worker5.log" 2>&1 &
 echo "[OK] Worker 5 started (PID: $!)"
 
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker6@%h \
     > "$PROJECT_ROOT/logs/worker6.log" 2>&1 &
 echo "[OK] Worker 6 started (PID: $!)"
 
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker7@%h \
     > "$PROJECT_ROOT/logs/worker7.log" 2>&1 &
 echo "[OK] Worker 7 started (PID: $!)"
 
-GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A workers.collection_worker worker \
+GITHUB_TOKEN=$GITHUB_TOKEN nohup python3 -m celery -A seattle_source_ranker.collector.collection_worker worker \
     --loglevel=info --concurrency=2 -n worker8@%h \
     > "$PROJECT_ROOT/logs/worker8.log" 2>&1 &
 echo "[OK] Worker 8 started (PID: $!)"

@@ -18,7 +18,6 @@ export default function OverallRankingsPage() {
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [pageCache, setPageCache] = useState({});
-    const [top10000Cache, setTop10000Cache] = useState(null); // Cache for top 10000 projects
     const timeoutRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const [pageInput, setPageInput] = useState(null);
@@ -49,9 +48,6 @@ export default function OverallRankingsPage() {
         debouncedSearchQueryRef.current = debouncedSearchQuery;
     }, [debouncedSearchQuery]);
 
-    const [isScrolling, setIsScrolling] = useState(false);
-    const scrollTimeoutRef = useRef(null);
-
     // Load metadata
     useEffect(() => {
         fetch(`${process.env.PUBLIC_URL}/metadata.json`)
@@ -59,7 +55,7 @@ export default function OverallRankingsPage() {
             .then((data) => {
                 setMetadata(data);
                 const langs = Object.keys(data.languages)
-                    .filter((lang) => lang !== "Other")
+                    .filter((lang) => lang !== "Other" && lang !== "All")
                     .sort((a, b) => data.languages[b].total - data.languages[a].total);
                 setLanguages(langs);
             })
@@ -96,27 +92,6 @@ export default function OverallRankingsPage() {
             }
         }
     }, [searchParams]);
-
-    // Detect scrolling to pause background loading
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolling(true);
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-            scrollTimeoutRef.current = setTimeout(() => {
-                setIsScrolling(false);
-            }, 150);
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-        };
-    }, []);
 
     // Generate search suggestions
     useEffect(() => {
@@ -406,6 +381,10 @@ export default function OverallRankingsPage() {
         setCurrentPage(newPage);
         const newParams = new URLSearchParams(searchParams);
         newParams.set('page', newPage.toString());
+        // Clear search param if search query is empty
+        if (!searchQuery.trim()) {
+            newParams.delete('search');
+        }
         setSearchParams(newParams);
     };
 
@@ -530,7 +509,7 @@ export default function OverallRankingsPage() {
         return () => clearTimeout(timer);
     }, [currentPage]);
 
-    // Load mixed page (all languages, lazy loading)
+    // Load mixed page (all languages, directly from pre-generated all/ pages)
     const loadMixedPage = async () => {
         const cacheKey = `mixed_${currentPage}`;
         if (pageCache[cacheKey]) {
@@ -539,140 +518,33 @@ export default function OverallRankingsPage() {
         }
 
         setIsLoading(true);
-        const pageSize = 50;
 
-        // If we already have the top 10000 cached, use it directly
-        if (top10000Cache) {
-            const startIndex = (currentPage - 1) * pageSize;
-            const pageRepos = top10000Cache.slice(startIndex, startIndex + pageSize);
-            setRepos(pageRepos);
-            setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
-            setIsLoading(false);
-            return;
-        }
-
-        // If we have the top10000 cached, use it directly
-        if (top10000Cache) {
-            const startIndex = (currentPage - 1) * pageSize;
-            const pageRepos = top10000Cache.slice(startIndex, startIndex + pageSize);
-            setRepos(pageRepos);
-            setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
-            setIsLoading(false);
-            return;
-        }
-
-        // For first page: load minimal data (just 2 pages per language)
-        // For other pages: need to load enough to get all top 10000
-        const allReposForLoad = [];
-        const langsToLoad = showAll ? [...languages, 'Other'] : languages;
+        // Directly load from pages/all/page_X.json
+        const pageUrl = `${process.env.PUBLIC_URL}/pages/all/page_${currentPage}.json`;
         
-        // Calculate how many pages per language we need to ensure we get all top 10000
-        // Since we don't know the distribution, load at least 100 pages per language for later pages
-        const quickLoadPages = currentPage === 1 ? 2 : 100;
-        
-        // Load pages in parallel for better performance
-        const loadPromises = langsToLoad.map(async (lang) => {
-            const langRepos = [];
-            const totalPagesForLang = metadata.languages[lang].pages;
-            const pagesToLoad = Math.min(quickLoadPages, totalPagesForLang);
-            
-            for (let page = 1; page <= pagesToLoad; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
-                const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
-
-                try {
-                    const response = await fetch(pageUrl);
-                    const pageData = await response.json();
-                    const reposWithCategory = pageData.map((repo) => ({
-                        ...repo,
-                        category: lang
-                    }));
-                    langRepos.push(...reposWithCategory);
-                } catch (err) {
-                    console.error(`Failed to load ${lang} page ${page}:`, err);
-                }
+        try {
+            const response = await fetch(pageUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
             }
-            return langRepos;
-        });
-
-        // Wait for all languages to load in parallel
-        const results = await Promise.all(loadPromises);
-        results.forEach(langRepos => allReposForLoad.push(...langRepos));
-
-        // Sort by global_rank and take only top 10000
-        allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
-        const top10000 = allReposForLoad.filter(repo => repo.global_rank && repo.global_rank <= 10000);
-        
-        // Cache it for future use
-        if (quickLoadPages >= 100) {
-            setTop10000Cache(top10000);
-        }
-        
-        // Display current page from top 10000
-        const startIndex = (currentPage - 1) * pageSize;
-        const pageRepos = top10000.slice(startIndex, startIndex + pageSize);
-        
-        setRepos(pageRepos);
-        setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
-        
-        if (pageRepos.length > 0) {
-            const pageMax = Math.max(...pageRepos.map((r) => r.score));
-            if (pageMax > maxScore) setMaxScore(pageMax);
+            
+            const pageData = await response.json();
+            setRepos(pageData);
+            setPageCache((prev) => ({ ...prev, [cacheKey]: pageData }));
+            
+            if (pageData.length > 0) {
+                const pageMax = Math.max(...pageData.map((r) => r.score));
+                if (pageMax > maxScore) setMaxScore(pageMax);
+            }
+        } catch (err) {
+            console.error(`Failed to load page ${currentPage}:`, err);
+            setRepos([]);
         }
         
         setIsLoading(false);
-
-        // Load remaining data in background for future pages (only if on first page)
-        if (currentPage === 1 && !isScrolling) {
-            setTimeout(() => {
-                loadFullTop10000();
-            }, 100);
-        }
     };
 
-    // Load full top 10000 dataset
-    const loadFullTop10000 = async () => {
-        if (top10000Cache) return top10000Cache; // Already loaded
-        if (isScrolling) return; // Pause loading while scrolling
-
-        const allReposForLoad = [];
-        const langsToLoad = showAll ? [...languages, 'Other'] : languages;
-        const maxPagesToLoadPerLang = 100;
-
-        for (const lang of langsToLoad) {
-            const totalPagesForLang = metadata.languages[lang].pages;
-            const pagesToLoad = Math.min(maxPagesToLoadPerLang, totalPagesForLang);
-
-            for (let page = 1; page <= pagesToLoad; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
-                const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
-
-                try {
-                    const response = await fetch(pageUrl);
-                    const pageData = await response.json();
-                    const reposWithLang = pageData.map((repo) => ({
-                        ...repo,
-                        language: lang
-                    }));
-                    allReposForLoad.push(...reposWithLang);
-                } catch (err) {
-                    console.error(`Failed to load ${lang} page ${page}:`, err);
-                }
-            }
-        }
-
-        // Sort by global_rank to get the true top 10000
-        allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
-        
-        // Take only projects with global_rank <= 10000
-        const top10000 = allReposForLoad.filter(repo => repo.global_rank && repo.global_rank <= 10000);
-        
-        // Cache the top 10000 for future use
-        setTop10000Cache(top10000);
-        return top10000;
-    };
-
-    // Load selected languages (need to load enough pages to get to current page)
+    // Load selected languages (need to load and mix multiple languages)
     const loadSelectedLanguages = async () => {
         const cacheKey = `langs_${selectedLanguages.join(",")}_${currentPage}`;
         if (pageCache[cacheKey]) {
@@ -682,12 +554,12 @@ export default function OverallRankingsPage() {
 
         setIsLoading(true);
         const pageSize = 50;
-        const MAX_PROJECTS = 10000;
         const allReposForLoad = [];
 
         // For selected languages, load pages in order (already sorted by score within each language)
         // We want the top projects from each language, not by global rank
-        const maxPagesToLoad = Math.ceil(MAX_PROJECTS / pageSize);
+        // Load 200 pages per language to get up to 10k projects
+        const maxPagesToLoad = 200;
 
         for (const lang of selectedLanguages) {
             const totalPagesForLang = metadata.languages[lang].pages;
@@ -714,8 +586,8 @@ export default function OverallRankingsPage() {
         // Sort by global_rank (not score) to maintain consistent ranking
         allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
         
-        // Filter to only show projects with global_rank <= 10000
-        const top10000 = allReposForLoad.filter(repo => repo.global_rank && repo.global_rank <= 10000);
+        // For selected languages: show top 10k from filtered results
+        const top10000 = allReposForLoad.slice(0, 10000);
         
         const startIndex = (currentPage - 1) * pageSize;
         const pageRepos = top10000.slice(startIndex, startIndex + pageSize);
@@ -807,6 +679,16 @@ export default function OverallRankingsPage() {
         
         // Fall back to traditional search (for partial matches)
         // But only if query is at least 2 characters (avoid too broad searches)
+        // AND only if this is NOT an exact owner click (activeOwner === null means manual search)
+        if (activeOwner) {
+            // If activeOwner is set but we didn't find in index, no results
+            console.log(`⚠️ Owner '${query}' not found in index`);
+            setRepos([]);
+            setSearchMatchCounts({});
+            setIsLoading(false);
+            return;
+        }
+        
         if (query.length < 2) {
             console.log(`⏭️ Query too short, skipping search: '${query}'`);
             setIsLoading(false);
@@ -989,8 +871,18 @@ export default function OverallRankingsPage() {
                 return currentPage;
             }
             return Math.ceil(totalMatches / 50);
+        } else if (selectedLanguages.length > 0) {
+            // Language filter mode: calculate based on filtered languages
+            // Each language shows up to 10000 projects, but total might be less
+            const totalProjectsInFilteredLanguages = selectedLanguages.reduce((sum, lang) => {
+                return sum + (metadata?.languages?.[lang]?.total || 0);
+            }, 0);
+            
+            // Cap at 10000 projects max
+            const actualProjects = Math.min(totalProjectsInFilteredLanguages, MAX_PROJECTS);
+            return Math.ceil(actualProjects / 50);
         } else {
-            // All other modes: maximum 200 pages (10000 projects)
+            // All projects mode: maximum 200 pages (10000 projects)
             return MAX_PAGES;
         }
     };
@@ -1143,7 +1035,9 @@ export default function OverallRankingsPage() {
                             onClick={() => {
                                 setSearchQuery('');
                                 setDebouncedSearchQuery('');
-                                setCurrentPage(1);
+                                // Return to the page we were on before the search
+                                const returnPage = pageBeforeSearchRef.current;
+                                setCurrentPage(returnPage);
                                 setPageCache({}); // Clear cache when clearing search
                                 setShowSuggestions(false);
                                 setSearchMatchCounts({});
@@ -1151,6 +1045,28 @@ export default function OverallRankingsPage() {
                                 // Reset to "All" languages
                                 setShowAll(true);
                                 setSelectedLanguages([]);
+                                // Clear URL parameters
+                                const newParams = new URLSearchParams(searchParams);
+                                newParams.delete('search');
+                                newParams.set('page', returnPage.toString());
+                                setSearchParams(newParams);
+                                
+                                // Trigger row update animation
+                                setTimeout(() => {
+                                    setUpdatingRows(true);
+                                    setTimeout(() => setUpdatingRows(false), 600);
+                                }, 50);
+                                
+                                // Scroll to position between header and search bar
+                                setTimeout(() => {
+                                    const headerElement = document.querySelector('header');
+                                    if (headerElement) {
+                                        const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                                        requestAnimationFrame(() => {
+                                            window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                                        });
+                                    }
+                                }, 500);
                             }}
                             title="Clear search"
                         >

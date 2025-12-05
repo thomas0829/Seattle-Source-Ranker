@@ -1,5 +1,5 @@
 // src/PythonProjectsPage.js
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -25,13 +25,13 @@ export default function PythonRankingsPage() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
     const [pageInput, setPageInput] = useState(null);
-    const [isScrolling, setIsScrolling] = useState(false);
     const [activeOwner, setActiveOwner] = useState(null);
     const [updatingRows, setUpdatingRows] = useState(false);
+    const [pageCache, setPageCache] = useState({}); // Cache loaded pages
+    const [pypiMap, setPypiMap] = useState(null); // PyPI lookup map
     const timeoutRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const searchWrapperRef = useRef(null);
-    const scrollTimeoutRef = useRef(null);
     const projectsPerPage = 50;
 
     // Use refs to track current values without causing re-renders
@@ -46,6 +46,41 @@ export default function PythonRankingsPage() {
     useEffect(() => {
         debouncedSearchQueryRef.current = debouncedSearchQuery;
     }, [debouncedSearchQuery]);
+
+    // Load metadata and PyPI data once
+    useEffect(() => {
+        const loadMetadata = async () => {
+            try {
+                // Load metadata
+                const metadataRes = await fetch(`${process.env.PUBLIC_URL}/metadata.json`);
+                const metadataData = await metadataRes.json();
+                setMetadata(metadataData);
+                
+                // Set total projects count from metadata
+                const pythonTotal = metadataData.languages.Python?.total || 0;
+                setTotalProjects(pythonTotal);
+                
+                // Load PyPI data and build lookup map
+                try {
+                    const pypiRes = await fetch(`${process.env.PUBLIC_URL}/data/seattle_pypi_projects.json`);
+                    const pypiData = await pypiRes.json();
+                    const map = new Map();
+                    pypiData.projects.forEach(p => {
+                        const key = `${p.owner}/${p.name}`.toLowerCase();
+                        map.set(key, p);
+                    });
+                    setPypiMap(map);
+                } catch (error) {
+                    console.warn("PyPI data not available:", error);
+                    setPypiMap(new Map());
+                }
+            } catch (error) {
+                console.error("Failed to load metadata:", error);
+            }
+        };
+        
+        loadMetadata();
+    }, []);
 
     // Restore state from URL parameters on mount and when URL changes
     useEffect(() => {
@@ -77,82 +112,33 @@ export default function PythonRankingsPage() {
         }
     }, [searchParams]);
 
-    // Detect scrolling to pause background loading
+    // Load current page data (simple on-demand loading)
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolling(true);
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
+        if (!metadata || !pypiMap || debouncedSearchQuery.trim()) return;
+        
+        const loadPageData = async () => {
+            const cacheKey = `page_${currentPage}`;
+            
+            // Check cache first
+            if (pageCache[cacheKey]) {
+                setProjects(pageCache[cacheKey]);
+                setLoading(false);
+                return;
             }
-            scrollTimeoutRef.current = setTimeout(() => {
-                setIsScrolling(false);
-            }, 150);
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        const loadData = async () => {
+            
+            setLoading(true);
+            
             try {
-                // Load metadata
-                const metadataRes = await fetch(`${process.env.PUBLIC_URL}/metadata.json`);
-                const metadataData = await metadataRes.json();
-                setMetadata(metadataData);
+                // Load single page
+                const response = await fetch(`${process.env.PUBLIC_URL}/pages/python/page_${currentPage}.json`);
+                const pageData = await response.json();
                 
-                // Set total projects count from metadata
-                const pythonTotal = metadataData.languages.Python?.total || 0;
-                setTotalProjects(pythonTotal);
-                
-                // Load PyPI data
-                let pypiData = null;
-                try {
-                    const pypiRes = await fetch(`${process.env.PUBLIC_URL}/data/seattle_pypi_projects.json`);
-                    pypiData = await pypiRes.json();
-                } catch (error) {
-                    console.warn("PyPI data not available:", error);
-                    pypiData = { projects: [] };
-                }
-                
-                // Build PyPI lookup map
-                const pypiMap = new Map();
-                pypiData.projects.forEach(p => {
-                    const key = `${p.owner}/${p.name}`.toLowerCase();
-                    pypiMap.set(key, p);
-                });
-                
-                // Load first 10 pages for quick display
-                const pythonPages = metadataData.languages.Python?.pages || 0;
-                const initialPages = Math.min(10, pythonPages);
-                const initialPromises = [];
-                
-                for (let i = 1; i <= initialPages; i++) {
-                    initialPromises.push(
-                        fetch(`${process.env.PUBLIC_URL}/pages/python/page_${i}.json`)
-                            .then(res => res.json())
-                            .catch(() => [])
-                    );
-                }
-                
-                const firstBatch = await Promise.all(initialPromises);
-                const allProjects = [];
-                firstBatch.forEach(pageData => {
-                    allProjects.push(...pageData);
-                });
-                
-                // Calculate initial scores and display first 10 pages
-                let scoredProjects = allProjects.map(proj => {
+                // Process with PyPI bonus
+                const scoredProjects = pageData.map((proj, idx) => {
                     const [owner, projectName] = proj.name.split('/');
                     const key = proj.name.toLowerCase();
                     const onPypi = pypiMap.has(key);
                     const baseScore = proj.score || 0;
-                    // PyPI projects get 10% bonus (multiplicative)
                     const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
                     
                     return {
@@ -163,104 +149,100 @@ export default function PythonRankingsPage() {
                         url: proj.html_url,
                         original_score: baseScore,
                         final_score: Math.round(finalScore),
-                        on_pypi: onPypi
+                        on_pypi: onPypi,
+                        python_rank: (currentPage - 1) * 50 + idx + 1  // Python-specific rank
                     };
                 });
                 
-                scoredProjects.sort((a, b) => {
-                    // Primary: sort by score (descending)
-                    if (b.final_score !== a.final_score) {
-                        return b.final_score - a.final_score;
-                    }
-                    // Secondary: PyPI projects rank higher when scores are equal
-                    if (a.on_pypi !== b.on_pypi) {
-                        return b.on_pypi ? 1 : -1;
-                    }
-                    // Tertiary: alphabetical by name
-                    return a.full_name.localeCompare(b.full_name);
-                });
-                // Add global rank
-                scoredProjects.forEach((proj, idx) => {
-                    proj.global_rank = idx + 1;
-                });
                 setProjects(scoredProjects);
-                setLoading(false);
-                
-                // Load remaining pages in background
-                if (pythonPages > initialPages && !isScrolling) {
-                    const batchSize = 50;
-                    for (let batchStart = initialPages + 1; batchStart <= pythonPages; batchStart += batchSize) {
-                        // Check if scrolling before each batch
-                        if (isScrolling) {
-                            console.log('⏸️ Pausing background loading due to scroll');
-                            break;
-                        }
-                        
-                        const batchEnd = Math.min(batchStart + batchSize - 1, pythonPages);
-                        const batchPromises = [];
-                        
-                        for (let i = batchStart; i <= batchEnd; i++) {
-                            batchPromises.push(
-                                fetch(`${process.env.PUBLIC_URL}/pages/python/page_${i}.json`)
-                                    .then(res => res.json())
-                                    .catch(() => [])
-                            );
-                        }
-                        
-                        const batchPages = await Promise.all(batchPromises);
-                        batchPages.forEach(pageData => {
-                            allProjects.push(...pageData);
-                        });
-                        
-                        // Recalculate and update all projects
-                        scoredProjects = allProjects.map(proj => {
-                            const [owner, projectName] = proj.name.split('/');
-                            const key = proj.name.toLowerCase();
-                            const onPypi = pypiMap.has(key);
-                            const baseScore = proj.score || 0;
-                            // PyPI projects get 10% bonus (multiplicative)
-                            const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
-                            
-                            return {
-                                ...proj,
-                                owner: owner,
-                                name: projectName,
-                                full_name: proj.name,
-                                url: proj.html_url,
-                                original_score: baseScore,
-                                final_score: Math.round(finalScore),
-                                on_pypi: onPypi
-                            };
-                        });
-                        
-                        scoredProjects.sort((a, b) => {
-                            // Primary: sort by score (descending)
-                            if (b.final_score !== a.final_score) {
-                                return b.final_score - a.final_score;
-                            }
-                            // Secondary: PyPI projects rank higher when scores are equal
-                            if (a.on_pypi !== b.on_pypi) {
-                                return b.on_pypi ? 1 : -1;
-                            }
-                            // Tertiary: alphabetical by name
-                            return a.full_name.localeCompare(b.full_name);
-                        });
-                        // Add global rank
-                        scoredProjects.forEach((proj, idx) => {
-                            proj.global_rank = idx + 1;
-                        });
-                        setProjects([...scoredProjects]);
-                    }
-                }
+                setPageCache(prev => ({ ...prev, [cacheKey]: scoredProjects }));
             } catch (error) {
-                console.error("Error loading data:", error);
-                setLoading(false);
+                console.error(`Failed to load page ${currentPage}:`, error);
+                setProjects([]);
             }
+            
+            setLoading(false);
         };
         
-        loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        loadPageData();
+    }, [metadata, pypiMap, currentPage, debouncedSearchQuery, pageCache]);
+
+    // Search functionality - load all data when searching
+    useEffect(() => {
+        if (!metadata || !pypiMap || !debouncedSearchQuery.trim()) {
+            return;
+        }
+        
+        const loadSearchData = async () => {
+            setLoading(true);
+            
+            try {
+                const pythonPages = metadata.languages.Python?.pages || 0;
+                const allPromises = [];
+                
+                // Load all pages for search
+                for (let i = 1; i <= pythonPages; i++) {
+                    allPromises.push(
+                        fetch(`${process.env.PUBLIC_URL}/pages/python/page_${i}.json`)
+                            .then(res => res.json())
+                            .catch(() => [])
+                    );
+                }
+                
+                const allPages = await Promise.all(allPromises);
+                const allProjects = [];
+                allPages.forEach(pageData => {
+                    allProjects.push(...pageData);
+                });
+                
+                // Process and filter
+                const query = debouncedSearchQuery.toLowerCase();
+                const filtered = allProjects
+                    .map(proj => {
+                        const [owner, projectName] = proj.name.split('/');
+                        const key = proj.name.toLowerCase();
+                        const onPypi = pypiMap.has(key);
+                        const baseScore = proj.score || 0;
+                        const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
+                        
+                        return {
+                            ...proj,
+                            owner: owner,
+                            name: projectName,
+                            full_name: proj.name,
+                            url: proj.html_url,
+                            original_score: baseScore,
+                            final_score: Math.round(finalScore),
+                            on_pypi: onPypi
+                        };
+                    })
+                    .filter(p => {
+                        // Exact match for owner clicks
+                        if (activeOwner) {
+                            return p.owner.toLowerCase() === query;
+                        }
+                        // Fuzzy search otherwise
+                        return p.name.toLowerCase().includes(query) ||
+                               p.owner.toLowerCase().includes(query) ||
+                               (p.description && p.description.toLowerCase().includes(query));
+                    })
+                    .map((p, idx) => ({
+                        ...p,
+                        python_rank: idx + 1  // Add Python-specific rank to filtered results
+                    }));
+                
+                setProjects(filtered);
+                setTotalProjects(filtered.length);
+            } catch (error) {
+                console.error("Failed to load search data:", error);
+                setProjects([]);
+            }
+            
+            setLoading(false);
+        };
+        
+        loadSearchData();
+    }, [metadata, pypiMap, debouncedSearchQuery, activeOwner]);
 
     // Generate search suggestions
     useEffect(() => {
@@ -423,23 +405,13 @@ export default function PythonRankingsPage() {
         };
     }, []);
 
-    // Filter by search query
-    const filteredProjects = useMemo(() => {
-        if (!debouncedSearchQuery.trim()) return projects;
-        
-        const query = debouncedSearchQuery.toLowerCase();
-        return projects.filter(p => 
-            p.name.toLowerCase().includes(query) ||
-            p.owner.toLowerCase().includes(query) ||
-            (p.description && p.description.toLowerCase().includes(query))
-        );
-    }, [projects, debouncedSearchQuery]);
-
-    // Pagination - use total from metadata when not searching
-    const displayTotal = debouncedSearchQuery.trim() ? filteredProjects.length : totalProjects;
-    const totalPages = Math.ceil((debouncedSearchQuery.trim() ? filteredProjects.length : totalProjects) / projectsPerPage);
+    // Pagination - projects are already filtered by search useEffect
+    const displayTotal = debouncedSearchQuery.trim() ? projects.length : totalProjects;
+    const totalPages = Math.ceil(displayTotal / projectsPerPage);
     const startIndex = (currentPage - 1) * projectsPerPage;
-    const currentProjects = filteredProjects.slice(startIndex, startIndex + projectsPerPage);
+    const currentProjects = debouncedSearchQuery.trim() 
+        ? projects.slice(startIndex, startIndex + projectsPerPage)
+        : projects; // For non-search, projects already contains one page
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -521,9 +493,33 @@ export default function PythonRankingsPage() {
                             onClick={() => {
                                 setSearchQuery('');
                                 setDebouncedSearchQuery('');
-                                setCurrentPage(1);
+                                // Return to the page we were on before the search
+                                const returnPage = pageBeforeSearchRef.current;
+                                setCurrentPage(returnPage);
                                 setShowSuggestions(false);
                                 setActiveOwner(null);
+                                // Clear URL parameters
+                                const newParams = new URLSearchParams(searchParams);
+                                newParams.delete('search');
+                                newParams.set('page', returnPage.toString());
+                                setSearchParams(newParams);
+                                
+                                // Trigger row update animation
+                                setTimeout(() => {
+                                    setUpdatingRows(true);
+                                    setTimeout(() => setUpdatingRows(false), 600);
+                                }, 50);
+                                
+                                // Scroll to position between header and search bar
+                                setTimeout(() => {
+                                    const headerElement = document.querySelector('header');
+                                    if (headerElement) {
+                                        const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                                        requestAnimationFrame(() => {
+                                            window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                                        });
+                                    }
+                                }, 500);
                             }}
                             title="Clear search"
                         >
@@ -587,10 +583,10 @@ export default function PythonRankingsPage() {
                             </thead>
                             <tbody>
                                 {currentProjects.map((project, index) => {
-                                    const displayRank = project.global_rank || (startIndex + index + 1);
+                                    const displayRank = project.python_rank || (startIndex + index + 1);
                                     const barWidth = project.final_score > 0
-                                        ? Math.max(15, Math.min(100, (project.final_score / filteredProjects[0].final_score) * 100))
-                                        : 15;
+                                        ? Math.max(15, Math.min(100, (project.final_score / currentProjects[0]?.final_score) * 100))
+                                        : 50
 
                                     return (
                                         <tr 
@@ -712,14 +708,14 @@ export default function PythonRankingsPage() {
                     >
                         {!debouncedSearchQuery.trim() ? (
                             <>
-                                Showing {startIndex + 1}-{Math.min(startIndex + projectsPerPage, filteredProjects.length)}{" "}
+                                Showing {startIndex + 1}-{Math.min(startIndex + projectsPerPage, projects.length)}{" "}
                                 of {displayTotal.toLocaleString()} projects
                             </>
                         ) : (
                             <>
                                 Showing {currentProjects.length > 0 ? startIndex + 1 : 0}-
                                 {currentProjects.length > 0 ? startIndex + currentProjects.length : 0}{" "}
-                                of {filteredProjects.length.toLocaleString()} matches
+                                of {projects.length.toLocaleString()} matches
                             </>
                         )}
                     </div>
