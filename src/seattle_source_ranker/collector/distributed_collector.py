@@ -359,9 +359,9 @@ class DistributedCollector:
 
             if age_hours < 24:  # Less than 1 day
                 print("[SEARCH] Step 1: Loading existing user data...")
-                print("   File: {filename}")
-                print("   Users: {user_count:,}")
-                print("   Age: {age_hours:.1f} hours")
+                print(f"   File: {filename}")
+                print(f"   Users: {user_count:,}")
+                print(f"   Age: {age_hours:.1f} hours")
                 print("   [OK] Using cached user list (skip user search)")
 
                 try:
@@ -404,17 +404,17 @@ class DistributedCollector:
         import requests
 
         print("[SEARCH] Step 1: Searching for Seattle developers (GraphQL)...")
-        print("   Target: {max_users} users (starting from index {start_user})")
+        print(f"   Target: {max_users} users (starting from index {start_user})")
         print("   Strategy: GraphQL Search API (5000 req/hour limit)")
 
         # Use TokenManager for multi-token support
         from seattle_source_ranker.tokens import get_token_manager
         try:
             tm = get_token_manager()
-            print("   Using multi-token rotation ({tm.get_token_count()} tokens)")
+            print(f"   Using multi-token rotation ({tm.get_token_count()} tokens)")
             use_token_manager = True
         except Exception as e:
-            print("   [WARNING]  TokenManager not available: {e}")
+            print(f"   [WARNING]  TokenManager not available: {e}")
             token = os.getenv("GITHUB_TOKEN")
             if not token:
                 raise ValueError("GITHUB_TOKEN environment variable not set")
@@ -651,9 +651,9 @@ class DistributedCollector:
             for i in range(0, len(usernames), self.batch_size)
         ]
 
-        print("\n[PKG] Step 2: Created {len(batches)} batches")
-        print("   Batch size: {self.batch_size} users/batch")
-        print("   Total users: {len(usernames)}")
+        print(f"\n[PKG] Step 2: Created {len(batches)} batches")
+        print(f"   Batch size: {self.batch_size} users/batch")
+        print(f"   Total users: {len(usernames)}")
 
         return batches
 
@@ -668,7 +668,7 @@ class DistributedCollector:
             Celery GroupResult for monitoring
         """
         print("\n⚡ Step 3: Distributing tasks to workers...")
-        print("   Spawning {len(batches)} parallel tasks")
+        print(f"   Spawning {len(batches)} parallel tasks")
 
         # Create parallel tasks
         job = group(fetch_users_batch_task.s(batch) for batch in batches)
@@ -888,34 +888,34 @@ class DistributedCollector:
                 for reason, count in batch_result["failure_reasons"].items():
                     aggregated_failures[reason] += count
 
-        print("   Raw projects collected: {len(all_projects)}")
-        print("   Users checked: {total_users_checked}")
-        print("   Successful users: {total_users_successful}")
-        print("   Filtered users: {total_users_filtered}")
-        print("   Failed users: {total_users_failed}")
+        print(f"   Raw projects collected: {len(all_projects)}")
+        print(f"   Users checked: {total_users_checked}")
+        print(f"   Successful users: {total_users_successful}")
+        print(f"   Filtered users: {total_users_filtered}")
+        print(f"   Failed users: {total_users_failed}")
 
         if total_users_filtered > 0:
             print("\n   [STATS] Filtered Analysis:")
-            print("      Doesn't meet criteria (repos/followers): {aggregated_failures.get('filtered_criteria', 0)}")
+            print(f"      Doesn't meet criteria (repos/followers): {aggregated_failures.get('filtered_criteria', 0)}")
 
         if total_users_failed > 0:
             print("\n   [STATS] Failure Analysis:")
-            print("      User not found/inaccessible: {aggregated_failures['user_not_found']} ({aggregated_failures['user_not_found']/total_users_failed*100:.1f}%)")
-            print("      Rate limit hits: {aggregated_failures['rate_limit']} ({aggregated_failures['rate_limit']/total_users_failed*100:.1f}%)")
-            print("      API errors: {aggregated_failures['api_error']} ({aggregated_failures['api_error']/total_users_failed*100:.1f}%)")
-            print("      Exceptions: {aggregated_failures['exception']} ({aggregated_failures['exception']/total_users_failed*100:.1f}%)")
+            print(f"      User not found/inaccessible: {aggregated_failures['user_not_found']} ({aggregated_failures['user_not_found']/total_users_failed*100:.1f}%)")
+            print(f"      Rate limit hits: {aggregated_failures['rate_limit']} ({aggregated_failures['rate_limit']/total_users_failed*100:.1f}%)")
+            print(f"      API errors: {aggregated_failures['api_error']} ({aggregated_failures['api_error']/total_users_failed*100:.1f}%)")
+            print(f"      Exceptions: {aggregated_failures['exception']} ({aggregated_failures['exception']/total_users_failed*100:.1f}%)")
 
         # Sort by stars
         all_projects.sort(key=lambda x: x["stars"], reverse=True)
 
         total_stars = sum(p["stars"] for p in all_projects)
 
-        print("\n   Total {len(all_projects)} projects collected")
-        print("   Total stars: {total_stars:,}")
+        print(f"\n   Total {len(all_projects)} projects collected")
+        print(f"   Total stars: {total_stars:,}")
 
         if all_projects:
             top_project = all_projects[0]
-            print("   #1 project: {top_project['name_with_owner']} ({top_project['stars']:,} stars)")
+            print(f"   #1 project: {top_project['name_with_owner']} ({top_project['stars']:,} stars)")
 
         return {
             "total_projects": len(all_projects),
@@ -965,10 +965,10 @@ class DistributedCollector:
         """
         print("[START] Starting Distributed Collection with Multi-Token Support")
         print(f"=" * 60)
-        print("Max Users: {max_users}")
-        print("Start User: {start_user}")
-        print("Batch Size: {self.batch_size}")
-        print("Auto-manage Workers: {self.auto_manage_workers}")
+        print(f"Max Users: {max_users}")
+        print(f"Start User: {start_user}")
+        print(f"Batch Size: {self.batch_size}")
+        print(f"Auto-manage Workers: {self.auto_manage_workers}")
         print(f"=" * 60)
 
         start_time = time.time()
@@ -1015,9 +1015,9 @@ class DistributedCollector:
             print(f"\n" + "=" * 60)
             print("[OK] Collection Complete!")
             print(f"=" * 60)
-            print("Total Time: {elapsed:.1f}s ({elapsed/60:.1f} minutes)")
-            print("Projects: {aggregated['total_projects']}")
-            print("Stars: {aggregated['total_stars']:,}")
+            print(f"Total Time: {elapsed:.1f}s ({elapsed/60:.1f} minutes)")
+            print(f"Projects: {aggregated['total_projects']}")
+            print(f"Stars: {aggregated['total_stars']:,}")
             print(f"Users: {aggregated['successful_users']} successful, "
                   f"{aggregated['filtered_users']} filtered, "
                   f"{aggregated['failed_users']} failed")
@@ -1026,7 +1026,7 @@ class DistributedCollector:
             return aggregated
 
         except Exception as e:
-            print("\n[ERROR] Error during collection: {e}")
+            print(f"\n[ERROR] Error during collection: {e}")
             raise
 
 
