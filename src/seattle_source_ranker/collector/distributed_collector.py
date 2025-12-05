@@ -237,19 +237,19 @@ class DistributedCollector:
         if not self.worker_processes:
             return
 
-        print("\n🛑 Stopping {len(self.worker_processes)} workers...")
+        print(f"\n🛑 Stopping {len(self.worker_processes)} workers...")
 
         for process in self.worker_processes:
             try:
                 # Send SIGTERM to process group
                 os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                 process.wait(timeout=5)
-                print("   Worker {process.pid} stopped")
+                print(f"   Worker {process.pid} stopped")
             except Exception as e:
                 # Force kill if SIGTERM doesn't work
                 try:
                     os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                    print("   Worker {process.pid} force killed")
+                    print(f"   Worker {process.pid} force killed")
                 except Exception:
                     pass
 
@@ -478,12 +478,29 @@ class DistributedCollector:
                     "cursor": cursor
                 }
 
-                response = requests.post(
-                    'https://api.github.com/graphql',
-                    json={'query': query_template, 'variables': variables},
-                    headers=headers,
-                    timeout=10
-                )
+                # Retry logic for network errors
+                max_retries = 3
+                retry_delay = 2
+                for retry in range(max_retries):
+                    try:
+                        response = requests.post(
+                            'https://api.github.com/graphql',
+                            json={'query': query_template, 'variables': variables},
+                            headers=headers,
+                            timeout=30
+                        )
+                        break  # Success, exit retry loop
+                    except (requests.exceptions.ConnectionError, 
+                            requests.exceptions.Timeout,
+                            requests.exceptions.ChunkedEncodingError) as e:
+                        if retry < max_retries - 1:
+                            print(f"      [WARNING] Network error on attempt {retry + 1}/{max_retries}: {type(e).__name__}")
+                            print(f"      Retrying in {retry_delay}s...")
+                            time.sleep(retry_delay)
+                            retry_delay *= 2  # Exponential backoff
+                        else:
+                            print(f"      [ERROR] Network error after {max_retries} attempts: {type(e).__name__}")
+                            raise
 
                 # Check rate limit from response headers
                 remaining = int(response.headers.get('X-RateLimit-Remaining', 999))
