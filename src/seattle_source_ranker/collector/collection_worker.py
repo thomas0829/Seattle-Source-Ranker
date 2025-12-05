@@ -42,7 +42,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
 
     try:
         tm = get_token_manager()
-        print("[OK] Using TokenManager with {tm.get_token_count()} tokens (dynamic selection)")
+        print(f"[OK] Using TokenManager with {tm.get_token_count()} tokens (dynamic selection)")
         use_token_manager = True
     except Exception:
         # Fallback to single token
@@ -58,7 +58,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                 "repos": [],
                 "completed_at": datetime.utcnow().isoformat()
             }
-        print("[OK] Using single token (length: {len(fallback_token)})")
+        print(f"[OK] Using single token (length: {len(fallback_token)})")
 
     # Track failure reasons
     failure_reasons = {
@@ -74,7 +74,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
     filtered = 0  # Users filtered out due to criteria
     checked = 0  # Total users checked (for statistics)
 
-    print("[RETRY] Processing batch of {len(usernames)} users...")
+    print(f"[RETRY] Processing batch of {len(usernames)} users...")
 
     # Process each user in this batch sequentially using REST API
     for idx, username in enumerate(usernames, 1):
@@ -145,18 +145,18 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                                     elif token_reset < min_reset_time:
                                         min_reset_time = token_reset
                             except Exception as e:
-                                print("[WARNING]  Failed to check token {i+1}: {e}")
+                                print(f"[WARNING]  Failed to check token {i+1}: {e}")
 
                         if min_reset_time == 0:
                             # Found available token, refresh and continue immediately
-                            print("[OK] Found available token, continuing... ({', '.join(token_status)})")
+                            print(f"[OK] Found available token, continuing... ({', '.join(token_status)})")
                             token = tm.get_token(force_check=True)
                             headers["Authorization"] = f"token {token}"
                         elif min_reset_time != float('inf'):
                             # Wait for earliest token recovery + 60s buffer
                             wait_time = max(min_reset_time - time.time(), 0) + 60
-                            print("[WAIT] All tokens low, waiting {wait_time:.0f}s for earliest recovery...")
-                            print("   Status: {', '.join(token_status)}")
+                            print(f"[WAIT] All tokens low, waiting {wait_time:.0f}s for earliest recovery...")
+                            print(f"   Status: {', '.join(token_status)}")
                             time.sleep(wait_time)
                             # After sleep, force refresh to get the recovered token
                             token = tm.get_token(force_check=True)
@@ -165,18 +165,18 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                             # Fallback: use current token's reset time
                             reset_time = int(response.headers.get('X-RateLimit-Reset', 0))
                             wait_time = max(reset_time - time.time(), 0) + 60
-                            print("[WAIT] Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
+                            print(f"[WAIT] Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
                             time.sleep(wait_time)
                     else:
                         # Fallback for single token mode
                         reset_time = int(response.headers.get('X-RateLimit-Reset', 0))
                         wait_time = max(reset_time - time.time(), 0) + 60
-                        print("[WAIT] Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
+                        print(f"[WAIT] Rate limit low ({remaining}), waiting {wait_time:.0f}s...")
                         time.sleep(wait_time)
                     continue
 
                 if response.status_code == 403:
-                    print("[WARNING]  403 Forbidden for {username}, waiting...")
+                    print(f"[WARNING]  403 Forbidden for {username}, waiting...")
                     failure_reasons["rate_limit"] += 1
                     time.sleep(10)
                     failed += 1
@@ -191,7 +191,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                     break
 
                 if response.status_code != 200:
-                    print("[ERROR] API error for {username}: Status {response.status_code}")
+                    print(f"[ERROR] API error for {username}: Status {response.status_code}")
                     failed += 1
                     user_fetch_failed = True
                     failure_reasons["api_error"] += 1
@@ -306,7 +306,7 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
                 print(f"   [OK] Got {len(user_repos)} repos from {username}", flush=True)
 
         except Exception as e:
-            print("[ERROR] Exception fetching repos for {username}: {type(e).__name__}: {e}")
+            print(f"[ERROR] Exception fetching repos for {username}: {type(e).__name__}: {e}")
             failed += 1
             failure_reasons["exception"] += 1
             continue
@@ -314,15 +314,15 @@ def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
     # Print summary for this batch
     if failed > 0 or filtered > 0:
         print("\n[STATS] Batch Summary:")
-        print("   Checked: {checked}, Successful: {successful}, Filtered: {filtered}, Failed: {failed}")
+        print(f"   Checked: {checked}, Successful: {successful}, Filtered: {filtered}, Failed: {failed}")
         if failed > 0:
             print("   Failed (errors):")
-            print("      User not found/inaccessible: {failure_reasons['user_not_found']}")
-            print("      Rate limit hits: {failure_reasons['rate_limit']}")
-            print("      API errors: {failure_reasons['api_error']}")
-            print("      Exceptions: {failure_reasons['exception']}")
+            print(f"      User not found/inaccessible: {failure_reasons['user_not_found']}")
+            print(f"      Rate limit hits: {failure_reasons['rate_limit']}")
+            print(f"      API errors: {failure_reasons['api_error']}")
+            print(f"      Exceptions: {failure_reasons['exception']}")
         if filtered > 0:
-            print("   Filtered (doesn't meet criteria): {failure_reasons['filtered_criteria']}")
+            print(f"   Filtered (doesn't meet criteria): {failure_reasons['filtered_criteria']}")
 
     return {
         "batch_size": len(usernames),

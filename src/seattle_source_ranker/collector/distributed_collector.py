@@ -447,7 +447,7 @@ class DistributedCollector:
         # Use shared pre-optimized filters (same as REST API)
         repo_filters = self.PREOPTIMIZED_FILTERS
 
-        print("   Using {len(repo_filters)} pre-optimized filters")
+        print(f"   Using {len(repo_filters)} pre-optimized filters")
         print("   (Same strategy as REST API for ~28K users)")
 
         for idx, repo_filter in enumerate(repo_filters, 1):
@@ -455,7 +455,7 @@ class DistributedCollector:
                 break
 
             search_query = f"location:seattle {repo_filter}"
-            print("   [{idx}/{len(repo_filters)}] Searching: {search_query}")
+            print(f"   [{idx}/{len(repo_filters)}] Searching: {search_query}")
 
             cursor = None
             page = 1
