@@ -17,14 +17,26 @@ from seattle_source_ranker.pypi import PyPIChecker
 def main():
     """Main function to check Python projects and generate PyPI list"""
 
-    # Find the latest projects file
-    project_files = glob.glob('data/seattle_projects_*.json')
-    if not project_files:
-        print("[ERROR] No project data files found in data/")
-        return
-
-    data_file = max(project_files)
-    print("[DIR] Loading data from {data_file}...")
+    # Accept filename from command line or find latest
+    if len(sys.argv) > 1:
+        data_file = sys.argv[1]
+        if not Path(data_file).exists():
+            print(f"[ERROR] File not found: {data_file}")
+            return
+    else:
+        # Find the latest projects file
+        project_files = glob.glob('data/seattle_projects_*.json')
+        if not project_files:
+            # Try standard filename
+            if Path('data/seattle_projects.json').exists():
+                data_file = 'data/seattle_projects.json'
+            else:
+                print("[ERROR] No project data files found in data/")
+                return
+        else:
+            data_file = max(project_files)
+    
+    print(f"[DIR] Loading data from {data_file}...")
 
     with open(data_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -40,7 +52,7 @@ def main():
 
     # Filter Python projects
     python_projects = [p for p in all_projects if p.get('language') == 'Python']
-    print("🐍 Found {len(python_projects):,} Python projects")
+    print(f"🐍 Found {len(python_projects):,} Python projects")
 
     # Initialize PyPI checker
     print("\n[PKG] Initializing PyPI checker...")

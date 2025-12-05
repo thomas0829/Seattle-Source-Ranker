@@ -29,9 +29,11 @@ export default function PythonRankingsPage() {
     const [updatingRows, setUpdatingRows] = useState(false);
     const [pageCache, setPageCache] = useState({}); // Cache loaded pages
     const [pypiMap, setPypiMap] = useState(null); // PyPI lookup map
+    const [tableFlash, setTableFlash] = useState(false);
     const timeoutRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const searchWrapperRef = useRef(null);
+    const skipScanAnimationRef = useRef(false);
     const projectsPerPage = 50;
 
     // Use refs to track current values without causing re-renders
@@ -119,14 +121,28 @@ export default function PythonRankingsPage() {
         const loadPageData = async () => {
             const cacheKey = `page_${currentPage}`;
             
+            // Reset totalProjects to full count when not searching
+            const pythonTotal = metadata.languages.Python?.total || 0;
+            setTotalProjects(pythonTotal);
+            
             // Check cache first
             if (pageCache[cacheKey]) {
                 setProjects(pageCache[cacheKey]);
                 setLoading(false);
+                
+                // Trigger animation if returning from owner click
+                if (!skipScanAnimationRef.current) {
+                    setTableFlash(true);
+                    setTimeout(() => setTableFlash(false), 2000);
+                }
+                skipScanAnimationRef.current = false;
                 return;
             }
             
-            setLoading(true);
+            // Set loading state if not skipping animation
+            if (!skipScanAnimationRef.current) {
+                setLoading(true);
+            }
             
             try {
                 // Load single page
@@ -161,13 +177,24 @@ export default function PythonRankingsPage() {
                 setProjects([]);
             }
             
+            // Close loading state after data is ready
             setLoading(false);
+            
+            // THEN trigger animation after data is ready
+            // But skip if we're returning from owner click (use row animation instead)
+            if (!skipScanAnimationRef.current) {
+                setTableFlash(true);
+                setTimeout(() => setTableFlash(false), 2000);
+            }
+            
+            // Reset the flag after checking
+            skipScanAnimationRef.current = false;
         };
         
         loadPageData();
     }, [metadata, pypiMap, currentPage, debouncedSearchQuery, pageCache]);
 
-    // Search functionality - load all data when searching
+    // Search functionality - use owner index for owner searches, load all for other searches
     useEffect(() => {
         if (!metadata || !pypiMap || !debouncedSearchQuery.trim()) {
             return;
@@ -177,62 +204,85 @@ export default function PythonRankingsPage() {
             setLoading(true);
             
             try {
-                const pythonPages = metadata.languages.Python?.pages || 0;
-                const allPromises = [];
-                
-                // Load all pages for search
-                for (let i = 1; i <= pythonPages; i++) {
-                    allPromises.push(
-                        fetch(`${process.env.PUBLIC_URL}/pages/python/page_${i}.json`)
-                            .then(res => res.json())
-                            .catch(() => [])
-                    );
-                }
-                
-                const allPages = await Promise.all(allPromises);
-                const allProjects = [];
-                allPages.forEach(pageData => {
-                    allProjects.push(...pageData);
-                });
-                
-                // Process and filter
                 const query = debouncedSearchQuery.toLowerCase();
-                const filtered = allProjects
-                    .map(proj => {
-                        const [owner, projectName] = proj.name.split('/');
-                        const key = proj.name.toLowerCase();
-                        const onPypi = pypiMap.has(key);
-                        const baseScore = proj.score || 0;
-                        const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
-                        
-                        return {
-                            ...proj,
-                            owner: owner,
-                            name: projectName,
-                            full_name: proj.name,
-                            url: proj.html_url,
-                            original_score: baseScore,
-                            final_score: Math.round(finalScore),
-                            on_pypi: onPypi
-                        };
-                    })
-                    .filter(p => {
-                        // Exact match for owner clicks
-                        if (activeOwner) {
-                            return p.owner.toLowerCase() === query;
-                        }
-                        // Fuzzy search otherwise
-                        return p.name.toLowerCase().includes(query) ||
-                               p.owner.toLowerCase().includes(query) ||
-                               (p.description && p.description.toLowerCase().includes(query));
-                    })
-                    .map((p, idx) => ({
-                        ...p,
-                        python_rank: idx + 1  // Add Python-specific rank to filtered results
-                    }));
                 
-                setProjects(filtered);
-                setTotalProjects(filtered.length);
+                // If searching for a specific owner (activeOwner set), use owner index
+                if (activeOwner) {
+                    const firstChar = activeOwner[0].toLowerCase();
+                    const indexChar = /[a-z0-9]/.test(firstChar) ? firstChar : 'other';
+                    
+                    try {
+                        const response = await fetch(`${process.env.PUBLIC_URL}/python_owner_index/${indexChar}.json`);
+                        const ownerData = await response.json();
+                        const projects = ownerData[activeOwner] || [];
+                        
+                        // Projects from index already have final_score and on_pypi
+                        const formatted = projects.map(p => ({
+                            ...p,
+                            name: p.name.split('/')[1],
+                            full_name: p.name,
+                            url: p.html_url,
+                            original_score: p.score
+                            // Keep python_rank from index - don't reassign
+                        }));
+                        
+                        setProjects(formatted);
+                        setTotalProjects(formatted.length);
+                    } catch (error) {
+                        console.error(`Failed to load owner index for ${activeOwner}:`, error);
+                        setProjects([]);
+                    }
+                } else {
+                    // For general search (project name, description), load all pages
+                    const pythonPages = metadata.languages.Python?.pages || 0;
+                    const allPromises = [];
+                    
+                    // Load all pages for search
+                    for (let i = 1; i <= pythonPages; i++) {
+                        allPromises.push(
+                            fetch(`${process.env.PUBLIC_URL}/pages/python/page_${i}.json`)
+                                .then(res => res.json())
+                                .catch(() => [])
+                        );
+                    }
+                    
+                    const allPages = await Promise.all(allPromises);
+                    const allProjects = [];
+                    allPages.forEach(pageData => {
+                        allProjects.push(...pageData);
+                    });
+                    
+                    // Process and filter
+                    const filtered = allProjects
+                        .map(proj => {
+                            const [owner, projectName] = proj.name.split('/');
+                            const key = proj.name.toLowerCase();
+                            const onPypi = pypiMap.has(key);
+                            const baseScore = proj.score || 0;
+                            const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
+                            
+                            return {
+                                ...proj,
+                                owner: owner,
+                                name: projectName,
+                                full_name: proj.name,
+                                url: proj.html_url,
+                                original_score: baseScore,
+                                final_score: Math.round(finalScore),
+                                on_pypi: onPypi
+                                // Keep python_rank from page data - don't reassign
+                            };
+                        })
+                        .filter(p => {
+                            // Fuzzy search for project name, owner, or description
+                            return p.name.toLowerCase().includes(query) ||
+                                   p.owner.toLowerCase().includes(query) ||
+                                   (p.description && p.description.toLowerCase().includes(query));
+                        });
+                    
+                    setProjects(filtered);
+                    setTotalProjects(filtered.length);
+                }
             } catch (error) {
                 console.error("Failed to load search data:", error);
                 setProjects([]);
@@ -259,50 +309,74 @@ export default function PythonRankingsPage() {
         }
 
         const query = searchQuery.toLowerCase().trim();
-        const suggestions = [];
+        const firstChar = query[0] && query[0].match(/[a-z0-9]/) ? query[0] : 'other';
         
-        // Get unique owners from loaded Python projects
-        const ownerSet = new Set();
-        projects.forEach(p => {
-            const ownerLower = p.owner.toLowerCase();
-            if (ownerLower.startsWith(query)) {
-                ownerSet.add(p.owner);
+        // Load Python owner index and generate suggestions
+        const loadAndGenerateSuggestions = async () => {
+            const suggestions = [];
+            
+            // Load owner suggestions from python_owner_index
+            try {
+                const response = await fetch(`${process.env.PUBLIC_URL}/python_owner_index/${firstChar}.json`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const owners = Object.keys(data);
+                    owners.forEach(owner => {
+                        if (owner.toLowerCase().includes(query)) {
+                            suggestions.push({ text: owner, type: 'owner', icon: '👤' });
+                        }
+                    });
+                }
+            } catch (err) {
+                console.log(`Failed to load Python owner suggestions for '${firstChar}'`);
             }
-        });
-        
-        // Add owner suggestions
-        Array.from(ownerSet).forEach(owner => {
-            suggestions.push({ text: owner, type: 'owner', icon: '👤' });
-        });
-        
-        // Add popular Python-related topics
-        const popularTopics = [
-            'machine-learning', 'deep-learning', 'artificial-intelligence', 'neural-networks',
-            'data-science', 'data-analysis', 'visualization', 'pandas', 'numpy',
-            'tensorflow', 'pytorch', 'scikit-learn', 'keras',
-            'web-scraping', 'flask', 'django', 'fastapi',
-            'api', 'rest', 'graphql', 'automation',
-            'testing', 'pytest', 'unittest',
-            'database', 'sql', 'nosql', 'mongodb', 'postgresql',
-            'cli', 'command-line', 'tool', 'utility',
-            'parser', 'compiler', 'interpreter'
-        ];
-        
-        popularTopics.forEach(topic => {
-            if (topic.toLowerCase().includes(query)) {
-                suggestions.push({ text: topic, type: 'topic', icon: '🏷️' });
+            
+            // Add popular Python-related topics
+            const popularTopics = [
+                'machine-learning', 'deep-learning', 'artificial-intelligence', 'neural-networks',
+                'data-science', 'data-analysis', 'visualization', 'pandas', 'numpy',
+                'tensorflow', 'pytorch', 'scikit-learn', 'keras',
+                'web-scraping', 'flask', 'django', 'fastapi',
+                'api', 'rest', 'graphql', 'automation',
+                'testing', 'pytest', 'unittest',
+                'database', 'sql', 'nosql', 'mongodb', 'postgresql',
+                'cli', 'command-line', 'tool', 'utility',
+                'parser', 'compiler', 'interpreter', 'nlp', 'computer-vision',
+                'asyncio', 'multiprocessing', 'websocket', 'bot', 'scraper'
+            ];
+            
+            popularTopics.forEach(topic => {
+                if (topic.toLowerCase().includes(query)) {
+                    suggestions.push({ text: topic, type: 'topic', icon: '🏷️' });
+                }
+            });
+            
+            // Sort: owners first, then topics; both alphabetically
+            suggestions.sort((a, b) => {
+                if (a.type !== b.type) return a.type === 'owner' ? -1 : 1;
+                return a.text.localeCompare(b.text);
+            });
+            
+            // Limit: max 8 owners, 4 topics (no languages, so more space than Overall's 4+3+2)
+            const limitedSuggestions = [];
+            const typeCounts = { 'owner': 0, 'topic': 0 };
+            const typeMaxCounts = { 'owner': 8, 'topic': 4 };
+            
+            for (const suggestion of suggestions) {
+                if (typeCounts[suggestion.type] < typeMaxCounts[suggestion.type]) {
+                    limitedSuggestions.push(suggestion);
+                    typeCounts[suggestion.type]++;
+                }
+                if (limitedSuggestions.length >= 12) break;
             }
-        });
+            
+            setSearchSuggestions(limitedSuggestions);
+            setShowSuggestions(limitedSuggestions.length > 0);
+        };
         
-        // Sort: owners first, then topics; both alphabetically
-        suggestions.sort((a, b) => {
-            if (a.type !== b.type) return a.type === 'owner' ? -1 : 1;
-            return a.text.localeCompare(b.text);
-        });
-        
-        setSearchSuggestions(suggestions.slice(0, 8));
-        setShowSuggestions(suggestions.length > 0);
-    }, [searchQuery, debouncedSearchQuery, projects]);
+        loadAndGenerateSuggestions();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchQuery, debouncedSearchQuery]);
 
     // Debounce search query - removed auto-trigger, now only on Enter
     useEffect(() => {
@@ -318,6 +392,8 @@ export default function PythonRankingsPage() {
 
     // Handle search trigger (Enter key or button)
     const triggerSearch = () => {
+        // Set loading state to show we're updating
+        setLoading(true);
         setDebouncedSearchQuery(searchQuery);
         setCurrentPage(1);
         setShowSuggestions(false);
@@ -344,6 +420,13 @@ export default function PythonRankingsPage() {
     const handleOwnerClick = (ownerName) => {
         setShowSuggestions(false);
         setSearchSuggestions([]);
+        
+        // Set loading state to show we're updating
+        setLoading(true);
+        
+        // ALWAYS skip scan animation for owner clicks - use row animation only
+        skipScanAnimationRef.current = true;
+        setTableFlash(false);
         
         // If clicking the same owner, clear search and return to previous page
         if (activeOwner === ownerName) {
@@ -416,12 +499,16 @@ export default function PythonRankingsPage() {
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
             updatePage(page);
-            // Scroll to position between header and search bar
+            // Scroll to top if going to page 1, otherwise scroll to header bottom
             setTimeout(() => {
-                const headerElement = document.querySelector('header');
-                if (headerElement) {
-                    const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
-                    window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                if (page === 1) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    const headerElement = document.querySelector('header');
+                    if (headerElement) {
+                        const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                        window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                    }
                 }
             }, 100);
         }
@@ -561,28 +648,26 @@ export default function PythonRankingsPage() {
                         </div>
                     )}
                 </div>
+                {loading && (
+                    <div className="search-hint">
+                        <span className="spinner"></span> Loading...
+                    </div>
+                )}
             </div>
 
-            {loading ? (
-                <div style={{ textAlign: "center", padding: "60px", color: "#7dd3fc" }}>
-                    <div className="spinner" style={{ margin: "0 auto 12px" }}></div>
-                    Loading Python projects...
-                </div>
-            ) : (
-                <>
-                    {/* Rankings Table */}
-                    <div className="ranking-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th className="rank-col">#</th>
-                                    <th className="owner-col">Owner</th>
-                                    <th className="chart-col">Project Name</th>
-                                    <th className="score-col">Score</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {currentProjects.map((project, index) => {
+            {/* Rankings Table */}
+            <div className="ranking-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th className="rank-col">#</th>
+                            <th className="owner-col">Owner</th>
+                            <th className="chart-col">Project Name</th>
+                            <th className="score-col">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody className={tableFlash ? 'flash-scan' : ''}>
+                        {currentProjects.map((project, index) => {
                                     const displayRank = project.python_rank || (startIndex + index + 1);
                                     const barWidth = project.final_score > 0
                                         ? Math.max(15, Math.min(100, (project.final_score / currentProjects[0]?.final_score) * 100))
@@ -802,8 +887,6 @@ export default function PythonRankingsPage() {
                             </button>
                         </div>
                     )}
-                </>
-            )}
         </div>
     );
 }

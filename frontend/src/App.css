@@ -618,7 +618,6 @@ tbody td {
 
 .owner-link:hover {
   color: #38bdf8;
-  transform: translateY(-2px);
   text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
 
@@ -635,7 +634,6 @@ tbody td {
 .owner-link.owner-active {
   color: #fbbf24;
   font-weight: 800;
-  animation: ownerPulseStrong 0.8s ease;
   text-shadow: 0 0 15px rgba(56, 189, 248, 0.8);
   background: linear-gradient(90deg, 
     rgba(56, 189, 248, 0.15) 0%, 
