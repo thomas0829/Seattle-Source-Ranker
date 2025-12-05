@@ -17,7 +17,7 @@ from seattle_source_ranker.celery_config import celery_app
 
 @celery_app.task(
     bind=True,
-    name="seattle_source_ranker.collector.collection_worker.search_seattle_users",
+    name="seattle_source_ranker.collector.collection_worker.fetch_users_batch",
     max_retries=3,
 )
 def fetch_users_batch_task(self, usernames: List[str]) -> Dict[str, Any]:
