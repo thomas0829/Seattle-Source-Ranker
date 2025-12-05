@@ -24,22 +24,29 @@ def load_latest_data():
     with open(user_file, 'r', encoding='utf-8') as f:
         user_data = json.load(f)
 
-    # Load seattle_projects.json
+    # Load seattle_projects.json or latest timestamped file
     project_file = data_dir / 'seattle_projects.json'
     project_data = None
 
-    if project_file.exists():
+    # If seattle_projects.json doesn't exist, look for timestamped files
+    if not project_file.exists():
+        timestamped_files = sorted(data_dir.glob('seattle_projects_*.json'), reverse=True)
+        if timestamped_files:
+            project_file = timestamped_files[0]
+            print(f"[DIR] Using latest timestamped file: {project_file.name}")
+        else:
+            print("[WARNING] No project data found (will use user data only)")
+            project_file = None
+    else:
         print(f"[DIR] Loading project data from {project_file.name}")
 
-    if project_file.exists():
+    if project_file and project_file.exists():
         try:
             with open(project_file, 'r', encoding='utf-8') as f:
                 project_data = json.load(f)
             print("[OK] Successfully loaded project data")
         except json.JSONDecodeError:
             print("[WARNING] Could not load project data")
-    else:
-        print("[WARNING] No project data found (will use user data only)")
 
     # Try to find PyPI data
     pypi_file = data_dir / 'seattle_pypi_projects.json'
