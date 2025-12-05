@@ -283,14 +283,16 @@ def secondary_update(input_file=None, batch_size=50):
         print("=" * 70)
         print()
 
-        # Save updated data
-        print(f"[SAVE] Saving updated data to {input_file.name}...")
-        with open(input_file, 'w', encoding='utf-8') as f:
+        # Determine output file - always save to seattle_projects.json (standard filename)
+        output_file = input_file.parent / 'seattle_projects.json'
+        print(f"[SAVE] Saving updated data to {output_file.name}...")
+        with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
         print("[OK] Successfully saved!")
         print()
         print(f"[DONE] Secondary update complete! {len(projects):,} verified repos remain.")
+        print(f"[OUTPUT] Standard filename: {output_file}")
         
     finally:
         # Always clean up Redis on exit

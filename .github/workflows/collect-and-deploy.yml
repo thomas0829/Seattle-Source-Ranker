@@ -204,27 +204,6 @@ jobs:
         
         echo "[OK] Collection verification passed: $LATEST_PROJECTS"
     
-    - name: Clean temporary files
-      run: |
-        echo "[CLEAN] Cleaning temporary files..."
-        cd data
-        
-        # Delete timestamped project files (only keep seattle_projects.json)
-        ls -t seattle_projects_*.json 2>/dev/null | xargs -r rm -v
-        echo "[OK] Removed timestamped project files"
-        
-        # Delete old user files (keep only seattle_users.json if it exists)
-        if [ -f "seattle_users.json" ]; then
-          ls seattle_users_*.json 2>/dev/null | xargs -r rm -v
-          echo "[OK] Removed timestamped user files"
-        fi
-        
-        # Delete success marker
-        rm -f .collection_success
-        
-        echo "[FILES] Remaining data files:"
-        ls -lh *.json 2>/dev/null | awk '{print $9, $5}'
-    
     - name: Update README with latest stats
       run: |
         python3 scripts/update_readme.py
@@ -258,6 +237,27 @@ jobs:
         echo "[DATA] Generating frontend data with topics..."
         python3 scripts/generate_frontend_data.py
         echo "[OK] Frontend data generated with topics support"
+    
+    - name: Clean temporary timestamped files
+      run: |
+        echo "[CLEAN] Cleaning temporary timestamped files..."
+        cd data
+        
+        # Delete timestamped project files (keep only seattle_projects.json)
+        ls -t seattle_projects_*.json 2>/dev/null | xargs -r rm -v
+        echo "[OK] Removed timestamped project files"
+        
+        # Delete old timestamped user files (keep only seattle_users.json)
+        if [ -f "seattle_users.json" ]; then
+          ls seattle_users_*.json 2>/dev/null | xargs -r rm -v
+          echo "[OK] Removed timestamped user files"
+        fi
+        
+        # Delete success marker
+        rm -f .collection_success
+        
+        echo "[FILES] Remaining data files:"
+        ls -lh *.json 2>/dev/null | awk '{print $9, $5}'
     
     - name: Copy PyPI data to frontend
       run: |
