@@ -148,11 +148,11 @@ def update_readme(stats):
 
     print("[OK] README.md updated successfully!")
     if total_projects is not None:
-        print("   Total Projects: {total_projects:,}")
+        print(f"   Total Projects: {total_projects:,}")
     if total_stars is not None:
-        print("   Total Stars: {total_stars:,}")
-    print("   Total Users: {total_users:,}")
-    print("   Last Updated: {date_str}")
+        print(f"   Total Stars: {total_stars:,}")
+    print(f"   Total Users: {total_users:,}")
+    print(f"   Last Updated: {date_str}")
 
 def main():
     print("📝 Updating README.md with latest statistics...")
@@ -189,16 +189,16 @@ def main():
     if project_data:
         stats['total_projects'] = project_data.get('total_projects')
         stats['total_stars'] = project_data.get('total_stars')
-        print("[OK] Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
+        print(f"[OK] Found project data with {stats['total_projects']:,} projects and {stats['total_stars']:,} stars")
 
     # Add PyPI statistics if available
     if pypi_data:
         stats['pypi_projects'] = pypi_data.get('projects_on_pypi', 0)
         stats['pypi_total_python'] = pypi_data.get('total_python_projects', 0)
         stats['pypi_detection_rate'] = pypi_data.get('detection_rate', '0%')
-        print("[OK] Found PyPI data with {stats['pypi_projects']:,} projects on PyPI")
+        print(f"[OK] Found PyPI data with {stats['pypi_projects']:,} projects on PyPI")
 
-    print("[OK] Found {stats['total_users']:,} users in latest data")
+    print(f"[OK] Found {stats['total_users']:,} users in latest data")
 
     # Update README
     update_readme(stats)
