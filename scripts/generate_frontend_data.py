@@ -356,6 +356,140 @@ def main():
         'pages': total_all_pages
     }
 
+    # Special handling for Python: Re-sort by score WITH PyPI bonus
+    print("\n[INFO] Generating Python rankings with PyPI bonus...")
+    
+    # Load PyPI data
+    pypi_file = 'data/seattle_pypi_projects.json'
+    pypi_projects = set()
+    if os.path.exists(pypi_file):
+        with open(pypi_file, 'r', encoding='utf-8') as f:
+            pypi_data = json.load(f)
+            projects_list = pypi_data.get('projects', [])
+            for proj in projects_list:
+                # Build full_name key: owner/name
+                owner = proj.get('owner', '')
+                name = proj.get('name', '')
+                if owner and name:
+                    full_name = f"{owner}/{name}".lower()
+                    pypi_projects.add(full_name)
+        print(f"  [OK] Loaded {len(pypi_projects):,} PyPI projects")
+    
+    # Get Python projects and recalculate scores with PyPI bonus
+    if 'Python' in by_language:
+        python_projects = by_language['Python']
+        GITHUB_WEIGHT = 1.0
+        PYPI_BONUS = 0.1
+        
+        # Add PyPI bonus to scores
+        for proj in python_projects:
+            project_key = proj['name'].lower()
+            on_pypi = project_key in pypi_projects
+            base_score = proj['score']
+            final_score = base_score * (GITHUB_WEIGHT + (PYPI_BONUS if on_pypi else 0))
+            proj['final_score'] = int(final_score)
+            proj['on_pypi'] = on_pypi
+        
+        # Re-sort by final score
+        python_projects.sort(key=lambda x: x['final_score'], reverse=True)
+        
+        # Add python_rank to each project for consistent ranking
+        for rank, proj in enumerate(python_projects, start=1):
+            proj['python_rank'] = rank
+        
+        # Regenerate Python pages with new sorting
+        total_python = len(python_projects)
+        total_python_pages = (total_python + PAGE_SIZE - 1) // PAGE_SIZE
+        
+        python_dir = os.path.join(pages_dir, 'python')
+        os.makedirs(python_dir, exist_ok=True)
+        python_build_dir = os.path.join(pages_build_dir, 'python')
+        os.makedirs(python_build_dir, exist_ok=True)
+        
+        for page_num in range(total_python_pages):
+            start_idx = page_num * PAGE_SIZE
+            end_idx = min(start_idx + PAGE_SIZE, total_python)
+            page_data = python_projects[start_idx:end_idx]
+            
+            # Remove temporary fields before saving (keep python_rank for filtering)
+            clean_data = []
+            for proj in page_data:
+                clean_proj = {k: v for k, v in proj.items() if k not in ['final_score', 'on_pypi']}
+                clean_data.append(clean_proj)
+            
+            page_file = os.path.join(python_dir, f'page_{page_num + 1}.json')
+            with open(page_file, 'w', encoding='utf-8') as f:
+                json.dump(clean_data, f, separators=(',', ':'))
+            
+            build_page_file = os.path.join(python_build_dir, f'page_{page_num + 1}.json')
+            with open(build_page_file, 'w', encoding='utf-8') as f:
+                json.dump(clean_data, f, separators=(',', ':'))
+        
+        print(f"  [OK] Python: {total_python:,} projects → {total_python_pages} pages (sorted by score + PyPI bonus)")
+        
+        # Generate Python owner index (for faster owner search)
+        print("\n[INFO] Generating Python owner index...")
+        python_owner_index = defaultdict(list)
+        
+        for proj in python_projects:
+            # Calculate final score with PyPI bonus for index
+            project_key = proj['name'].lower()
+            on_pypi = project_key in pypi_projects
+            base_score = proj['score']
+            final_score = int(base_score * (GITHUB_WEIGHT + (PYPI_BONUS if on_pypi else 0)))
+            
+            python_owner_index[proj['owner']].append({
+                'name': proj['name'],
+                'owner': proj['owner'],
+                'html_url': proj['html_url'],
+                'stars': proj['stars'],
+                'forks': proj['forks'],
+                'watchers': proj.get('watchers', 0),
+                'issues': proj['issues'],
+                'language': 'Python',
+                'description': proj.get('description', ''),
+                'topics': proj.get('topics', []),
+                'score': proj['score'],
+                'final_score': final_score,
+                'on_pypi': on_pypi,
+                'python_rank': proj['python_rank']
+            })
+        
+        # Sort each owner's projects by final score
+        for owner in python_owner_index:
+            python_owner_index[owner].sort(key=lambda x: x['final_score'], reverse=True)
+        
+        # Split index by first character
+        python_owner_groups = defaultdict(dict)
+        for owner, projects in python_owner_index.items():
+            first_char = owner[0].lower() if owner else 'other'
+            if not first_char.isalnum():
+                first_char = 'other'
+            python_owner_groups[first_char][owner] = projects
+        
+        # Create python_owner_index directory
+        python_owner_dir = 'frontend/public/python_owner_index'
+        os.makedirs(python_owner_dir, exist_ok=True)
+        
+        python_owner_build_dir = 'frontend/build/python_owner_index'
+        os.makedirs(python_owner_build_dir, exist_ok=True)
+        
+        # Save each group
+        total_python_owners = 0
+        for char, owners in python_owner_groups.items():
+            index_file = os.path.join(python_owner_dir, f'{char}.json')
+            with open(index_file, 'w', encoding='utf-8') as f:
+                json.dump(owners, f, separators=(',', ':'))
+            
+            # Copy to build
+            build_file = os.path.join(python_owner_build_dir, f'{char}.json')
+            with open(build_file, 'w', encoding='utf-8') as f:
+                json.dump(owners, f, separators=(',', ':'))
+            
+            total_python_owners += len(owners)
+        
+        print(f"  [OK] Python owner index: {total_python_owners:,} unique owners")
+    
     # Save metadata
     metadata_file = 'frontend/public/metadata.json'
     with open(metadata_file, 'w', encoding='utf-8') as f:
