@@ -79,7 +79,7 @@ def main():
 
     for i, project in enumerate(python_projects):
         if (i + 1) % 5000 == 0:
-            print("   Processed {i + 1:,}/{len(python_projects):,}...")
+            print(f"   Processed {i + 1:,}/{len(python_projects):,}...")
 
         is_on_pypi, confidence, method = checker.check_project(project)
 
@@ -121,7 +121,7 @@ def main():
         else:
             stats['not_on_pypi'] += 1
 
-    print("   Processed {len(python_projects):,}/{len(python_projects):,} [OK]")
+    print(f"   Processed {len(python_projects):,}/{len(python_projects):,} [OK]")
 
     # Sort by stars (most popular first)
     pypi_projects.sort(key=lambda x: x['stars'], reverse=True)
@@ -140,7 +140,7 @@ def main():
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2)
 
-    print("\n[OK] Generated {output_file}")
+    print(f"\n[OK] Generated {output_file}")
 
     # Print summary
     print("\n" + "=" * 80)
@@ -148,15 +148,15 @@ def main():
     print("=" * 80)
 
     print("\n🐍 Python Projects:")
-    print("   Total: {len(python_projects):,}")
-    print("   On PyPI: {len(pypi_projects):,} ({len(pypi_projects) / len(python_projects) * 100:.2f}%)")
-    print("   Not on PyPI: {stats['not_on_pypi']:,} ({stats['not_on_pypi'] / len(python_projects) * 100:.2f}%)")
+    print(f"   Total: {len(python_projects):,}")
+    print(f"   On PyPI: {len(pypi_projects):,} ({len(pypi_projects) / len(python_projects) * 100:.2f}%)")
+    print(f"   Not on PyPI: {stats['not_on_pypi']:,} ({stats['not_on_pypi'] / len(python_projects) * 100:.2f}%)")
 
     print("\n[CHART] Confidence Distribution:")
-    print("   Very High (>0.9): {stats['by_confidence']['very_high']:,}")
-    print("   High (0.8-0.9):   {stats['by_confidence']['high']:,}")
-    print("   Medium (0.7-0.8): {stats['by_confidence']['medium']:,}")
-    print("   Low (0.4-0.7):    {stats['by_confidence']['low']:,}")
+    print(f"   Very High (>0.9): {stats['by_confidence']['very_high']:,}")
+    print(f"   High (0.8-0.9):   {stats['by_confidence']['high']:,}")
+    print(f"   Medium (0.7-0.8): {stats['by_confidence']['medium']:,}")
+    print(f"   Low (0.4-0.7):    {stats['by_confidence']['low']:,}")
 
     print("\n[SEARCH] Top Match Methods:")
     for method, method_count in sorted(
@@ -174,7 +174,7 @@ def main():
             print(f"   {i:2}. {proj_owner}/{proj_name:<30} {proj_stars:>6,} ⭐")
 
     print("\n" + "=" * 80)
-    print("📁 Output saved to: {output_file}")
+    print(f"📁 Output saved to: {output_file}")
     print("=" * 80)
 
 
