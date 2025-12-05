@@ -70,9 +70,17 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 - **Comprehensive Documentation** - Dedicated pages for scoring methodology and data validation
 
 ### Technical Excellence
+- **Dual Data Sources** - Integrates GitHub API (user search via GraphQL, repository data via REST) and PyPI API (package verification)
 - **Rate Limit Optimization** - 6 GitHub tokens with intelligent rotation
 - **PyPI Detection** - Offline matching with 702k+ packages, 100% precision
-- **Comprehensive Testing** - 91 tests covering all core functionality
+- **Comprehensive Testing** - 225 tests covering all core functionality
+  - Test Coverage: **56%** of library code (100% for scoring module, 97% for PyPI detection, 94% for token management)
+  - Core modules at 94-100% coverage ensuring reliability
+  - Python: pylint code quality checks (8.72/10)
+  - Frontend: JavaScript/JSX syntax validation, CSS structure checks
+  - Shell: Bash script syntax validation, GitHub Actions YAML validation
+  - Run tests: `pytest test/`
+  - Generate coverage report: `pytest --cov=src/seattle_source_ranker --cov-report=html`
 - **Organization Support** - Handles allenai, awslabs, FredHutch, and other Seattle organizations
 
 ---
@@ -82,7 +90,73 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 ### View Live Rankings
 Visit **[https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)** to explore Seattle's open source projects.
 
-### Run Locally
+### Installation
+
+```bash
+# Clone and install
+git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
+cd Seattle-Source-Ranker
+pip install -e .
+```
+
+### Simple Usage Examples
+
+The package can be used as a library for analyzing GitHub projects:
+
+#### Example 1: Calculate Project Score
+```python
+from seattle_source_ranker.scoring import calculate_github_score
+
+project = {
+    'stars': 1000,
+    'forks': 150,
+    'watchers': 200,
+    'open_issues': 25,
+    'created_at': '2020-01-01T00:00:00Z',
+    'pushed_at': '2024-11-15T10:30:00Z'
+}
+
+score = calculate_github_score(project)
+print(f"SSR Score: {score:.2f}")  # Output: SSR Score: 6842.35
+```
+
+#### Example 2: Check PyPI Publication
+```python
+from seattle_source_ranker.pypi import PyPIChecker
+
+checker = PyPIChecker()
+
+project = {
+    'name': 'requests',
+    'language': 'Python',
+    'topics': ['http', 'python'],
+    'description': 'Python HTTP library'
+}
+
+is_on_pypi = checker.check_project(project)
+print(f"On PyPI: {is_on_pypi}")  # Output: On PyPI: True
+```
+
+#### Example 3: Manage GitHub Tokens
+```python
+from seattle_source_ranker.tokens import TokenManager
+
+# Load tokens from .env.tokens or environment
+tm = TokenManager()
+
+# Get best available token
+token = tm.get_token()
+
+# Check rate limit
+limit_info = tm.check_rate_limit()
+print(f"Remaining: {limit_info['remaining']}")
+```
+
+See the **[examples/](examples/)** directory for more detailed usage examples.
+
+### Full Data Collection Pipeline
+
+For running the complete data collection system:
 
 **Prerequisites:**
 - Python 3.11+
@@ -91,20 +165,15 @@ Visit **[https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829
 
 **Installation:**
 ```bash
-# 1. Clone repository
-git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
-cd Seattle-Source-Ranker
-
-# 2. Install dependencies
+# Install with conda (includes all dependencies)
 conda env create -f environment.yml
 conda activate ssr
-# Or: pip install -e .
 
-# 3. Start Redis
+# Start Redis
 sudo systemctl start redis-server
 redis-cli ping  # Should return PONG
 
-# 4. Configure tokens (.env.tokens file)
+# Configure tokens in .env.tokens file
 GITHUB_TOKEN_1=ghp_your_token_here
 GITHUB_TOKEN_2=ghp_your_token_here
 # ... up to GITHUB_TOKEN_6
@@ -213,13 +282,13 @@ The 10% bonus rewards projects that contribute to Python's package ecosystem whi
 
 Projects are ranked both **overall** and **by programming language** (11 categories).
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed factor calculations.
+See [ARCHITECTURE.md](doc/ARCHITECTURE.md) for detailed factor calculations.
 
 ---
 
 ## Troubleshooting
 
-Having issues? Check the **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** for:
+Having issues? Check the **[Troubleshooting Guide](doc/TROUBLESHOOTING.md)** for:
 - Common errors and solutions (Redis, rate limits, collection failures)
 - Frontend build issues
 - Frequently Asked Questions (watchers, tokens, file management)
@@ -228,11 +297,16 @@ Having issues? Check the **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** fo
 
 ## Documentation
 
-For detailed technical information:
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture, data flow, and component design
-- **[VERSION_HISTORY.md](docs/VERSION_HISTORY.md)** - Project changelog and version history
-- **[MULTI_TOKEN_GUIDE.md](docs/MULTI_TOKEN_GUIDE.md)** - GitHub token setup and rotation guide
-- **[USER_STORIES.md](docs/USER_STORIES.md)** - Use cases and target audiences
+### Design Specifications
+- **[Functional Specification](doc/functional_specification.md)** - User requirements, data sources, and use cases
+- **[Component Specification](doc/component_specification.md)** - Software components, interactions, and implementation plan
+
+### Technical Documentation
+- **[ARCHITECTURE.md](doc/ARCHITECTURE.md)** - Complete system architecture, data flow, and component design
+- **[VERSION_HISTORY.md](doc/VERSION_HISTORY.md)** - Project changelog and version history
+- **[MULTI_TOKEN_GUIDE.md](doc/MULTI_TOKEN_GUIDE.md)** - GitHub token setup and rotation guide
+- **[USER_STORIES.md](doc/USER_STORIES.md)** - Use cases and target audiences
+- **[TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ---
 

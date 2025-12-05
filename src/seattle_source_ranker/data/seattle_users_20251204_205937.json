@@ -1,0 +1,7 @@
+{
+  "total_users": 0,
+  "collected_at": "2025-12-04T20:59:37.976282-08:00",
+  "query_strategy": "graphql multi-filter",
+  "filters_used": 76,
+  "usernames": []
+}

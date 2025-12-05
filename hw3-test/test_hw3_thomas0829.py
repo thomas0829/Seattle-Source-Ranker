@@ -12,8 +12,8 @@ from datetime import datetime, timezone, timedelta
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.token_manager import TokenManager
-from scripts.generate_frontend_data import (
+from seattle_source_ranker.tokens import TokenManager
+from seattle_source_ranker.scripts.generate_frontend_data import (
     normalize,
     age_factor,
     calculate_github_score
