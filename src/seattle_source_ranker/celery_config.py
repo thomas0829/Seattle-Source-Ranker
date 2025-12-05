@@ -17,7 +17,7 @@ celery_app = Celery(
     broker=REDIS_URL,
     backend=REDIS_URL,
     include=[
-        "workers.collection_worker"
+        "seattle_source_ranker.collector.collection_worker"
     ]
 )
 
@@ -25,7 +25,7 @@ celery_app = Celery(
 celery_app.conf.update(
     # Task routing
     task_routes={
-        "workers.collection_worker.*": {"queue": "default"},
+        "seattle_source_ranker.collector.collection_worker.*": {"queue": "default"},
     },
 
     # Task queues

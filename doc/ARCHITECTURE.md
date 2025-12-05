@@ -23,9 +23,9 @@
 
 ### 2. PyPI Integration Layer (`utils/`)
 - **pypi_checker.py** (~250 lines): Package detection system
-  - **Offline matching** for high performance (<30 seconds for 55k projects)
+  - **Offline matching** for high performance (<30 seconds for 54k projects)
   - **Zero false positives**: 100% precision via strict matching rules
-  - Local cache of 702,223 PyPI packages
+  - Local cache of 707,093 PyPI packages
   - Multiple matching strategies:
     * Direct name match
     * Underscore/hyphen conversion
@@ -37,9 +37,9 @@
     * Generic name filtering (chat, bot, api, etc.)
   
 - **generate_pypi_projects.py**: PyPI project list generator
-  - Processes all Python projects (~55k)
-  - Outputs `seattle_pypi_projects.json` (~10k packages, ~3MB)
-  - Detection rate: ~18% of Python projects are on PyPI
+  - Processes all Python projects (~54,188)
+  - Outputs `seattle_pypi_projects.json` (~1,025 packages)
+  - Detection rate: ~1.89% of Python projects are on PyPI
   - Sorted by stars (most popular first)
 
 ### 3. Analysis Layer
@@ -101,21 +101,21 @@ Built with React, featuring:
   - Topics and tech stack information
 
 ### Data Scale
-- **464,133 projects** tracked
-- **2,817,581 total stars** analyzed
-- **28,203 verified accounts** in Seattle area (users + organizations)
-- **55,034 Python projects** identified
-- **9,962 PyPI packages** detected (18.10% of Python projects)
-- **702,223 PyPI packages** indexed for offline matching
+- **457,212 projects** tracked
+- **2,476,436 total stars** analyzed
+- **28,256 verified accounts** in Seattle area (users + organizations)
+- **54,188 Python projects** identified
+- **1,025 PyPI packages** detected (1.89% of Python projects)
+- **707,093 PyPI packages** indexed for offline matching
 - **252MB** primary data file (local only, not in Git)
 - **3MB** PyPI projects data (in Git)
 - **12MB** PyPI packages index (in Git)
 - **9,632 paginated files** for frontend (50 projects each)
 
 ### PyPI Detection Performance
-- **Processing time**: <30 seconds for 55,034 Python projects
+- **Processing time**: <30 seconds for 54,188 Python projects
 - **Accuracy**: 100% precision (zero false positives)
-- **Detection rate**: 18.10% of Python projects are on PyPI
+- **Detection rate**: 1.89% of Python projects are on PyPI
 - **Matching strategies**: 5 methods (direct, underscore/dash conversion, prefix removal, manual mapping, signal verification)
 - **Cache duration**: 7 days for PyPI index
 
@@ -135,13 +135,13 @@ Built with React, featuring:
 3. Project Collection (REST API)
    ↓ All public repositories
    ↓ Topics & tech stack metadata
-   ↓ ~464,000 projects
+   ↓ ~457,212 projects
    
 4. PyPI Detection (Offline Matching)
-   ↓ Load 702k PyPI packages index
-   ↓ Filter ~55,000 Python projects
+   ↓ Load 707k PyPI packages index
+   ↓ Filter ~54,188 Python projects
    ↓ Strict matching with signal verification
-   ↓ ~10,000 packages detected (18% detection rate)
+   ↓ ~1,025 packages detected (1.89% detection rate)
    ↓ Zero false positives (100% precision)
    
 5. Multi-factor Scoring (SSR Algorithm)

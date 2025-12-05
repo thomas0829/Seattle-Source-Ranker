@@ -7,15 +7,96 @@ Uses enhanced SSR scoring algorithm with multiple factors.
 """
 import json
 import os
-import sys
+import math
 from collections import defaultdict
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+def normalize(value, max_value):
+    """Normalize value to 0-1 range"""
+    return value / max_value if max_value > 0 else 0
 
-from seattle_source_ranker.scoring import calculate_github_score
+def log_normalize(value, base=10):
+    """Logarithmic normalization for better score distribution"""
+    return math.log10(value + 1) / math.log10(base)
+
+def age_factor(created_at):
+    """
+    Calculate age factor (0-1 range)
+    Mature projects (2-8 years) get higher scores
+    """
+    try:
+        created_time = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        years = (datetime.now(timezone.utc) - created_time).days / 365.25
+
+        # Peak score at 3-5 years, decrease for too old/new
+        if years < 0.5:
+            return 0.3  # Too new
+        if years < 2:
+            return 0.6 + (years - 0.5) * 0.2  # Growing: 0.6-0.9
+        if years < 5:
+            return 0.9 + (years - 2) * 0.033  # Peak: 0.9-1.0
+        if years < 8:
+            return 1.0 - (years - 5) * 0.05  # Mature: 1.0-0.85
+        return 0.7 - min((years - 8) * 0.03, 0.4)  # Declining: 0.7-0.3
+    except (ValueError, TypeError):
+        return 0.5
+
+def activity_factor(pushed_at, created_at):
+    """
+    Calculate recent activity factor (0-1 range)
+    Recent updates indicate active maintenance
+    """
+    try:
+        pushed_time = datetime.strptime(pushed_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        created_time = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+        days_since_push = (datetime.now(timezone.utc) - pushed_time).days
+        project_age_days = (datetime.now(timezone.utc) - created_time).days
+
+        # Avoid division by zero
+        if project_age_days < 1:
+            return 1.0
+
+        # Recent activity is good
+        if days_since_push < 7:
+            return 1.0
+        if days_since_push < 30:
+            return 0.95
+        if days_since_push < 90:
+            return 0.85
+        if days_since_push < 180:
+            return 0.7
+        if days_since_push < 365:
+            return 0.5
+        # Check if abandoned (no update in years)
+        return max(0.2, 0.5 - (days_since_push - 365) / 3650)
+    except (ValueError, TypeError):
+        return 0.5
+
+def health_factor(open_issues, stars):
+    """
+    Calculate project health (0-1 range)
+    Issues relative to popularity
+    """
+    if stars < 10:
+        return 1.0 if open_issues < 5 else 0.8
+
+    # Issue ratio relative to stars
+    issue_ratio = open_issues / (stars + 1)
+
+    if issue_ratio < 0.01:
+        return 1.0
+    if issue_ratio < 0.05:
+        return 0.9
+    if issue_ratio < 0.1:
+        return 0.8
+    if issue_ratio < 0.2:
+        return 0.6
+    return 0.4
+
+def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watchers=None):
+    """
+    Enhanced SSR Algorithm:
 
     Base Metrics (70%):
       - Stars: 40% (primary popularity indicator)
@@ -125,13 +206,11 @@ def main():
     if len(sys.argv) > 1:
         data_file = sys.argv[1]
     else:
-        # Find the latest projects file
-        import glob
-        files = glob.glob('data/seattle_projects_*.json')
-        if not files:
-            print("[ERROR] No project data files found in data/")
+        # Use standard filename
+        data_file = 'data/seattle_projects.json'
+        if not os.path.exists(data_file):
+            print("[ERROR] No project data file found: data/seattle_projects.json")
             return
-        data_file = max(files)  # Get the latest file
 
     print(f"[DIR] Loading data from {data_file}...")
     with open(data_file, 'r', encoding='utf-8') as f:
@@ -242,6 +321,40 @@ def main():
 
         percentage = (total_projects / sum(len(p) for p in by_language.values()) * 100)
         print(f"  [OK] {language}: {total_projects:,} projects ({percentage:.1f}%) → {total_pages} pages")
+
+    # Generate mixed "All" pages (top 10000 by global_rank)
+    print("\n[INFO] Generating mixed 'All' pages (top 10000)...")
+    all_projects_sorted = sorted(all_projects, key=lambda x: x['global_rank'])[:10000]
+    
+    all_dir = os.path.join(pages_dir, 'all')
+    os.makedirs(all_dir, exist_ok=True)
+    
+    all_build_dir = os.path.join(pages_build_dir, 'all')
+    os.makedirs(all_build_dir, exist_ok=True)
+    
+    total_all_pages = (len(all_projects_sorted) + PAGE_SIZE - 1) // PAGE_SIZE  # Should be 200
+    
+    for page_num in range(total_all_pages):
+        start_idx = page_num * PAGE_SIZE
+        end_idx = min(start_idx + PAGE_SIZE, len(all_projects_sorted))
+        page_data = all_projects_sorted[start_idx:end_idx]
+        
+        page_file = os.path.join(all_dir, f'page_{page_num + 1}.json')
+        with open(page_file, 'w', encoding='utf-8') as f:
+            json.dump(page_data, f, separators=(',', ':'))
+        
+        # Copy to build directory
+        build_page_file = os.path.join(all_build_dir, f'page_{page_num + 1}.json')
+        with open(build_page_file, 'w', encoding='utf-8') as f:
+            json.dump(page_data, f, separators=(',', ':'))
+    
+    print(f"  [OK] All (mixed): 10,000 projects → {total_all_pages} pages")
+    
+    # Add to metadata
+    metadata['languages']['All'] = {
+        'total': len(all_projects_sorted),
+        'pages': total_all_pages
+    }
 
     # Save metadata
     metadata_file = 'frontend/public/metadata.json'

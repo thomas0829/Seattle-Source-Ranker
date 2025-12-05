@@ -12,7 +12,7 @@ Seattle has a thriving open-source community with thousands of developers contri
 
 ### Solution
 Seattle Source Ranker addresses these challenges by:
-1. **Automated Data Collection**: Systematically collecting data from 28,000+ Seattle-based GitHub users
+1. **Automated Data Collection**: Systematically collecting data from 28,256 Seattle-based GitHub users
 2. **Intelligent Ranking**: Using a multi-factor SSR (Seattle Source Ranker) algorithm that considers popularity, maintenance, and project health
 3. **Interactive Visualization**: Providing a web-based interface for exploring projects by language, PyPI status, and other criteria
 4. **Daily Updates**: Maintaining fresh data through automated collection and deployment
@@ -108,7 +108,7 @@ Seattle Source Ranker addresses these challenges by:
 **Data Characteristics**:
 - **Granularity**: Individual repository level
 - **Freshness**: Updated daily via automated collection
-- **Volume**: ~457,000 projects from 28,000 users
+- **Volume**: ~457,212 projects from 28,256 users
 - **Completeness**: Full metadata for public repositories
 
 ### 3.2 PyPI (Python Package Index)
@@ -117,7 +117,7 @@ Seattle Source Ranker addresses these challenges by:
 **Access**: Public API, no authentication required
 
 **Data Collected**:
-- Complete list of published package names (702,223 packages)
+- Complete list of published package names (707,093 packages)
 - Used for offline matching against GitHub projects
 
 **Data Characteristics**:
@@ -146,7 +146,7 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → S
 **Data Quality**:
 - **Coverage**: 28,256 Seattle users, 457,212 projects
 - **Precision**: 100% for PyPI matching (zero false positives)
-- **Detection Rate**: ~18% of Python projects are on PyPI
+- **Detection Rate**: ~1.89% of Python projects are on PyPI (1,025 packages)
 - **Update Frequency**: Daily automated collection at midnight Seattle time
 
 ---
@@ -165,7 +165,7 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → S
 
 2. **Navigate to Python Rankings**
    - Clicks "Python Rankings" navigation link
-   - Views page showing ~55,000 Python projects from Seattle
+   - Views page showing ~54,188 Python projects from Seattle
 
 3. **Filter and Search**
    - Uses search bar to type "machine learning" 

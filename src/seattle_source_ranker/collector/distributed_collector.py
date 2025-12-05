@@ -190,7 +190,7 @@ class DistributedCollector:
             # Start worker process
             cmd = [
                 sys.executable, "-m", "celery",
-                "-A", "distributed.workers.collection_worker",
+                "-A", "seattle_source_ranker.collector.collection_worker",
                 "worker",
                 "--loglevel=info",
                 f"--concurrency={self.concurrency}",
@@ -1098,7 +1098,7 @@ def main():
     else:
         print("\n[WARNING]  Auto-manage workers: DISABLED")
         print("   Make sure {args.workers} Celery workers are running!")
-        print("   Use: python3 -m celery -A distributed.workers.collection_worker worker --loglevel=info --concurrency=2 -n workerN@%h")
+        print("   Use: python3 -m celery -A seattle_source_ranker.collector.collection_worker worker --loglevel=info --concurrency=2 -n workerN@%h")
 
     print("\n[START] Starting collection now...\n")
 
