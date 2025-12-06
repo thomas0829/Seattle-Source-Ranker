@@ -6,16 +6,29 @@ import { Link, useSearchParams } from "react-router-dom";
 export default function OverallRankingsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [metadata, setMetadata] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
+    
+    // Initialize state from URL parameters
+    const [currentPage, setCurrentPage] = useState(() => {
+        const pageParam = searchParams.get('page');
+        return pageParam ? parseInt(pageParam, 10) : 1;
+    });
+    const [activeOwner, setActiveOwner] = useState(() => searchParams.get('search') || null);
+    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => searchParams.get('search') || '');
+    const [selectedLanguages, setSelectedLanguages] = useState(() => {
+        const langsParam = searchParams.get('langs');
+        return langsParam ? langsParam.split(',').filter(l => l) : [];
+    });
+    const [showAll, setShowAll] = useState(() => {
+        const langsParam = searchParams.get('langs');
+        return !langsParam || langsParam === '';
+    });
+    
     const [repos, setRepos] = useState([]);
     const [hoveredRepo, setHoveredRepo] = useState(null);
     const [maxScore, setMaxScore] = useState(1);
     const [repoDetails, setRepoDetails] = useState({});
     const [languages, setLanguages] = useState([]);
-    const [selectedLanguages, setSelectedLanguages] = useState([]);
-    const [showAll, setShowAll] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [pageCache, setPageCache] = useState({});
     const timeoutRef = useRef(null);
@@ -27,18 +40,20 @@ export default function OverallRankingsPage() {
     const [searchSuggestions, setSearchSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+    const pageBeforeSearchRef = useRef(1);
     const searchWrapperRef = useRef(null);
     const [tooltipPosition, setTooltipPosition] = useState({});
-    const [activeOwner, setActiveOwner] = useState(null);
     const [updatingRows, setUpdatingRows] = useState(false);
     const [tableFlash, setTableFlash] = useState(false);
-    const skipScanAnimationRef = useRef(false);
+    // Skip scan animation on initial load if there's a search parameter
+    const skipScanAnimationRef = useRef(searchParams.get('search') !== null);
     const previousFiltersRef = useRef({ languages: selectedLanguages, showAll, search: debouncedSearchQuery });
+    const tableFlashTimeoutRef = useRef(null);
+    const isInitialLoadRef = useRef(true); // Track if this is the initial page load
 
     // Use refs to track current values without causing re-renders
     const currentPageRef = useRef(currentPage);
     const debouncedSearchQueryRef = useRef(debouncedSearchQuery);
-    const pageBeforeSearchRef = useRef(1); // Remember page before owner search
     
     useEffect(() => {
         currentPageRef.current = currentPage;
@@ -61,36 +76,71 @@ export default function OverallRankingsPage() {
             })
             .catch((err) => console.error("❌ Failed to load metadata:", err));
     }, []);
+    
+    // Save scroll position before unload (for F5 refresh)
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            sessionStorage.setItem('scrollPosition', window.pageYOffset.toString());
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
+    
+    // Mark initial load as complete and restore scroll position after first data load
+    useEffect(() => {
+        if (repos.length > 0 && isInitialLoadRef.current) {
+            isInitialLoadRef.current = false;
+            
+            // Restore scroll position with smooth animation after a short delay to ensure content is rendered
+            const savedScrollPosition = sessionStorage.getItem('scrollPosition');
+            if (savedScrollPosition) {
+                setTimeout(() => {
+                    window.scrollTo({ top: parseInt(savedScrollPosition, 10), behavior: 'smooth' });
+                    sessionStorage.removeItem('scrollPosition');
+                }, 100);
+            }
+        }
+    }, [repos]);
 
-    // Restore state from URL parameters on mount and when URL changes
+    // Sync state when URL changes (browser back/forward)
     useEffect(() => {
         const searchParam = searchParams.get('search');
         const pageParam = searchParams.get('page');
+        const langsParam = searchParams.get('langs');
         
-        // Restore search state
-        if (searchParam !== null) {
-            if (searchParam !== debouncedSearchQueryRef.current) {
-                setSearchQuery(searchParam);
-                setDebouncedSearchQuery(searchParam);
-                setActiveOwner(searchParam);
+        // Only update if values actually changed (to avoid infinite loops)
+        if (searchParam !== debouncedSearchQueryRef.current) {
+            const newSearch = searchParam || '';
+            setSearchQuery(newSearch);
+            setDebouncedSearchQuery(newSearch);
+            setActiveOwner(newSearch || null);
+            setShowSuggestions(false);
+            if (newSearch) {
+                skipScanAnimationRef.current = true;
             }
-        } else {
-            // Clear search if no search param in URL
-            if (debouncedSearchQueryRef.current !== '') {
-                setSearchQuery('');
-                setDebouncedSearchQuery('');
-                setActiveOwner(null);
+            if (!newSearch) {
                 setSearchMatchCounts({});
             }
         }
         
-        // Restore page number
+        // Update language filter
+        if (langsParam) {
+            const langs = langsParam.split(',').filter(l => l);
+            setSelectedLanguages(langs);
+            setShowAll(langs.length === 0);
+        } else if (!searchParam) {
+            setSelectedLanguages([]);
+            setShowAll(true);
+        }
+        
+        // Update page number
         if (pageParam) {
             const page = parseInt(pageParam, 10);
             if (!isNaN(page) && page > 0 && page !== currentPageRef.current) {
                 setCurrentPage(page);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams]);
 
     // Generate search suggestions
@@ -359,9 +409,25 @@ export default function OverallRankingsPage() {
     }, [searchQuery]);
 
     // Handle search trigger (Enter key or button)
-    const triggerSearch = () => {
-        // Set loading state to show we're updating
-        setIsLoading(true);
+    const triggerSearch = async () => {
+        const query = searchQuery.toLowerCase().trim();
+        
+        // Check if this might be an owner search by looking at the first character
+        const firstChar = query[0] && query[0].match(/[a-z0-9]/) ? query[0] : 'other';
+        let isOwnerSearch = false;
+        
+        // Quick check if owner exists in cache
+        if (ownerIndexCache[firstChar]) {
+            const ownerKey = Object.keys(ownerIndexCache[firstChar]).find(key => key.toLowerCase() === query);
+            isOwnerSearch = !!ownerKey;
+        }
+        
+        // If it's an owner search, skip scan animation (use row animation only)
+        if (isOwnerSearch) {
+            skipScanAnimationRef.current = true;
+            setTableFlash(false);
+        }
+        
         setDebouncedSearchQuery(searchQuery);
         setCurrentPage(1);
         setShowSuggestions(false);
@@ -392,9 +458,6 @@ export default function OverallRankingsPage() {
     const handleOwnerClick = (ownerName) => {
         setShowSuggestions(false);
         setSearchSuggestions([]);
-        
-        // Set loading state to show we're updating
-        setIsLoading(true);
         
         // ALWAYS skip scan animation for owner clicks - use row animation only
         skipScanAnimationRef.current = true;
@@ -458,13 +521,13 @@ export default function OverallRankingsPage() {
                 previousFiltersRef.current.showAll !== showAll ||
                 JSON.stringify(previousFiltersRef.current.languages) !== JSON.stringify(selectedLanguages);
             
-            // Set loading state if filters changed
-            if (filtersChanged && !skipScanAnimationRef.current) {
+            // Only show loading for search queries (not for language filters or pagination)
+            const isSearchQuery = debouncedSearchQuery.trim() !== '';
+            const shouldShowLoading = isSearchQuery && filtersChanged && !skipScanAnimationRef.current;
+            
+            if (shouldShowLoading) {
                 setIsLoading(true);
             }
-            
-            // Update previous filters
-            previousFiltersRef.current = { languages: selectedLanguages, showAll, search: debouncedSearchQuery };
             
             // Load data FIRST
             if (showAll && !debouncedSearchQuery.trim()) {
@@ -476,14 +539,39 @@ export default function OverallRankingsPage() {
             }
             
             // Close loading state after data is ready
-            setIsLoading(false);
+            if (shouldShowLoading) {
+                setIsLoading(false);
+            }
             
             // THEN trigger animation after data is ready
             // But skip if we're returning from owner click (use row animation instead)
             if (filtersChanged && !skipScanAnimationRef.current) {
-                setTableFlash(true);
-                setTimeout(() => setTableFlash(false), 2000);
+                // Clear any existing timeout to ensure immediate restart
+                if (tableFlashTimeoutRef.current) {
+                    clearTimeout(tableFlashTimeoutRef.current);
+                }
+                
+                // Force restart animation by briefly setting to false then true
+                setTableFlash(false);
+                requestAnimationFrame(() => {
+                    setTableFlash(true);
+                    tableFlashTimeoutRef.current = setTimeout(() => {
+                        setTableFlash(false);
+                        tableFlashTimeoutRef.current = null;
+                    }, 2000);
+                });
+            } else if (filtersChanged && skipScanAnimationRef.current) {
+                // Use row animation for owner searches
+                setUpdatingRows(true);
+                setTimeout(() => setUpdatingRows(false), 600);
             }
+            
+            // Update previous filters AFTER animation trigger to ensure next comparison is correct
+            previousFiltersRef.current = { 
+                languages: [...selectedLanguages], 
+                showAll, 
+                search: debouncedSearchQuery 
+            };
             
             // Reset the flag after checking
             skipScanAnimationRef.current = false;
@@ -495,8 +583,8 @@ export default function OverallRankingsPage() {
 
     // Scroll to position between header and search bar when page changes
     useEffect(() => {
-        // Skip scroll on initial page load (page 1)
-        if (currentPage === 1) return;
+        // Skip scroll on initial page load
+        if (isInitialLoadRef.current) return;
         
         // Use setTimeout to ensure DOM is ready
         const timer = setTimeout(() => {
@@ -516,8 +604,6 @@ export default function OverallRankingsPage() {
             setRepos(pageCache[cacheKey]);
             return;
         }
-
-        setIsLoading(true);
 
         // Directly load from pages/all/page_X.json
         const pageUrl = `${process.env.PUBLIC_URL}/pages/all/page_${currentPage}.json`;
@@ -540,8 +626,6 @@ export default function OverallRankingsPage() {
             console.error(`Failed to load page ${currentPage}:`, err);
             setRepos([]);
         }
-        
-        setIsLoading(false);
     };
 
     // Load selected languages (need to load and mix multiple languages)
@@ -551,46 +635,69 @@ export default function OverallRankingsPage() {
             setRepos(pageCache[cacheKey]);
             return;
         }
-
-        setIsLoading(true);
         const pageSize = 50;
+        
+        // If only one language selected, directly load from that language's pages (fast path)
+        if (selectedLanguages.length === 1) {
+            const lang = selectedLanguages[0];
+            const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
+            const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${currentPage}.json`;
+            
+            try {
+                const response = await fetch(pageUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const pageData = await response.json();
+                // Add category for display
+                const reposWithCategory = pageData.map((repo) => ({
+                    ...repo,
+                    category: lang
+                }));
+                
+                setRepos(reposWithCategory);
+                setPageCache((prev) => ({ ...prev, [cacheKey]: reposWithCategory }));
+                
+                if (reposWithCategory.length > 0) {
+                    const pageMax = Math.max(...reposWithCategory.map((r) => r.score));
+                    if (pageMax > maxScore) setMaxScore(pageMax);
+                }
+            } catch (err) {
+                console.error(`Failed to load ${lang} page ${currentPage}:`, err);
+                setRepos([]);
+            }
+            
+            return;
+        }
+        
+        // For multiple languages, load and mix from their respective pages
         const allReposForLoad = [];
 
-        // For selected languages, load pages in order (already sorted by score within each language)
-        // We want the top projects from each language, not by global rank
-        // Load 200 pages per language to get up to 10k projects
-        const maxPagesToLoad = 200;
-
+        // Load the current page from each selected language
         for (const lang of selectedLanguages) {
-            const totalPagesForLang = metadata.languages[lang].pages;
-            const pagesToLoad = Math.min(maxPagesToLoad, totalPagesForLang);
+            const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
+            const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${currentPage}.json`;
 
-            for (let page = 1; page <= pagesToLoad; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
-                const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
-
-                try {
-                    const response = await fetch(pageUrl);
-                    const pageData = await response.json();
-                    const reposWithCategory = pageData.map((repo) => ({
-                        ...repo,
-                        category: lang  // Use category field instead of overwriting language
-                    }));
-                    allReposForLoad.push(...reposWithCategory);
-                } catch (err) {
-                    console.error(`Failed to load ${lang} page ${page}:`, err);
-                }
+            try {
+                const response = await fetch(pageUrl);
+                if (!response.ok) continue;
+                const pageData = await response.json();
+                const reposWithCategory = pageData.map((repo) => ({
+                    ...repo,
+                    category: lang
+                }));
+                allReposForLoad.push(...reposWithCategory);
+            } catch (err) {
+                console.error(`Failed to load ${lang} page ${currentPage}:`, err);
             }
         }
 
-        // Sort by global_rank (not score) to maintain consistent ranking
-        allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
+        // Sort by score (descending) for mixed language view
+        allReposForLoad.sort((a, b) => b.score - a.score);
         
-        // For selected languages: show top 10k from filtered results
-        const top10000 = allReposForLoad.slice(0, 10000);
-        
-        const startIndex = (currentPage - 1) * pageSize;
-        const pageRepos = top10000.slice(startIndex, startIndex + pageSize);
+        // Take top 50 for this page
+        const pageRepos = allReposForLoad.slice(0, pageSize);
 
         setRepos(pageRepos);
         setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
@@ -599,13 +706,10 @@ export default function OverallRankingsPage() {
             const pageMax = Math.max(...pageRepos.map((r) => r.score));
             if (pageMax > maxScore) setMaxScore(pageMax);
         }
-
-        setIsLoading(false);
     };
 
     // Load search results (use owner index for fast exact owner searches)
     const loadSearchResults = async () => {
-        setIsLoading(true);
         const query = debouncedSearchQuery.toLowerCase().trim();
         
         // Try to load owner index for exact match
@@ -673,7 +777,6 @@ export default function OverallRankingsPage() {
                 if (pageMax > maxScore) setMaxScore(pageMax);
             }
             
-            setIsLoading(false);
             return;
         }
         
@@ -685,13 +788,11 @@ export default function OverallRankingsPage() {
             console.log(`⚠️ Owner '${query}' not found in index`);
             setRepos([]);
             setSearchMatchCounts({});
-            setIsLoading(false);
             return;
         }
         
         if (query.length < 2) {
             console.log(`⏭️ Query too short, skipping search: '${query}'`);
-            setIsLoading(false);
             return;
         }
         
@@ -813,14 +914,10 @@ export default function OverallRankingsPage() {
             const pageMax = Math.max(...pageRepos.map((r) => r.score));
             if (pageMax > maxScore) setMaxScore(pageMax);
         }
-
-        setIsLoading(false);
     };
 
     // Handle language checkbox toggle
     const handleLanguageToggle = (lang) => {
-        setShowAll(false); // Uncheck "All" when selecting specific languages
-        
         // Clear language-specific search when switching languages
         if (searchQuery.match(/^language:.+$/i)) {
             setSearchQuery('');
@@ -828,19 +925,44 @@ export default function OverallRankingsPage() {
             setSearchMatchCounts({});
         }
         
-        setSelectedLanguages((prev) => {
-            if (prev.includes(lang)) {
-                const newSelected = prev.filter((l) => l !== lang);
-                // If no languages selected, go back to "All"
-                if (newSelected.length === 0) {
-                    setShowAll(true);
-                }
-                return newSelected;
-            } else {
-                return [...prev, lang];
+        // Calculate new state first
+        const isCurrentlySelected = selectedLanguages.includes(lang);
+        let newLanguages;
+        let newShowAll;
+        
+        if (isCurrentlySelected) {
+            // Removing language
+            newLanguages = selectedLanguages.filter((l) => l !== lang);
+            newShowAll = newLanguages.length === 0;
+        } else {
+            // Adding language
+            newLanguages = [...selectedLanguages, lang];
+            newShowAll = false;
+        }
+        
+        // Update all states together
+        setSelectedLanguages(newLanguages);
+        setShowAll(newShowAll);
+        setCurrentPage(1);
+        
+        // Update URL
+        const newParams = new URLSearchParams(searchParams);
+        if (newLanguages.length > 0) {
+            newParams.set('langs', newLanguages.join(','));
+        } else {
+            newParams.delete('langs');
+        }
+        newParams.set('page', '1');
+        setSearchParams(newParams);
+        
+        // Scroll to table position (same as page navigation)
+        setTimeout(() => {
+            const headerElement = document.querySelector('header');
+            if (headerElement) {
+                const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
             }
-        });
-        setCurrentPage(1); // Reset to page 1 when filter changes
+        }, 100);
     };
 
     // Handle "All" checkbox toggle
@@ -856,6 +978,21 @@ export default function OverallRankingsPage() {
                 setDebouncedSearchQuery('');
                 setSearchMatchCounts({});
             }
+            
+            // Update URL - remove langs param
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('langs');
+            newParams.set('page', '1');
+            setSearchParams(newParams);
+            
+            // Scroll to table position (same as page navigation)
+            setTimeout(() => {
+                const headerElement = document.querySelector('header');
+                if (headerElement) {
+                    const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                    window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                }
+            }, 100);
         }
     };
 
@@ -999,7 +1136,14 @@ export default function OverallRankingsPage() {
                                             setDebouncedSearchQuery(`language:${selectedText}`);
                                         }
                                     } else {
-                                        // For owner/topic suggestions, just search
+                                        // For owner/topic suggestions, set active owner and skip scan animation
+                                        if (suggestion.type === 'owner') {
+                                            // Skip scan animation for owner search (use row animation only)
+                                            skipScanAnimationRef.current = true;
+                                            setTableFlash(false);
+                                            setActiveOwner(selectedText);
+                                        }
+                                        
                                         setSearchQuery(selectedText);
                                         setDebouncedSearchQuery(selectedText);
                                         setShowSuggestions(false);
@@ -1033,6 +1177,9 @@ export default function OverallRankingsPage() {
                         <button
                             className="clear-search-btn"
                             onClick={() => {
+                                // Skip scan animation when clearing search (just show simple transition)
+                                skipScanAnimationRef.current = true;
+                                
                                 setSearchQuery('');
                                 setDebouncedSearchQuery('');
                                 // Return to the page we were on before the search
@@ -1110,7 +1257,14 @@ export default function OverallRankingsPage() {
                                                 setDebouncedSearchQuery(`language:${selectedText}`);
                                             }
                                         } else {
-                                            // For owner/topic suggestions, just search
+                                            // For owner/topic suggestions, check if it's an owner and skip scan animation
+                                            if (suggestion.type === 'owner') {
+                                                // Skip scan animation for owner search (use row animation only)
+                                                skipScanAnimationRef.current = true;
+                                                setTableFlash(false);
+                                                setActiveOwner(selectedText);
+                                            }
+                                            
                                             setSearchQuery(selectedText);
                                             setDebouncedSearchQuery(selectedText);
                                             setShowSuggestions(false);
@@ -1140,8 +1294,9 @@ export default function OverallRankingsPage() {
                     )}
                 </div>
                 {isLoading && (
-                    <div className="search-hint">
-                        <span className="spinner"></span> Searching...
+                    <div className="search-hint loading-indicator">
+                        <span className="spinner"></span>
+                        <span>Loading...</span>
                     </div>
                 )}
             </div>
@@ -1149,7 +1304,21 @@ export default function OverallRankingsPage() {
             {/* Language Filter Toggle Button */}
             <button 
                 className="filter-toggle-btn"
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => {
+                    const newShowFilters = !showFilters;
+                    setShowFilters(newShowFilters);
+                    
+                    // Scroll to filter section when expanding
+                    if (newShowFilters) {
+                        setTimeout(() => {
+                            const headerElement = document.querySelector('header');
+                            if (headerElement) {
+                                const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                                window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                            }
+                        }, 100);
+                    }
+                }}
             >
                 <span>{showFilters ? '▼' : '▶'}</span> Filter by Language
                 {!showAll && selectedLanguages.length > 0 && !searchQuery.match(/^language:.+$/i) && (

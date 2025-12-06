@@ -1,11 +1,33 @@
 // src/ScoringPage.js
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 
 export default function ScoringPage() {
+    const hasRestoredRef = useRef(false);
+    
+    // Save scroll position before unload (for F5 refresh)
     useEffect(() => {
-        window.scrollTo(0, 0);
+        const handleBeforeUnload = () => {
+            sessionStorage.setItem('scoringScrollPosition', window.pageYOffset.toString());
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
+    
+    // Restore scroll position after mount (only if coming from F5 refresh)
+    useEffect(() => {
+        const savedScrollPosition = sessionStorage.getItem('scoringScrollPosition');
+        if (savedScrollPosition && !hasRestoredRef.current) {
+            hasRestoredRef.current = true;
+            setTimeout(() => {
+                window.scrollTo({ top: parseInt(savedScrollPosition, 10), behavior: 'smooth' });
+                sessionStorage.removeItem('scoringScrollPosition');
+            }, 100);
+        } else if (!savedScrollPosition) {
+            // First time entering page - scroll to top
+            window.scrollTo(0, 0);
+        }
     }, []);
     
     return (

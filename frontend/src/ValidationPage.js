@@ -1,10 +1,32 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import "./App.css";
 import { Link } from "react-router-dom";
 
 export default function ValidationPage() {
+    const hasRestoredRef = useRef(false);
+    
+    // Save scroll position before unload (for F5 refresh)
     useEffect(() => {
-        window.scrollTo(0, 0);
+        const handleBeforeUnload = () => {
+            sessionStorage.setItem('validationScrollPosition', window.pageYOffset.toString());
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
+    
+    // Restore scroll position after mount (only if coming from F5 refresh)
+    useEffect(() => {
+        const savedScrollPosition = sessionStorage.getItem('validationScrollPosition');
+        if (savedScrollPosition && !hasRestoredRef.current) {
+            hasRestoredRef.current = true;
+            setTimeout(() => {
+                window.scrollTo({ top: parseInt(savedScrollPosition, 10), behavior: 'smooth' });
+                sessionStorage.removeItem('validationScrollPosition');
+            }, 100);
+        } else if (!savedScrollPosition) {
+            // First time entering page - scroll to top
+            window.scrollTo(0, 0);
+        }
     }, []);
     
     return (
