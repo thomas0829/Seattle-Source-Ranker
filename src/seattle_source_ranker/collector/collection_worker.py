@@ -551,24 +551,48 @@ def update_watchers_batch_task(self, repos_batch):
                     repo_data = data['data'].get(safe_alias)
 
                     if repo_data:
-                        # Check if repo should be filtered
-                        if repo_data.get('isEmpty') or repo_data.get('isLocked') or repo_data.get('isArchived'):
-                            # Mark for deletion
-                            results[repo_key] = None
+                        # Check if repo should be filtered - return detailed reason
+                        reasons = []
+                        if repo_data.get('isEmpty'):
+                            reasons.append('isEmpty')
+                        if repo_data.get('isLocked'):
+                            reasons.append('isLocked')
+                        if repo_data.get('isArchived'):
+                            reasons.append('isArchived')
+                        
+                        if reasons:
+                            # Return dict with reason info instead of just None
+                            results[repo_key] = {'status': 'filtered', 'reasons': reasons}
                         elif repo_data.get('watchers'):
                             results[repo_key] = repo_data['watchers']['totalCount']
                         else:
                             # Repo exists but no watchers data
-                            results[repo_key] = None
+                            results[repo_key] = {'status': 'no_watchers'}
                     else:
                         # Repo deleted or inaccessible
-                        results[repo_key] = None
+                        results[repo_key] = {'status': 'deleted'}
 
             else:
-                # GraphQL error - mark all as needing retry
-                print(f"[ERROR] GraphQL error in batch: {data.get('errors', 'Unknown')}")
-                for repo_key in repo_keys:
-                    results[repo_key] = None
+                # GraphQL error - check if it's rate limit
+                errors = data.get('errors', [])
+                print(f"[ERROR] GraphQL error in batch: {errors}")
+                
+                # Check if it's a rate limit error
+                is_rate_limit = any(
+                    error.get('type') == 'RATE_LIMIT' or 
+                    'rate limit' in str(error.get('message', '')).lower()
+                    for error in errors
+                )
+                
+                if is_rate_limit:
+                    print(f"[RATE_LIMIT] GraphQL rate limit hit, switching token and retrying")
+                    # Switch token and retry
+                    token_manager.get_token()  # Get next token
+                    raise self.retry(countdown=2, max_retries=5)
+                else:
+                    # Other GraphQL error - retry with same token
+                    print(f"[RETRY] GraphQL error, retrying in 5s")
+                    raise self.retry(countdown=5, max_retries=3)
         elif response.status_code == 403:
             # Rate limit hit - check if we should retry
             
@@ -640,21 +664,21 @@ def update_watchers_batch_task(self, repos_batch):
                 for repo_key in repo_keys:
                     results[repo_key] = None
         else:
-            # Other HTTP error - mark all as needing retry
-            print(f"[ERROR] HTTP {response.status_code} in batch")
-            for repo_key in repo_keys:
-                results[repo_key] = None
+            # Other HTTP error - retry
+            print(f"[ERROR] HTTP {response.status_code} in batch, retrying")
+            raise self.retry(countdown=5, max_retries=3)
 
         return results
 
     except requests.exceptions.Timeout:
-        print(f"[ERROR] Timeout in batch of {len(repos_batch)} repos")
-        # Mark all as None to trigger retry or manual check
-        return {repo_key: None for repo_key in repo_keys}
+        print(f"[ERROR] Timeout in batch of {len(repos_batch)} repos, retrying")
+        raise self.retry(countdown=10, max_retries=3)
     except Exception as e:
         print(f"[ERROR] Exception in batch: {type(e).__name__}: {e}")
-        if self.request.retries < 1:
-            raise self.retry(exc=e, countdown=10)
+        if self.request.retries < 3:
+            print(f"[RETRY] Attempt {self.request.retries + 1}/3, retrying in 10s")
+            raise self.retry(exc=e, countdown=10, max_retries=3)
         else:
-            # Final failure - mark all as None
-            return {repo_key: None for repo_key in repo_keys}
+            # Final failure after all retries - raise exception to abort
+            print(f"[FATAL] All retries exhausted, aborting task")
+            raise Exception(f"Failed to verify batch after {self.request.retries + 1} attempts: {e}")
