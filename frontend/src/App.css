@@ -207,6 +207,35 @@ header h1 {
   font-style: italic;
 }
 
+.search-hint.loading-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 20px 40px;
+  border-radius: 16px;
+  border: 2px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 500;
+  font-style: normal;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-hint.loading-indicator .spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 3px;
+  border-color: rgba(56, 189, 248, 0.3);
+  border-top-color: #38bdf8;
+}
+
 /* Search Suggestions */
 .search-suggestions {
   position: absolute;

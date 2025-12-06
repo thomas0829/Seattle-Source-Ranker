@@ -1,9 +1,35 @@
 // src/HomePage.js
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./App.css";
 
 export default function HomePage() {
+    const hasRestoredRef = useRef(false);
+    
+    // Save scroll position before unload (for F5 refresh)
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            sessionStorage.setItem('homeScrollPosition', window.pageYOffset.toString());
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
+    
+    // Restore scroll position after mount (only if coming from F5 refresh)
+    useEffect(() => {
+        const savedScrollPosition = sessionStorage.getItem('homeScrollPosition');
+        if (savedScrollPosition && !hasRestoredRef.current) {
+            hasRestoredRef.current = true;
+            setTimeout(() => {
+                window.scrollTo({ top: parseInt(savedScrollPosition, 10), behavior: 'smooth' });
+                sessionStorage.removeItem('homeScrollPosition');
+            }, 100);
+        } else if (!savedScrollPosition) {
+            // First time entering page - scroll to top
+            window.scrollTo(0, 0);
+        }
+    }, []);
+    
     return (
         <div className="container home-container">
 
