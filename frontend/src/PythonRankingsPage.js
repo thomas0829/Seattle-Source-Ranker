@@ -162,36 +162,40 @@ export default function PythonRankingsPage() {
                 setProjects(pageCache[cacheKey]);
                 setLoading(false);
                 
-                // Trigger animation based on flags
-                if (forceScanAnimationRef.current) {
-                    // Force scan animation (from clear button for general search)
-                    if (tableFlashTimeoutRef.current) {
-                        clearTimeout(tableFlashTimeoutRef.current);
-                    }
-                    setTableFlash(false);
-                    // Double requestAnimationFrame to ensure DOM update
-                    requestAnimationFrame(() => {
+                // Skip animation on initial load
+                if (!isInitialLoadRef.current) {
+                    // Trigger animation based on flags
+                    if (forceScanAnimationRef.current) {
+                        // Force scan animation (from clear button for general search)
+                        if (tableFlashTimeoutRef.current) {
+                            clearTimeout(tableFlashTimeoutRef.current);
+                        }
+                        setTableFlash(false);
+                        // Double requestAnimationFrame to ensure DOM update
                         requestAnimationFrame(() => {
-                            setTableFlash(true);
-                            tableFlashTimeoutRef.current = setTimeout(() => {
-                                setTableFlash(false);
-                                tableFlashTimeoutRef.current = null;
-                            }, 2000);
+                            requestAnimationFrame(() => {
+                                setTableFlash(true);
+                                tableFlashTimeoutRef.current = setTimeout(() => {
+                                    setTableFlash(false);
+                                    tableFlashTimeoutRef.current = null;
+                                }, 2000);
+                            });
                         });
-                    });
-                } else if (skipScanAnimationRef.current) {
-                    // Use row animation (from owner clear)
-                    setUpdatingRows(true);
-                    setTimeout(() => setUpdatingRows(false), 600);
-                } else {
-                    // Normal cache hit, simple flash
-                    setTableFlash(true);
-                    setTimeout(() => setTableFlash(false), 2000);
+                    } else if (skipScanAnimationRef.current) {
+                        // Use row animation (from owner clear)
+                        setUpdatingRows(true);
+                        setTimeout(() => setUpdatingRows(false), 600);
+                    } else {
+                        // Normal cache hit, simple flash
+                        setTableFlash(true);
+                        setTimeout(() => setTableFlash(false), 2000);
+                    }
                 }
                 
                 // Reset flags
                 skipScanAnimationRef.current = false;
                 forceScanAnimationRef.current = false;
+                isInitialLoadRef.current = false;
                 return;
             }
             
@@ -239,28 +243,30 @@ export default function PythonRankingsPage() {
             // Check if filters actually changed
             const filtersChanged = previousFiltersRef.current.search !== debouncedSearchQuery;
             
-            // THEN trigger animation after data is ready
-            if ((filtersChanged && !skipScanAnimationRef.current) || forceScanAnimationRef.current) {
-                // Clear any existing timeout
-                if (tableFlashTimeoutRef.current) {
-                    clearTimeout(tableFlashTimeoutRef.current);
-                }
-                // Force restart animation
-                setTableFlash(false);
-                // Double requestAnimationFrame to ensure DOM update
-                requestAnimationFrame(() => {
+            // THEN trigger animation after data is ready (skip on initial load)
+            if (!isInitialLoadRef.current) {
+                if ((filtersChanged && !skipScanAnimationRef.current) || forceScanAnimationRef.current) {
+                    // Clear any existing timeout
+                    if (tableFlashTimeoutRef.current) {
+                        clearTimeout(tableFlashTimeoutRef.current);
+                    }
+                    // Force restart animation
+                    setTableFlash(false);
+                    // Double requestAnimationFrame to ensure DOM update
                     requestAnimationFrame(() => {
-                        setTableFlash(true);
-                        tableFlashTimeoutRef.current = setTimeout(() => {
-                            setTableFlash(false);
-                            tableFlashTimeoutRef.current = null;
-                        }, 2000);
+                        requestAnimationFrame(() => {
+                            setTableFlash(true);
+                            tableFlashTimeoutRef.current = setTimeout(() => {
+                                setTableFlash(false);
+                                tableFlashTimeoutRef.current = null;
+                            }, 2000);
+                        });
                     });
-                });
-            } else if (filtersChanged && skipScanAnimationRef.current) {
-                // Use row animation for owner searches
-                setUpdatingRows(true);
-                setTimeout(() => setUpdatingRows(false), 600);
+                } else if (filtersChanged && skipScanAnimationRef.current) {
+                    // Use row animation for owner searches
+                    setUpdatingRows(true);
+                    setTimeout(() => setUpdatingRows(false), 600);
+                }
             }
             
             // Update previous filters
@@ -269,10 +275,12 @@ export default function PythonRankingsPage() {
             // Reset the flags after checking
             skipScanAnimationRef.current = false;
             forceScanAnimationRef.current = false;
+            isInitialLoadRef.current = false;
         };
         
         loadPageData();
-    }, [metadata, pypiMap, currentPage, debouncedSearchQuery, pageCache]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [metadata, pypiMap, currentPage, debouncedSearchQuery]);
 
     // Search functionality - use owner index for owner searches, load all for other searches
     useEffect(() => {
@@ -378,25 +386,31 @@ export default function PythonRankingsPage() {
             // Always close loading state after data is loaded
             setLoading(false);
             
-            // Trigger animation after search data is loaded
-            if (skipScanAnimationRef.current) {
-                // Use row animation for owner searches
-                setUpdatingRows(true);
-                setTimeout(() => setUpdatingRows(false), 600);
-                skipScanAnimationRef.current = false;
-            } else {
-                // Use scan animation for general searches
-                if (tableFlashTimeoutRef.current) {
-                    clearTimeout(tableFlashTimeoutRef.current);
+            // Trigger animation after search data is loaded (skip on initial load)
+            if (!isInitialLoadRef.current) {
+                if (skipScanAnimationRef.current) {
+                    // Use row animation for owner searches
+                    setUpdatingRows(true);
+                    setTimeout(() => setUpdatingRows(false), 600);
+                    skipScanAnimationRef.current = false;
+                } else {
+                    // Use scan animation for general searches
+                    if (tableFlashTimeoutRef.current) {
+                        clearTimeout(tableFlashTimeoutRef.current);
+                    }
+                    setTableFlash(false);
+                    requestAnimationFrame(() => {
+                        setTableFlash(true);
+                        tableFlashTimeoutRef.current = setTimeout(() => {
+                            setTableFlash(false);
+                            tableFlashTimeoutRef.current = null;
+                        }, 2000);
+                    });
                 }
-                setTableFlash(false);
-                requestAnimationFrame(() => {
-                    setTableFlash(true);
-                    tableFlashTimeoutRef.current = setTimeout(() => {
-                        setTableFlash(false);
-                        tableFlashTimeoutRef.current = null;
-                    }, 2000);
-                });
+            } else {
+                // Reset flag on initial load without animation
+                skipScanAnimationRef.current = false;
+                isInitialLoadRef.current = false;
             }
         };
         
