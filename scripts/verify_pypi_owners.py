@@ -149,8 +149,8 @@ def print_summary(results: Dict):
     print("VERIFICATION SUMMARY")
     print("=" * 80)
     print(f"\nTotal checked: {total}")
-    print(f"✅ Verified (真實發布者):     {len(verified):4} ({len(verified)/total*100:.1f}%)")
-    print(f"❌ False positives (誤判):    {len(false_positives):4} ({len(false_positives)/total*100:.1f}%)")
+    print(f"✅ Verified (True owners):     {len(verified):4} ({len(verified)/total*100:.1f}%)")
+    print(f"❌ False positives (Mismatches): {len(false_positives):4} ({len(false_positives)/total*100:.1f}%)")
     print(f"ℹ️  No GitHub link:           {len(no_github_link):4} ({len(no_github_link)/total*100:.1f}%)")
     
     if verified:
@@ -174,14 +174,14 @@ def print_summary(results: Dict):
     
     if false_positives:
         print("\n" + "=" * 80)
-        print("❌ FALSE POSITIVES (repo名稱碰巧相同)")
-        print("=" * 80)
-        print("\n範例 (前10個):")
+        print("❌ FALSE POSITIVES (repo name coincidence)")
+        print("="*80)
+        print("\nExamples (first 10):")
         for proj in false_positives[:10]:
             seattle = f"{proj['owner']}/{proj['repo']}"
             actual = proj.get('pypi_github', 'unknown')
             package = proj['pypi_package']
-            print(f"  • {package}: {seattle} (實際: {actual})")
+            print(f"  • {package}: {seattle} (actual: {actual})")
 
 
 def save_verified_results(results: Dict, output_dir: Path):
