@@ -12,11 +12,18 @@ const PYPI_BONUS = 0.1;          // +10% multiplier for PyPI projects
 
 export default function PythonRankingsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    
+    // Initialize state from URL parameters
+    const [currentPage, setCurrentPage] = useState(() => {
+        const pageParam = searchParams.get('page');
+        return pageParam ? parseInt(pageParam, 10) : 1;
+    });
+    const [activeOwner, setActiveOwner] = useState(() => searchParams.get('search') || null);
+    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => searchParams.get('search') || '');
+    
     const [projects, setProjects] = useState([]);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [metadata, setMetadata] = useState(null);
     const [totalProjects, setTotalProjects] = useState(0);
     const [tooltipPosition, setTooltipPosition] = useState({});
@@ -25,21 +32,25 @@ export default function PythonRankingsPage() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
     const [pageInput, setPageInput] = useState(null);
-    const [activeOwner, setActiveOwner] = useState(null);
     const [updatingRows, setUpdatingRows] = useState(false);
     const [pageCache, setPageCache] = useState({}); // Cache loaded pages
     const [pypiMap, setPypiMap] = useState(null); // PyPI lookup map
     const [tableFlash, setTableFlash] = useState(false);
+    
+    const pageBeforeSearchRef = useRef(1);
     const timeoutRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const searchWrapperRef = useRef(null);
-    const skipScanAnimationRef = useRef(false);
+    const skipScanAnimationRef = useRef(searchParams.get('search') !== null);
+    const forceScanAnimationRef = useRef(false);
+    const tableFlashTimeoutRef = useRef(null);
+    const previousFiltersRef = useRef({ search: debouncedSearchQuery });
+    const isInitialLoadRef = useRef(true);
     const projectsPerPage = 50;
 
     // Use refs to track current values without causing re-renders
     const currentPageRef = useRef(currentPage);
     const debouncedSearchQueryRef = useRef(debouncedSearchQuery);
-    const pageBeforeSearchRef = useRef(1); // Remember page before owner search
     
     useEffect(() => {
         currentPageRef.current = currentPage;
@@ -83,29 +94,50 @@ export default function PythonRankingsPage() {
         
         loadMetadata();
     }, []);
+    
+    // Save scroll position before unload (for F5 refresh)
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            sessionStorage.setItem('pythonScrollPosition', window.pageYOffset.toString());
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
+    
+    // Mark initial load as complete and restore scroll position after first data load
+    useEffect(() => {
+        if (projects.length > 0 && isInitialLoadRef.current) {
+            isInitialLoadRef.current = false;
+            
+            // Restore scroll position with smooth animation after a short delay to ensure content is rendered
+            const savedScrollPosition = sessionStorage.getItem('pythonScrollPosition');
+            if (savedScrollPosition) {
+                setTimeout(() => {
+                    window.scrollTo({ top: parseInt(savedScrollPosition, 10), behavior: 'smooth' });
+                    sessionStorage.removeItem('pythonScrollPosition');
+                }, 100);
+            }
+        }
+    }, [projects]);
 
-    // Restore state from URL parameters on mount and when URL changes
+    // Sync state when URL changes (browser back/forward)
     useEffect(() => {
         const searchParam = searchParams.get('search');
         const pageParam = searchParams.get('page');
         
-        // Restore search state
-        if (searchParam !== null) {
-            if (searchParam !== debouncedSearchQueryRef.current) {
-                setSearchQuery(searchParam);
-                setDebouncedSearchQuery(searchParam);
-                setActiveOwner(searchParam);
-            }
-        } else {
-            // Clear search if no search param in URL
-            if (debouncedSearchQueryRef.current !== '') {
-                setSearchQuery('');
-                setDebouncedSearchQuery('');
-                setActiveOwner(null);
+        // Only update if values actually changed (to avoid infinite loops)
+        if (searchParam !== debouncedSearchQueryRef.current) {
+            const newSearch = searchParam || '';
+            setSearchQuery(newSearch);
+            setDebouncedSearchQuery(newSearch);
+            setActiveOwner(newSearch || null);
+            setShowSuggestions(false);
+            if (newSearch) {
+                skipScanAnimationRef.current = true;
             }
         }
         
-        // Restore page number
+        // Update page number
         if (pageParam) {
             const page = parseInt(pageParam, 10);
             if (!isNaN(page) && page > 0 && page !== currentPageRef.current) {
@@ -130,12 +162,36 @@ export default function PythonRankingsPage() {
                 setProjects(pageCache[cacheKey]);
                 setLoading(false);
                 
-                // Trigger animation if returning from owner click
-                if (!skipScanAnimationRef.current) {
+                // Trigger animation based on flags
+                if (forceScanAnimationRef.current) {
+                    // Force scan animation (from clear button for general search)
+                    if (tableFlashTimeoutRef.current) {
+                        clearTimeout(tableFlashTimeoutRef.current);
+                    }
+                    setTableFlash(false);
+                    // Double requestAnimationFrame to ensure DOM update
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            setTableFlash(true);
+                            tableFlashTimeoutRef.current = setTimeout(() => {
+                                setTableFlash(false);
+                                tableFlashTimeoutRef.current = null;
+                            }, 2000);
+                        });
+                    });
+                } else if (skipScanAnimationRef.current) {
+                    // Use row animation (from owner clear)
+                    setUpdatingRows(true);
+                    setTimeout(() => setUpdatingRows(false), 600);
+                } else {
+                    // Normal cache hit, simple flash
                     setTableFlash(true);
                     setTimeout(() => setTableFlash(false), 2000);
                 }
+                
+                // Reset flags
                 skipScanAnimationRef.current = false;
+                forceScanAnimationRef.current = false;
                 return;
             }
             
@@ -180,15 +236,39 @@ export default function PythonRankingsPage() {
             // Close loading state after data is ready
             setLoading(false);
             
+            // Check if filters actually changed
+            const filtersChanged = previousFiltersRef.current.search !== debouncedSearchQuery;
+            
             // THEN trigger animation after data is ready
-            // But skip if we're returning from owner click (use row animation instead)
-            if (!skipScanAnimationRef.current) {
-                setTableFlash(true);
-                setTimeout(() => setTableFlash(false), 2000);
+            if ((filtersChanged && !skipScanAnimationRef.current) || forceScanAnimationRef.current) {
+                // Clear any existing timeout
+                if (tableFlashTimeoutRef.current) {
+                    clearTimeout(tableFlashTimeoutRef.current);
+                }
+                // Force restart animation
+                setTableFlash(false);
+                // Double requestAnimationFrame to ensure DOM update
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setTableFlash(true);
+                        tableFlashTimeoutRef.current = setTimeout(() => {
+                            setTableFlash(false);
+                            tableFlashTimeoutRef.current = null;
+                        }, 2000);
+                    });
+                });
+            } else if (filtersChanged && skipScanAnimationRef.current) {
+                // Use row animation for owner searches
+                setUpdatingRows(true);
+                setTimeout(() => setUpdatingRows(false), 600);
             }
             
-            // Reset the flag after checking
+            // Update previous filters
+            previousFiltersRef.current = { search: debouncedSearchQuery };
+            
+            // Reset the flags after checking
             skipScanAnimationRef.current = false;
+            forceScanAnimationRef.current = false;
         };
         
         loadPageData();
@@ -201,7 +281,14 @@ export default function PythonRankingsPage() {
         }
         
         const loadSearchData = async () => {
-            setLoading(true);
+            // Don't show loading on initial page load (F5 refresh)
+            if (!isInitialLoadRef.current) {
+                // Only show loading for general searches that require scanning all pages
+                const shouldShowLoading = !skipScanAnimationRef.current && !activeOwner;
+                if (shouldShowLoading) {
+                    setLoading(true);
+                }
+            }
             
             try {
                 const query = debouncedSearchQuery.toLowerCase();
@@ -288,7 +375,29 @@ export default function PythonRankingsPage() {
                 setProjects([]);
             }
             
+            // Always close loading state after data is loaded
             setLoading(false);
+            
+            // Trigger animation after search data is loaded
+            if (skipScanAnimationRef.current) {
+                // Use row animation for owner searches
+                setUpdatingRows(true);
+                setTimeout(() => setUpdatingRows(false), 600);
+                skipScanAnimationRef.current = false;
+            } else {
+                // Use scan animation for general searches
+                if (tableFlashTimeoutRef.current) {
+                    clearTimeout(tableFlashTimeoutRef.current);
+                }
+                setTableFlash(false);
+                requestAnimationFrame(() => {
+                    setTableFlash(true);
+                    tableFlashTimeoutRef.current = setTimeout(() => {
+                        setTableFlash(false);
+                        tableFlashTimeoutRef.current = null;
+                    }, 2000);
+                });
+            }
         };
         
         loadSearchData();
@@ -392,8 +501,6 @@ export default function PythonRankingsPage() {
 
     // Handle search trigger (Enter key or button)
     const triggerSearch = () => {
-        // Set loading state to show we're updating
-        setLoading(true);
         setDebouncedSearchQuery(searchQuery);
         setCurrentPage(1);
         setShowSuggestions(false);
@@ -420,9 +527,6 @@ export default function PythonRankingsPage() {
     const handleOwnerClick = (ownerName) => {
         setShowSuggestions(false);
         setSearchSuggestions([]);
-        
-        // Set loading state to show we're updating
-        setLoading(true);
         
         // ALWAYS skip scan animation for owner clicks - use row animation only
         skipScanAnimationRef.current = true;
@@ -545,7 +649,16 @@ export default function PythonRankingsPage() {
                                 e.preventDefault();
                                 if (selectedSuggestionIndex >= 0 && searchSuggestions.length > 0) {
                                     // Select suggestion and search
-                                    const selectedText = searchSuggestions[selectedSuggestionIndex].text;
+                                    const suggestion = searchSuggestions[selectedSuggestionIndex];
+                                    const selectedText = suggestion.text;
+                                    
+                                    // If it's an owner suggestion, skip scan animation
+                                    if (suggestion.type === 'owner') {
+                                        skipScanAnimationRef.current = true;
+                                        setTableFlash(false);
+                                        setActiveOwner(selectedText);
+                                    }
+                                    
                                     setSearchQuery(selectedText);
                                     setDebouncedSearchQuery(selectedText);
                                     setShowSuggestions(false);
@@ -578,6 +691,19 @@ export default function PythonRankingsPage() {
                         <button
                             className="clear-search-btn"
                             onClick={() => {
+                                // Check if this is an owner search before clearing
+                                const isOwnerSearch = activeOwner !== null;
+                                
+                                if (isOwnerSearch) {
+                                    // For owner search, skip scan animation (use row animation in loadPageData)
+                                    skipScanAnimationRef.current = true;
+                                    forceScanAnimationRef.current = false;
+                                } else {
+                                    // For general search, force scan animation in loadPageData
+                                    skipScanAnimationRef.current = false;
+                                    forceScanAnimationRef.current = true;
+                                }
+                                
                                 setSearchQuery('');
                                 setDebouncedSearchQuery('');
                                 // Return to the page we were on before the search
@@ -590,23 +716,6 @@ export default function PythonRankingsPage() {
                                 newParams.delete('search');
                                 newParams.set('page', returnPage.toString());
                                 setSearchParams(newParams);
-                                
-                                // Trigger row update animation
-                                setTimeout(() => {
-                                    setUpdatingRows(true);
-                                    setTimeout(() => setUpdatingRows(false), 600);
-                                }, 50);
-                                
-                                // Scroll to position between header and search bar
-                                setTimeout(() => {
-                                    const headerElement = document.querySelector('header');
-                                    if (headerElement) {
-                                        const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
-                                        requestAnimationFrame(() => {
-                                            window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
-                                        });
-                                    }
-                                }, 500);
                             }}
                             title="Clear search"
                         >
@@ -624,6 +733,14 @@ export default function PythonRankingsPage() {
                                     onMouseDown={(e) => {
                                         e.preventDefault(); // Prevent input blur
                                         const selectedText = suggestion.text;
+                                        
+                                        // If it's an owner suggestion, skip scan animation
+                                        if (suggestion.type === 'owner') {
+                                            skipScanAnimationRef.current = true;
+                                            setTableFlash(false);
+                                            setActiveOwner(selectedText);
+                                        }
+                                        
                                         setSearchQuery(selectedText);
                                         setDebouncedSearchQuery(selectedText);
                                         setShowSuggestions(false);
@@ -649,14 +766,15 @@ export default function PythonRankingsPage() {
                     )}
                 </div>
                 {loading && (
-                    <div className="search-hint">
-                        <span className="spinner"></span> Loading...
+                    <div className="search-hint loading-indicator">
+                        <span className="spinner"></span>
+                        <span>Loading...</span>
                     </div>
                 )}
             </div>
 
             {/* Rankings Table */}
-            <div className="ranking-table">
+            <div className={`ranking-table ${tableFlash ? 'table-flash' : ''}`}>
                 <table>
                     <thead>
                         <tr>
@@ -666,7 +784,7 @@ export default function PythonRankingsPage() {
                             <th className="score-col">Score</th>
                         </tr>
                     </thead>
-                    <tbody className={tableFlash ? 'flash-scan' : ''}>
+                    <tbody>
                         {currentProjects.map((project, index) => {
                                     const displayRank = project.python_rank || (startIndex + index + 1);
                                     const barWidth = project.final_score > 0
