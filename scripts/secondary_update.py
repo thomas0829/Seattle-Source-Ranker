@@ -161,6 +161,9 @@ def secondary_update(input_file=None, batch_size=50):
         print(f"[PKG] Split into {total_batches:,} batches ({batch_size} repos each)")
         print("[START] Dispatching tasks to Celery workers...")
 
+        # Record start time for summary
+        start_time = time.time()
+
         # Create task group
         job = group(update_watchers_batch_task.s(batch) for batch in batches)
 
