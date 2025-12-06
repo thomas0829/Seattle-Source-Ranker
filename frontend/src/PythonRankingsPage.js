@@ -156,6 +156,9 @@ export default function PythonRankingsPage() {
     useEffect(() => {
         if (!metadata || !pypiMap || debouncedSearchQuery.trim()) return;
         
+        // Clear tooltip when changing pages
+        setHoveredProject(null);
+        
         const loadPageData = async () => {
             const cacheKey = `page_${currentPage}`;
             
@@ -334,7 +337,7 @@ export default function PythonRankingsPage() {
                     }
                 } else {
                     // For general search (project name, description), load all pages
-                    const pythonPages = metadata.languages.Python?.pages || 0;
+                    const pythonPages = metadata.languages.Python_PyPI?.pages || metadata.languages.Python?.pages || 0;
                     const allPromises = [];
                     
                     // Load all pages for search
@@ -709,6 +712,11 @@ export default function PythonRankingsPage() {
                         <button
                             className="clear-search-btn"
                             onClick={() => {
+                                // Clear any pending hover timeouts
+                                if (timeoutRef.current) {
+                                    clearTimeout(timeoutRef.current);
+                                }
+                                
                                 // Check if this is an owner search before clearing
                                 const isOwnerSearch = activeOwner !== null;
                                 
@@ -722,8 +730,11 @@ export default function PythonRankingsPage() {
                                     forceScanAnimationRef.current = true;
                                 }
                                 
+                                // Clear projects to force reload and avoid showing stale search results
+                                setProjects([]);
                                 setSearchQuery('');
                                 setDebouncedSearchQuery('');
+                                setHoveredProject(null); // Clear any open tooltip
                                 // Return to the page we were on before the search
                                 const returnPage = pageBeforeSearchRef.current;
                                 setCurrentPage(returnPage);
@@ -812,7 +823,7 @@ export default function PythonRankingsPage() {
 
                                     return (
                                         <tr 
-                                            key={project.full_name} 
+                                            key={`${project.full_name}-${displayRank}`}
                                             className={updatingRows ? 'row-updating' : ''}
                                             style={updatingRows ? { animationDelay: `${index * 0.03}s` } : {}}
                                         >

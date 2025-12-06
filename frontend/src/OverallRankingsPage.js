@@ -72,7 +72,7 @@ export default function OverallRankingsPage() {
             .then((data) => {
                 setMetadata(data);
                 const langs = Object.keys(data.languages)
-                    .filter((lang) => lang !== "Other" && lang !== "All")
+                    .filter((lang) => lang !== "Other" && lang !== "All" && lang !== "Python_PyPI")
                     .sort((a, b) => data.languages[b].total - data.languages[a].total);
                 setLanguages(langs);
                 
@@ -526,6 +526,9 @@ export default function OverallRankingsPage() {
     // Load page data based on selected languages and search
     useEffect(() => {
         if (!metadata) return;
+
+        // Clear tooltip when changing pages or filters
+        setHoveredRepo(null);
 
         const loadData = async () => {
             // Check if filters actually changed (not just page number)
@@ -1190,11 +1193,19 @@ export default function OverallRankingsPage() {
                         <button
                             className="clear-search-btn"
                             onClick={() => {
+                                // Clear any pending hover timeouts
+                                if (timeoutRef.current) {
+                                    clearTimeout(timeoutRef.current);
+                                }
+                                
                                 // Skip scan animation when clearing search (just show simple transition)
                                 skipScanAnimationRef.current = true;
                                 
+                                // Clear repos to force reload and avoid showing stale search results
+                                setRepos([]);
                                 setSearchQuery('');
                                 setDebouncedSearchQuery('');
+                                setHoveredRepo(null); // Clear any open tooltip
                                 // Return to the page we were on before the search
                                 const returnPage = pageBeforeSearchRef.current;
                                 setCurrentPage(returnPage);
@@ -1355,7 +1366,7 @@ export default function OverallRankingsPage() {
                                         {debouncedSearchQuery.trim() && Object.keys(searchMatchCounts).length > 0 ? (
                                             `(${Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0).toLocaleString()} matches)`
                                         ) : (
-                                            `(${Object.keys(metadata.languages).reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
+                                            `(${Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI').reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
                                         )}
                 </span>
                                 )}
@@ -1429,7 +1440,7 @@ export default function OverallRankingsPage() {
 
                         return (
                             <tr 
-                                key={repo.name} 
+                                key={`${repo.name}-${displayRank}`}
                                 className={updatingRows ? 'row-updating' : ''}
                                 style={updatingRows ? { animationDelay: `${index * 0.03}s` } : {}}
                             >
@@ -1533,7 +1544,7 @@ export default function OverallRankingsPage() {
                         of{" "}
                         {Math.min(
                             metadata
-                                ? Object.keys(metadata.languages).reduce(
+                                ? Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI').reduce(
                                     (sum, lang) => sum + metadata.languages[lang].total,
                                     0
                                 )
