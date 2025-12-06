@@ -46,9 +46,17 @@
     },
     "All": {
       "total": 10000,
-      "pages": 200
+      "pages": 200,
+      "max_score": 8828,
+      "min_score": 1261.6000000000001
+    },
+    "Python_PyPI": {
+      "total": 39067,
+      "pages": 782,
+      "max_score": 8895,
+      "min_score": 1617
     }
   },
   "page_size": 50,
-  "last_updated": "2025-12-05 01:42:20 PST"
+  "last_updated": "2025-12-01 02:20:56 PST"
 }
