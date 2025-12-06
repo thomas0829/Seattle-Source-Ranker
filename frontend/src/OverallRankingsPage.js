@@ -1308,16 +1308,14 @@ export default function OverallRankingsPage() {
                     const newShowFilters = !showFilters;
                     setShowFilters(newShowFilters);
                     
-                    // Scroll to filter section when expanding
-                    if (newShowFilters) {
-                        setTimeout(() => {
-                            const headerElement = document.querySelector('header');
-                            if (headerElement) {
-                                const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
-                                window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
-                            }
-                        }, 100);
-                    }
+                    // Scroll to filter button position when expanding or collapsing
+                    setTimeout(() => {
+                        const headerElement = document.querySelector('header');
+                        if (headerElement) {
+                            const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                            window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                        }
+                    }, 100);
                 }}
             >
                 <span>{showFilters ? '▼' : '▶'}</span> Filter by Language
