@@ -262,21 +262,35 @@ def main():
     import re
     SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
 
-    # Extract date from filename (e.g., seattle_projects_20251120_220648.json)
-    filename_match = re.search(r'(\d{8})_(\d{6})', data_file)
-    if filename_match:
-        date_str = filename_match.group(1)  # YYYYMMDD
-        time_str = filename_match.group(2)  # HHMMSS
-        data_datetime = datetime.strptime(date_str + time_str, "%Y%m%d%H%M%S")
-        # Filename timestamp is already in PST/PDT (local Seattle time)
-        data_datetime = data_datetime.replace(tzinfo=SEATTLE_TZ)
-        # Automatically use PST or PDT based on daylight saving time
-        tz_name = data_datetime.strftime("%Z")  # Will be "PST" or "PDT"
-        last_updated = data_datetime.strftime(f"%Y-%m-%d %H:%M:%S {tz_name}")
-    else:
-        now = datetime.now(SEATTLE_TZ)
-        tz_name = now.strftime("%Z")  # Will be "PST" or "PDT"
-        last_updated = now.strftime(f"%Y-%m-%d %H:%M:%S {tz_name}")
+    # Try to get collected_at from data first (most accurate)
+    collected_at = data.get('collected_at')
+    if collected_at:
+        try:
+            # Parse ISO format timestamp
+            data_datetime = datetime.fromisoformat(collected_at.replace('Z', '+00:00'))
+            # Convert to Seattle timezone
+            data_datetime = data_datetime.astimezone(SEATTLE_TZ)
+            tz_name = data_datetime.strftime("%Z")  # Will be "PST" or "PDT"
+            last_updated = data_datetime.strftime(f"%Y-%m-%d %H:%M:%S {tz_name}")
+        except (ValueError, AttributeError):
+            collected_at = None
+    
+    # Fallback: Extract date from filename (e.g., seattle_projects_20251120_220648.json)
+    if not collected_at:
+        filename_match = re.search(r'(\d{8})_(\d{6})', data_file)
+        if filename_match:
+            date_str = filename_match.group(1)  # YYYYMMDD
+            time_str = filename_match.group(2)  # HHMMSS
+            data_datetime = datetime.strptime(date_str + time_str, "%Y%m%d%H%M%S")
+            # Filename timestamp is already in PST/PDT (local Seattle time)
+            data_datetime = data_datetime.replace(tzinfo=SEATTLE_TZ)
+            # Automatically use PST or PDT based on daylight saving time
+            tz_name = data_datetime.strftime("%Z")  # Will be "PST" or "PDT"
+            last_updated = data_datetime.strftime(f"%Y-%m-%d %H:%M:%S {tz_name}")
+        else:
+            now = datetime.now(SEATTLE_TZ)
+            tz_name = now.strftime("%Z")  # Will be "PST" or "PDT"
+            last_updated = now.strftime(f"%Y-%m-%d %H:%M:%S {tz_name}")
 
     metadata = {
         'languages': {},
