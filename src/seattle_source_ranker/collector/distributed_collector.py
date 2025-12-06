@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from seattle_source_ranker.collector.collection_worker import fetch_users_batch_task
 from seattle_source_ranker.celery_config import celery_app
+from seattle_source_ranker.utils.progress import monitor_celery_task
 
 
 class DistributedCollector:
@@ -704,8 +705,11 @@ class DistributedCollector:
         """
         print("\n[STATS] Step 4: Monitoring progress...")
         print(f"   Total batches: {total_batches}")
-        print("   Waiting for workers...\n")
+        print()
 
+        from seattle_source_ranker.utils.progress import ProgressMonitor
+        
+        progress = ProgressMonitor(total_batches, "Collecting user batches")
         start_time = time.time()
         last_completed = 0
         shown_errors = set()
@@ -723,53 +727,49 @@ class DistributedCollector:
             # Update progress time
             if completed != last_completed:
                 last_progress_time = time.time()
+                progress.update(completed)
 
             # Timeout check - only timeout when no real progress
             if idle_time > max_idle_time:
-                print(f"\n[WARNING]  No progress for {idle_time:.0f}s (max idle: {max_idle_time}s)", flush=True)
-                print(f"   Completed so far: {completed}/{total_batches}", flush=True)
-                print(f"   Tasks may have stalled, stopping...", flush=True)
+                progress.finish()
+                print(f"\n[WARNING] No progress for {idle_time:.0f}s (max idle: {max_idle_time}s)")
+                print(f"   Completed so far: {completed}/{total_batches}")
+                print(f"   Tasks may have stalled, stopping...")
                 break
 
             if elapsed > max_total_time:
-                print(f"\n[WARNING]  Total timeout after {elapsed:.1f}s", flush=True)
-                print(f"   Completed so far: {completed}/{total_batches}", flush=True)
+                progress.finish()
+                print(f"\n[WARNING] Total timeout after {elapsed:.1f}s")
+                print(f"   Completed so far: {completed}/{total_batches}")
                 break
 
             # If all tasks completed, force exit
             if completed >= total_batches:
-                print(f"\n[OK] All {total_batches} tasks completed!", flush=True)
+                progress.update(completed, force=True)
+                progress.finish()
+                print(f"\n[OK] All {total_batches} tasks completed!")
                 break
 
-            # Check for failures
-            failed_count = 0
+            # Check for failures (show errors but don't stop progress bar)
             for task_result in result.results:
                 if task_result.failed():
-                    failed_count += 1
                     task_id = task_result.id
                     if task_id not in shown_errors:
+                        progress.finish()  # End progress bar before error message
                         try:
                             error = task_result.result
-                            print(f"   [ERROR] Task {task_id[:8]} failed: {error}", flush=True)
+                            print(f"   [ERROR] Task {task_id[:8]} failed: {error}")
                         except Exception as e:
-                            print(f"   [ERROR] Task {task_id[:8]} failed: {str(e)}", flush=True)
+                            print(f"   [ERROR] Task {task_id[:8]} failed: {str(e)}")
                         shown_errors.add(task_id)
-
-            if completed != last_completed or failed_count > 0:
-                progress = (completed / total_batches) * 100
-
-                status = f"   Progress: {completed}/{total_batches} batches ({progress:.1f}%)"
-                if failed_count > 0:
-                    status += f" | Failed: {failed_count}"
-                status += f" | Elapsed: {elapsed:.1f}s"
-
-                print(status, flush=True)
-                last_completed = completed
-
+                        # Restart progress on next iteration
+            
+            last_completed = completed
             time.sleep(2)
 
+        progress.finish()
         elapsed = time.time() - start_time
-        print(f"\n[OK] All tasks completed in {elapsed:.1f}s", flush=True)
+        print(f"\n[OK] Monitoring complete in {elapsed:.1f}s")
 
     def retry_failed_tasks(self, result: GroupResult, original_batches: List[List[str]]) -> GroupResult:
         """
@@ -809,9 +809,12 @@ class DistributedCollector:
         retry_result = retry_jobs.apply_async()
 
         print(f"   Submitted {len(retry_batches)} retry tasks")
-        print("   Monitoring retry progress...")
+        print()
 
-        # Monitor retry progress
+        # Monitor retry progress with progress bar
+        from seattle_source_ranker.utils.progress import ProgressMonitor
+        
+        progress = ProgressMonitor(len(retry_batches), "Retrying failed batches")
         start_time = time.time()
         last_completed = 0
         shown_errors = set()
@@ -819,37 +822,35 @@ class DistributedCollector:
         while True:
             completed = retry_result.completed_count()
             elapsed = time.time() - start_time
+            
+            # Update progress
+            if completed != last_completed:
+                progress.update(completed)
+                last_completed = completed
 
             if completed >= len(retry_batches):
+                progress.update(completed, force=True)
+                progress.finish()
                 print("\n[OK] All retry tasks completed!")
                 break
 
             if elapsed > 3600:  # 1 hour timeout for retries
-                print(f"\n[WARNING]  Retry timeout after {elapsed:.1f}s")
+                progress.finish()
+                print(f"\n[WARNING] Retry timeout after {elapsed:.1f}s")
                 break
 
-            # Check for failures
-            failed_count = 0
+            # Check for failures (show errors but don't stop progress)
             for task_result in retry_result.results:
                 if task_result.failed():
-                    failed_count += 1
                     task_id = task_result.id
                     if task_id not in shown_errors:
+                        progress.finish()
                         try:
                             error = task_result.result
-                            print(f"   [ERROR] Retry task {task_id[:8]} failed: {error}", flush=True)
+                            print(f"   [ERROR] Retry task {task_id[:8]} failed: {error}")
                         except Exception:
                             pass
                         shown_errors.add(task_id)
-
-            if completed != last_completed:
-                progress = (completed / len(retry_batches)) * 100
-                status = f"   Retry: {completed}/{len(retry_batches)} ({progress:.1f}%)"
-                if failed_count > 0:
-                    status += f" | Still failed: {failed_count}"
-                status += f" | Elapsed: {elapsed:.1f}s"
-                print(status, flush=True)
-                last_completed = completed
 
             time.sleep(2)
 
@@ -876,7 +877,14 @@ class DistributedCollector:
         """
         print("\n📥 Step 5: Aggregating results...")
 
-        batch_results = result.get(timeout=3600)  # 60 minutes timeout (increased for large collections)
+        # Use monitor_celery_task to get results with error handling
+        batch_results = monitor_celery_task(
+            result=result,
+            total_tasks=len(result.results),
+            desc="Collecting user data",
+            check_interval=2.0,
+            timeout=3600  # 60 minutes timeout
+        )
 
         all_projects = []
         total_users_checked = 0

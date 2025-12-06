@@ -38,6 +38,7 @@ from seattle_source_ranker.tokens import TokenManager
 import atexit
 from pathlib import Path
 from celery import group
+from seattle_source_ranker.utils.progress import monitor_celery_task
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -164,66 +165,30 @@ def secondary_update(input_file=None, batch_size=50):
         job = group(update_watchers_batch_task.s(batch) for batch in batches)
 
         # Execute tasks (non-blocking)
-        start_time = time.time()
         result = job.apply_async()
 
-        # Show waiting status initially
-        bar_length = 40
-        bar = '░' * bar_length
-        print(f"\r   [{bar}] Waiting for workers... | 0/{total_batches}", end='', flush=True)
-
-        last_completed = 0
-        last_print_time = time.time()
-        first_task_started = False
-        
-        while not result.ready():
-            # Count completed tasks
-            completed = sum(1 for r in result.results if r.ready())
-            current_time = time.time()
-
-            # Check if any task has started
-            if completed > 0 and not first_task_started:
-                first_task_started = True
-                start_time = current_time  # Reset start time when first task completes
-
-            # Print progress if completed count changed OR every 5 seconds
-            if completed > last_completed or (current_time - last_print_time) >= 5:
-                if not first_task_started:
-                    # Still waiting for first task
-                    elapsed = int(current_time - start_time)
-                    print(f"\r   [{bar}] Waiting for workers... ({elapsed}s) | 0/{total_batches}", end='', flush=True)
-                else:
-                    # Tasks are processing
-                    percent = (completed / total_batches) * 100
-                    elapsed = current_time - start_time
-                    rate = completed / elapsed if elapsed > 0 else 0
-                    remaining = total_batches - completed
-                    eta = remaining / rate if rate > 0 else 0
-
-                    # Progress bar
-                    filled = int(bar_length * completed / total_batches)
-                    bar = '█' * filled + '░' * (bar_length - filled)
-                    
-                    print(f"\r   [{bar}] {completed}/{total_batches} ({percent:.1f}%) | "
-                          f"Rate: {rate:.1f} batch/s | ETA: {eta:.0f}s", end='', flush=True)
-                
-                last_completed = completed
-                last_print_time = current_time
-
-            time.sleep(1)  # Check more frequently
-        
-        print()  # New line after progress bar
-
-        # Get results
-        print()
-        print("[STATS] Collecting results...")
-        batch_results = result.get()
+        # Monitor progress with unified progress bar
+        batch_results = monitor_celery_task(
+            result=result,
+            total_tasks=total_batches,
+            desc="Verifying projects",
+            check_interval=1.0
+        )
 
         # Aggregate results
         updated_count = 0
         unchanged_count = 0
         deleted_count = 0
         repos_to_remove = []
+        
+        # Track deletion reasons
+        deletion_reasons = {
+            'isEmpty': [],
+            'isLocked': [],
+            'isArchived': [],
+            'deleted': [],
+            'no_watchers': []
+        }
 
         # Flatten results
         all_results = {}
@@ -238,16 +203,52 @@ def secondary_update(input_file=None, batch_size=50):
             repo_key = f"{owner}/{repo_name}"
 
             if repo_key in all_results:
-                watchers_count = all_results[repo_key]
+                result_data = all_results[repo_key]
                 old_watchers = project.get('watchers', 0)
 
-                if watchers_count is None:
-                    # Repo deleted/inaccessible
-                    deleted_count += 1
-                    repos_to_remove.append(idx)
-                elif watchers_count != old_watchers:
-                    project['watchers'] = watchers_count
-                    updated_count += 1
+                # Handle different result types
+                if isinstance(result_data, dict):
+                    status = result_data.get('status')
+                    
+                    if status == 'filtered':
+                        # Repo should be removed (isEmpty/isLocked/isArchived)
+                        reasons = result_data.get('reasons', [])
+                        deleted_count += 1
+                        repos_to_remove.append(idx)
+                        
+                        # Track each reason
+                        for reason in reasons:
+                            if reason in deletion_reasons:
+                                deletion_reasons[reason].append({
+                                    'repo': repo_key,
+                                    'stars': project.get('stars', 0)
+                                })
+                    
+                    elif status == 'deleted':
+                        # Repo deleted or inaccessible
+                        deleted_count += 1
+                        repos_to_remove.append(idx)
+                        deletion_reasons['deleted'].append({
+                            'repo': repo_key,
+                            'stars': project.get('stars', 0)
+                        })
+                    
+                    elif status == 'no_watchers':
+                        # Repo exists but no watchers data (keep it)
+                        deletion_reasons['no_watchers'].append(repo_key)
+                        unchanged_count += 1
+                
+                elif result_data is None:
+                    # None means query failed (rate limit/error) - KEEP the repo, don't delete
+                    unchanged_count += 1
+                
+                elif isinstance(result_data, int):
+                    # Watchers count update
+                    if result_data != old_watchers:
+                        project['watchers'] = result_data
+                        updated_count += 1
+                    else:
+                        unchanged_count += 1
                 else:
                     unchanged_count += 1
 
@@ -256,17 +257,57 @@ def secondary_update(input_file=None, batch_size=50):
             print()
             print(f"[DELETE] Removing {len(repos_to_remove)} inaccessible repos...")
             print("   (deleted/private/blocked/empty/locked/archived)")
+            
+            # Save removed repos to a log file for verification
+            removed_log = input_file.parent / 'removed_repos_log.json'
+            removed_repos = []
+            
+            # Build reverse lookup for deletion reasons
+            repo_reason_map = {}
+            for reason_type, repos_list in deletion_reasons.items():
+                if reason_type != 'no_watchers':
+                    for repo_info in repos_list:
+                        if isinstance(repo_info, dict):
+                            repo_key = repo_info['repo']
+                            if repo_key not in repo_reason_map:
+                                repo_reason_map[repo_key] = []
+                            repo_reason_map[repo_key].append(reason_type)
+            
             for idx in sorted(set(repos_to_remove), reverse=True):
                 if idx < len(projects):
                     removed = projects.pop(idx)
                     owner = removed['owner']['login'] if isinstance(removed['owner'], dict) else removed['owner']
-                    print(f"   [REMOVED] {owner}/{removed['name']}")
+                    repo_name = removed['name']
+                    repo_key = f"{owner}/{repo_name}"
+                    
+                    # Get specific reason(s) for this repo
+                    reasons = repo_reason_map.get(repo_key, ['unknown'])
+                    reason_str = ', '.join(reasons)
+                    
+                    removed_repos.append({
+                        'name_with_owner': repo_key,
+                        'stars': removed.get('stars', 0),
+                        'url': removed.get('url', ''),
+                        'reason': reason_str
+                    })
+                    
+                    print(f"   [REMOVED] {repo_key} (⭐ {removed.get('stars', 0)}) - {reason_str}")
+            
+            # Save log
+            print(f"\n[LOG] Saving removal log to {removed_log.name}...")
+            with open(removed_log, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'total_removed': len(removed_repos),
+                    'removed_repos': removed_repos
+                }, f, ensure_ascii=False, indent=2)
+            print(f"[OK] Log saved with {len(removed_repos)} entries")
 
             # Update metadata
             data['total_projects'] = len(projects)
             data['total_stars'] = sum(p.get('stars', 0) for p in projects)
 
-        # Summary
+        # Summary with detailed deletion reasons
         print()
         print("=" * 70)
         print(" Secondary Update Summary")
@@ -278,6 +319,20 @@ def secondary_update(input_file=None, batch_size=50):
         print(f"Watchers updated:         {updated_count:,} ({updated_count/total_projects*100:.1f}%)")
         print(f"Unchanged:                {unchanged_count:,} ({unchanged_count/total_projects*100:.1f}%)")
         print(f"Deleted/Blocked:          {deleted_count:,} ({deleted_count/total_projects*100:.1f}%)")
+        print()
+        print("Deletion Breakdown:")
+        for reason, repos_list in deletion_reasons.items():
+            if repos_list and reason != 'no_watchers':
+                count = len(repos_list)
+                print(f"  • {reason:12s}: {count:,} repos ({count/deleted_count*100:.1f}% of deleted)" if deleted_count > 0 else f"  • {reason:12s}: {count:,} repos")
+                
+                # Show top 3 examples with highest stars
+                if isinstance(repos_list[0], dict):
+                    top_examples = sorted(repos_list, key=lambda x: x['stars'], reverse=True)[:3]
+                    for ex in top_examples:
+                        print(f"      - {ex['repo']} (⭐ {ex['stars']:,})")
+        
+        print()
         print(f"Time elapsed:             {elapsed/60:.1f} minutes")
         print(f"Processing rate:          {total_projects/elapsed:.1f} repos/sec")
         print("=" * 70)
