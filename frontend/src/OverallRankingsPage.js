@@ -27,6 +27,8 @@ export default function OverallRankingsPage() {
     const [repos, setRepos] = useState([]);
     const [hoveredRepo, setHoveredRepo] = useState(null);
     const [maxScore, setMaxScore] = useState(1);
+    const [minScore, setMinScore] = useState(null);
+    const [topScore, setTopScore] = useState(null);
     const [repoDetails, setRepoDetails] = useState({});
     const [languages, setLanguages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +75,17 @@ export default function OverallRankingsPage() {
                     .filter((lang) => lang !== "Other" && lang !== "All")
                     .sort((a, b) => data.languages[b].total - data.languages[a].total);
                 setLanguages(langs);
+                
+                // Get min/max scores from metadata (no need to load pages)
+                const allData = data.languages.All;
+                if (allData) {
+                    if (allData.max_score !== undefined) {
+                        setTopScore(allData.max_score);
+                    }
+                    if (allData.min_score !== undefined) {
+                        setMinScore(allData.min_score);
+                    }
+                }
             })
             .catch((err) => console.error("❌ Failed to load metadata:", err));
     }, []);
@@ -1393,7 +1406,14 @@ export default function OverallRankingsPage() {
                     {repos.map((repo, index) => {
                         // Use global rank if available, otherwise calculate from page
                         const displayRank = repo.global_rank || ((currentPage - 1) * 50 + index + 1);
-                        const barWidth = (repo.score / maxScore) * 100;
+                        // Use min-max normalization if we have topScore and minScore
+                        let barWidth;
+                        if (topScore !== null && minScore !== null && topScore !== minScore) {
+                            barWidth = ((repo.score - minScore) / (topScore - minScore)) * 100;
+                        } else {
+                            // Fallback to linear scale if scores not loaded yet
+                            barWidth = (repo.score / maxScore) * 100;
+                        }
                         // Handle score display: remove "0.", e.g., 0.88 -> 88, 1.23 -> 123
                         let displayScore;
                         if (repo.score < 1) {
@@ -1424,52 +1444,44 @@ export default function OverallRankingsPage() {
                                     </span>
                                 </td>
                                 <td className="chart-col">
-                                    <div
-                                        className="bar-container"
-                                        onMouseEnter={(e) => {
-                                            // Clear any pending close operations
-                                            if (timeoutRef.current) {
-                                                clearTimeout(timeoutRef.current);
-                                            }
-                                            
-                                            // Calculate tooltip position
-                                            const container = e.currentTarget;
-                                            const rect = container.getBoundingClientRect();
-                                            const viewportHeight = window.innerHeight;
-                                            const tooltipHeight = 200; // Approximate tooltip height
-                                            const spaceBelow = viewportHeight - rect.bottom;
-                                            
-                                            // If not enough space below, show tooltip above
-                                            const showAbove = spaceBelow < tooltipHeight + 20;
-                                            
-                                            setTooltipPosition({
-                                                [repo.name]: showAbove
-                                            });
-                                            setHoveredRepo(repo.name);
-                                            fetchRepoDetails(repo);
-                                        }}
-                                        onMouseLeave={() => {
-                                            // Delay close to allow mouse to move to tooltip
-                                            timeoutRef.current = setTimeout(() => {
-                                                setHoveredRepo(null);
-                                            }, 150);
-                                        }}
-                                    >
-                                        <a
-                                            href={repo.html_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="bar-link"
+                                    <div className="bar-container">
+                                        <div 
+                                            className="bar-wrapper-column"
+                                            onClick={() => window.open(repo.html_url, '_blank')}
+                                            style={{ cursor: 'pointer' }}
+                                            onMouseEnter={(e) => {
+                                                // Clear any pending close operations
+                                                if (timeoutRef.current) {
+                                                    clearTimeout(timeoutRef.current);
+                                                }
+                                                
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                const tooltipHeight = 200;
+                                                const viewportHeight = window.innerHeight;
+                                                const spaceBelow = viewportHeight - rect.bottom;
+                                                const showAbove = spaceBelow < tooltipHeight + 20;
+                                                
+                                                setTooltipPosition({
+                                                    [repo.name]: showAbove
+                                                });
+                                                setHoveredRepo(repo.name);
+                                                fetchRepoDetails(repo);
+                                            }}
+                                            onMouseLeave={() => {
+                                                timeoutRef.current = setTimeout(() => {
+                                                    setHoveredRepo(null);
+                                                }, 150);
+                                            }}
                                         >
                                             <div
                                                 className="bar"
                                                 style={{ width: `${barWidth}%` }}
                                             >
-                          <span className="project-name">
-                            {projectName}
-                          </span>
                                             </div>
-                                        </a>
+                                            <span className="project-name-below">
+                                                {projectName}
+                                            </span>
+                                        </div>
                                         {hoveredRepo === repo.name && (
                                             <div
                                                 className={`tooltip ${tooltipPosition[repo.name] ? 'tooltip-above' : ''}`}
