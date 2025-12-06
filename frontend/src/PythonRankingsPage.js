@@ -3,13 +3,6 @@ import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { Link, useSearchParams } from "react-router-dom";
 
-// Scoring configuration - Multiplicative bonus approach
-const GITHUB_WEIGHT = 1.0;       // 100% of base score
-const PYPI_BONUS = 0.1;          // +10% multiplier for PyPI projects
-
-// Current formula: finalScore = baseScore * (1.0 + 0.1) = baseScore * 1.1
-// Future: Can change to weighted average by using separate weights for GitHub/PyPI components
-
 export default function PythonRankingsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     
@@ -36,6 +29,8 @@ export default function PythonRankingsPage() {
     const [pageCache, setPageCache] = useState({}); // Cache loaded pages
     const [pypiMap, setPypiMap] = useState(null); // PyPI lookup map
     const [tableFlash, setTableFlash] = useState(false);
+    const [topScore, setTopScore] = useState(null); // Global max score for bar width calculation
+    const [minScore, setMinScore] = useState(null); // Global min score for bar width calculation
     
     const pageBeforeSearchRef = useRef(1);
     const timeoutRef = useRef(null);
@@ -72,6 +67,17 @@ export default function PythonRankingsPage() {
                 // Set total projects count from metadata
                 const pythonTotal = metadataData.languages.Python?.total || 0;
                 setTotalProjects(pythonTotal);
+                
+                // Get min/max scores from metadata (no need to load pages)
+                const pythonPypiData = metadataData.languages.Python_PyPI;
+                if (pythonPypiData) {
+                    if (pythonPypiData.max_score !== undefined) {
+                        setTopScore(pythonPypiData.max_score);
+                    }
+                    if (pythonPypiData.min_score !== undefined) {
+                        setMinScore(pythonPypiData.min_score);
+                    }
+                }
                 
                 // Load PyPI data and build lookup map
                 try {
@@ -206,16 +212,15 @@ export default function PythonRankingsPage() {
             
             try {
                 // Load single page
-                const response = await fetch(`${process.env.PUBLIC_URL}/pages/python/page_${currentPage}.json`);
+                const response = await fetch(`${process.env.PUBLIC_URL}/pages/python_pypi/page_${currentPage}.json`);
                 const pageData = await response.json();
                 
-                // Process with PyPI bonus
+                // Process with PyPI bonus (already calculated in backend)
                 const scoredProjects = pageData.map((proj, idx) => {
                     const [owner, projectName] = proj.name.split('/');
-                    const key = proj.name.toLowerCase();
-                    const onPypi = pypiMap.has(key);
+                    // Use final_score from backend (already includes PyPI bonus)
+                    const finalScore = proj.final_score || proj.score || 0;
                     const baseScore = proj.score || 0;
-                    const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
                     
                     return {
                         ...proj,
@@ -224,9 +229,9 @@ export default function PythonRankingsPage() {
                         full_name: proj.name,
                         url: proj.html_url,
                         original_score: baseScore,
-                        final_score: Math.round(finalScore),
-                        on_pypi: onPypi,
-                        python_rank: (currentPage - 1) * 50 + idx + 1  // Python-specific rank
+                        final_score: finalScore,
+                        on_pypi: proj.on_pypi || false,
+                        python_rank: proj.python_rank || ((currentPage - 1) * 50 + idx + 1)
                     };
                 });
                 
@@ -335,7 +340,7 @@ export default function PythonRankingsPage() {
                     // Load all pages for search
                     for (let i = 1; i <= pythonPages; i++) {
                         allPromises.push(
-                            fetch(`${process.env.PUBLIC_URL}/pages/python/page_${i}.json`)
+                            fetch(`${process.env.PUBLIC_URL}/pages/python_pypi/page_${i}.json`)
                                 .then(res => res.json())
                                 .catch(() => [])
                         );
@@ -347,14 +352,13 @@ export default function PythonRankingsPage() {
                         allProjects.push(...pageData);
                     });
                     
-                    // Process and filter
+                    // Process and filter (use backend-calculated scores)
                     const filtered = allProjects
                         .map(proj => {
                             const [owner, projectName] = proj.name.split('/');
-                            const key = proj.name.toLowerCase();
-                            const onPypi = pypiMap.has(key);
+                            // Use final_score from backend (already includes PyPI bonus)
+                            const finalScore = proj.final_score || proj.score || 0;
                             const baseScore = proj.score || 0;
-                            const finalScore = baseScore * (GITHUB_WEIGHT + (onPypi ? PYPI_BONUS : 0));
                             
                             return {
                                 ...proj,
@@ -363,8 +367,8 @@ export default function PythonRankingsPage() {
                                 full_name: proj.name,
                                 url: proj.html_url,
                                 original_score: baseScore,
-                                final_score: Math.round(finalScore),
-                                on_pypi: onPypi
+                                final_score: finalScore,
+                                on_pypi: proj.on_pypi || false
                                 // Keep python_rank from page data - don't reassign
                             };
                         })
@@ -801,9 +805,10 @@ export default function PythonRankingsPage() {
                     <tbody>
                         {currentProjects.map((project, index) => {
                                     const displayRank = project.python_rank || (startIndex + index + 1);
-                                    const barWidth = project.final_score > 0
-                                        ? Math.max(15, Math.min(100, (project.final_score / currentProjects[0]?.final_score) * 100))
-                                        : 50
+                                    // Min-max normalization: last rank ≈ 0%, first rank = 100%
+                                    const barWidth = project.final_score > 0 && topScore && minScore && topScore !== minScore
+                                        ? ((project.final_score - minScore) / (topScore - minScore)) * 100
+                                        : (project.final_score > 0 && topScore ? (project.final_score / topScore) * 100 : 50)
 
                                     return (
                                         <tr 
@@ -822,52 +827,45 @@ export default function PythonRankingsPage() {
                                                 </span>
                                             </td>
                                             <td className="chart-col">
-                                                <div 
-                                                    className="bar-container"
-                                                    onMouseEnter={(e) => {
-                                                        if (timeoutRef.current) {
-                                                            clearTimeout(timeoutRef.current);
-                                                        }
-                                                        
-                                                        // Calculate tooltip position
-                                                        const container = e.currentTarget;
-                                                        const rect = container.getBoundingClientRect();
-                                                        const viewportHeight = window.innerHeight;
-                                                        const tooltipHeight = 200;
-                                                        const spaceBelow = viewportHeight - rect.bottom;
-                                                        
-                                                        // If not enough space below, show tooltip above
-                                                        const showAbove = spaceBelow < tooltipHeight + 20;
-                                                        
-                                                        setTooltipPosition({
-                                                            [project.full_name]: showAbove
-                                                        });
-                                                        setHoveredProject(project.full_name);
-                                                    }}
-                                                    onMouseLeave={() => {
-                                                        timeoutRef.current = setTimeout(() => {
-                                                            setHoveredProject(null);
-                                                        }, 150);
-                                                    }}
-                                                >
-                                                    <a
-                                                        href={project.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="bar-link"
+                                                <div className="bar-container">
+                                                    <div 
+                                                        className="bar-wrapper-column"
+                                                        onClick={() => window.open(project.url, '_blank')}
+                                                        style={{ cursor: 'pointer' }}
+                                                        onMouseEnter={(e) => {
+                                                            if (timeoutRef.current) {
+                                                                clearTimeout(timeoutRef.current);
+                                                            }
+                                                            
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            const viewportHeight = window.innerHeight;
+                                                            const tooltipHeight = 200;
+                                                            const spaceBelow = viewportHeight - rect.bottom;
+                                                            const showAbove = spaceBelow < tooltipHeight + 20;
+                                                            
+                                                            setTooltipPosition({
+                                                                [project.full_name]: showAbove
+                                                            });
+                                                            setHoveredProject(project.full_name);
+                                                        }}
+                                                        onMouseLeave={() => {
+                                                            timeoutRef.current = setTimeout(() => {
+                                                                setHoveredProject(null);
+                                                            }, 150);
+                                                        }}
                                                     >
                                                         <div
                                                             className="bar"
                                                             style={{ width: `${barWidth}%` }}
                                                         >
-                                                            <span className="project-name">
-                                                                {project.name}
-                                                                {project.on_pypi && (
-                                                                    <span className="pypi-badge">PyPI</span>
-                                                                )}
-                                                            </span>
                                                         </div>
-                                                    </a>
+                                                        <span className="project-name-below">
+                                                            {project.name}
+                                                            {project.on_pypi && (
+                                                                <span className="pypi-badge">PyPI</span>
+                                                            )}
+                                                        </span>
+                                                    </div>
                                                     {hoveredProject === project.full_name && (
                                                         <div 
                                                             className={`tooltip ${tooltipPosition[project.full_name] ? 'tooltip-above' : ''}`}
