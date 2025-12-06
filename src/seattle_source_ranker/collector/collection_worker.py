@@ -532,153 +532,204 @@ def update_watchers_batch_task(self, repos_batch):
     }
 
     results = {}
+    attempt = 0
+    
+    # Use while loop for retries - keep trying until success
+    while True:
+        attempt += 1
+        
+        try:
+            # Execute GraphQL query
+            response = requests.post(
+                'https://api.github.com/graphql',
+                headers=headers_graphql,
+                json={'query': query},
+                timeout=30
+            )
 
-    try:
-        # Execute GraphQL query
-        response = requests.post(
-            'https://api.github.com/graphql',
-            headers=headers_graphql,
-            json={'query': query},
-            timeout=30
-        )
+            if response.status_code == 200:
+                data = response.json()
 
-        if response.status_code == 200:
-            data = response.json()
+                if 'data' in data:
+                    # Success! Process results and return
+                    for idx, repo_key in enumerate(repo_keys):
+                        safe_alias = f"repo_{idx}"
+                        repo_data = data['data'].get(safe_alias)
 
-            if 'data' in data:
-                for idx, repo_key in enumerate(repo_keys):
-                    safe_alias = f"repo_{idx}"
-                    repo_data = data['data'].get(safe_alias)
+                        if repo_data:
+                            # Check if repo should be filtered - return detailed reason
+                            reasons = []
+                            if repo_data.get('isEmpty'):
+                                reasons.append('isEmpty')
+                            if repo_data.get('isLocked'):
+                                reasons.append('isLocked')
+                            if repo_data.get('isArchived'):
+                                reasons.append('isArchived')
+                            
+                            if reasons:
+                                # Return dict with reason info instead of just None
+                                results[repo_key] = {'status': 'filtered', 'reasons': reasons}
+                            elif repo_data.get('watchers'):
+                                results[repo_key] = repo_data['watchers']['totalCount']
+                            else:
+                                # Repo exists but no watchers data
+                                results[repo_key] = {'status': 'no_watchers'}
+                        else:
+                            # Repo deleted or inaccessible
+                            results[repo_key] = {'status': 'deleted'}
+                    
+                    return results  # Success - exit the while loop
 
-                    if repo_data:
-                        # Check if repo should be filtered - return detailed reason
-                        reasons = []
-                        if repo_data.get('isEmpty'):
-                            reasons.append('isEmpty')
-                        if repo_data.get('isLocked'):
-                            reasons.append('isLocked')
-                        if repo_data.get('isArchived'):
-                            reasons.append('isArchived')
+                else:
+                    # GraphQL error - check if it's rate limit
+                    errors = data.get('errors', [])
+                    print(f"[ERROR] GraphQL error in batch (attempt {attempt}): {errors}")
+                    
+                    # Check if it's a rate limit error
+                    is_rate_limit = any(
+                        error.get('type') == 'RATE_LIMIT' or 
+                        'rate limit' in str(error.get('message', '')).lower()
+                        for error in errors
+                    )
+                    
+                    if is_rate_limit:
+                        print(f"[RATE_LIMIT] GraphQL rate limit hit, switching token")
+                        # Switch token and retry
+                        token = token_manager.get_token()
+                        headers_graphql['Authorization'] = f'bearer {token}'
+                        time.sleep(2)
+                        continue  # Retry the request
+                    else:
+                        # Other GraphQL error - wait and retry
+                        print(f"[RETRY] GraphQL error, waiting 5s")
+                        time.sleep(5)
+                        continue  # Retry the request
+            elif response.status_code == 403:
+                # Rate limit hit - check if we should retry
+                
+                # Check rate limit from headers
+                remaining = response.headers.get('X-RateLimit-Remaining', '0')
+                reset_time = response.headers.get('X-RateLimit-Reset', '0')
+                resource = response.headers.get('X-RateLimit-Resource', 'unknown')
+                
+                # Check for secondary rate limit
+                retry_after = response.headers.get('Retry-After')
+                
+                try:
+                    remaining = int(remaining)
+                    reset_time = int(reset_time)
+                    current_time = int(time.time())
+                    wait_time = max(0, reset_time - current_time)
+                    
+                    print(f"[RATE_LIMIT] HTTP 403 (attempt {attempt}) - Resource: {resource}, Remaining: {remaining}, Reset: {wait_time}s")
+                    
+                    if retry_after:
+                        # Secondary rate limit
+                        retry_seconds = int(retry_after)
+                        print(f"[SECONDARY_LIMIT] Retry-After: {retry_seconds}s, switching token")
                         
-                        if reasons:
-                            # Return dict with reason info instead of just None
-                            results[repo_key] = {'status': 'filtered', 'reasons': reasons}
-                        elif repo_data.get('watchers'):
-                            results[repo_key] = repo_data['watchers']['totalCount']
+                        # Try different token immediately
+                        new_token = token_manager.get_token()
+                        if new_token != token:
+                            print(f"[TOKEN] Switched token, retrying")
+                            token = new_token
+                            headers_graphql['Authorization'] = f'bearer {token}'
+                            continue  # Retry the request
                         else:
-                            # Repo exists but no watchers data
-                            results[repo_key] = {'status': 'no_watchers'}
+                            # Wait briefly then retry
+                            print(f"[WAIT] Waiting {min(retry_seconds, 10)}s before retry")
+                            time.sleep(min(retry_seconds, 10))
+                            continue  # Retry the request
+                    
+                    elif remaining == 0 and wait_time > 0:
+                        # Primary rate limit exhausted - check all tokens for earliest recovery
+                        print(f"[TOKEN] Primary rate limit hit, checking all tokens")
+                        
+                        # Check all tokens to find earliest recovery time
+                        min_reset_time = float('inf')
+                        token_status = []
+                        
+                        for i in range(token_manager.get_token_count()):
+                            try:
+                                check_token = token_manager._tokens[i]
+                                check_resp = requests.get(
+                                    'https://api.github.com/rate_limit',
+                                    headers={'Authorization': f'bearer {check_token}'},
+                                    timeout=5
+                                )
+                                if check_resp.status_code == 200:
+                                    rate_data = check_resp.json()
+                                    graphql_limit = rate_data.get('resources', {}).get('graphql', {})
+                                    token_remaining = graphql_limit.get('remaining', 0)
+                                    token_reset = graphql_limit.get('reset', 0)
+                                    token_status.append(f"T{i+1}:{token_remaining}")
+                                    
+                                    # Find token with earliest reset that has quota
+                                    if token_remaining > 100:
+                                        # This token is available now!
+                                        min_reset_time = 0
+                                        break
+                                    elif token_reset < min_reset_time:
+                                        min_reset_time = token_reset
+                            except Exception as e:
+                                print(f"[WARNING] Failed to check token {i+1}: {e}")
+                        
+                        if min_reset_time == 0:
+                            # Found available token, switch and retry
+                            print(f"[OK] Found available token, continuing... ({', '.join(token_status)})")
+                            token = token_manager.get_token(force_check=True)
+                            headers_graphql['Authorization'] = f'bearer {token}'
+                            continue  # Retry the request
+                        elif min_reset_time != float('inf'):
+                            # Wait for earliest token recovery + 60s buffer
+                            wait_time = max(min_reset_time - time.time(), 0) + 60
+                            print(f"[WAIT] All tokens exhausted, waiting {wait_time:.0f}s for earliest recovery...")
+                            print(f"   Status: {', '.join(token_status)}")
+                            time.sleep(wait_time)
+                            # After waiting, force refresh token
+                            token = token_manager.get_token(force_check=True)
+                            headers_graphql['Authorization'] = f'bearer {token}'
+                            continue  # Retry the request
+                        else:
+                            # Fallback: use current token's reset time
+                            print(f"[WAIT] All tokens exhausted, waiting {wait_time}s + 60s buffer")
+                            time.sleep(wait_time + 60)
+                            token = token_manager.get_token(force_check=True)
+                            headers_graphql['Authorization'] = f'bearer {token}'
+                            continue  # Retry the request
                     else:
-                        # Repo deleted or inaccessible
-                        results[repo_key] = {'status': 'deleted'}
-
+                        # Other 403 error (permissions, abuse detection, etc.)
+                        print(f"[403_ERROR] Resource: {resource}, Remaining: {remaining}, not rate limit")
+                        
+                        # Try switching token once
+                        new_token = token_manager.get_token()
+                        if new_token != token:
+                            print(f"[TOKEN] Trying different token")
+                            token = new_token
+                            headers_graphql['Authorization'] = f'bearer {token}'
+                            time.sleep(2)
+                            continue  # Retry the request
+                        else:
+                            # All tokens have same issue - wait and retry
+                            print(f"[WAIT] All tokens have same issue, waiting 10s")
+                            time.sleep(10)
+                            continue  # Keep retrying
+                except ValueError as e:
+                    print(f"[ERROR] Could not parse headers: {e}, waiting 10s")
+                    time.sleep(10)
+                    continue  # Retry the request
             else:
-                # GraphQL error - check if it's rate limit
-                errors = data.get('errors', [])
-                print(f"[ERROR] GraphQL error in batch: {errors}")
-                
-                # Check if it's a rate limit error
-                is_rate_limit = any(
-                    error.get('type') == 'RATE_LIMIT' or 
-                    'rate limit' in str(error.get('message', '')).lower()
-                    for error in errors
-                )
-                
-                if is_rate_limit:
-                    print(f"[RATE_LIMIT] GraphQL rate limit hit, switching token and retrying")
-                    # Switch token and retry
-                    token_manager.get_token()  # Get next token
-                    raise self.retry(countdown=2, max_retries=5)
-                else:
-                    # Other GraphQL error - retry with same token
-                    print(f"[RETRY] GraphQL error, retrying in 5s")
-                    raise self.retry(countdown=5, max_retries=3)
-        elif response.status_code == 403:
-            # Rate limit hit - check if we should retry
-            
-            # Check rate limit from headers
-            remaining = response.headers.get('X-RateLimit-Remaining', '0')
-            reset_time = response.headers.get('X-RateLimit-Reset', '0')
-            resource = response.headers.get('X-RateLimit-Resource', 'unknown')
-            
-            # Check for secondary rate limit
-            retry_after = response.headers.get('Retry-After')
-            
-            try:
-                remaining = int(remaining)
-                reset_time = int(reset_time)
-                current_time = int(time.time())
-                wait_time = max(0, reset_time - current_time)
-                
-                print(f"[RATE_LIMIT] HTTP 403 - Resource: {resource}, Remaining: {remaining}, Reset: {wait_time}s")
-                
-                if retry_after:
-                    # Secondary rate limit
-                    retry_seconds = int(retry_after)
-                    print(f"[SECONDARY_LIMIT] Retry-After: {retry_seconds}s, switching token")
-                    
-                    # Try different token immediately
-                    new_token = token_manager.get_token()
-                    if new_token != token:
-                        print(f"[TOKEN] Switched token, retrying immediately")
-                        raise self.retry(countdown=1, max_retries=3)
-                    else:
-                        # Wait briefly then retry
-                        print(f"[WAIT] Waiting {min(retry_seconds, 10)}s before retry")
-                        time.sleep(min(retry_seconds, 10))
-                        raise self.retry(countdown=1, max_retries=3)
-                
-                elif remaining == 0 and wait_time > 0:
-                    # Primary rate limit exhausted
-                    print(f"[TOKEN] Primary rate limit hit, switching token")
-                    new_token = token_manager.get_token()
-                    
-                    if new_token != token:
-                        print(f"[TOKEN] Switched to different token, retrying")
-                        raise self.retry(countdown=1, max_retries=3)
-                    else:
-                        # All tokens exhausted
-                        if wait_time < 300:  # Only wait if less than 5 minutes
-                            print(f"[WAIT] All tokens exhausted, waiting {wait_time}s")
-                            time.sleep(wait_time + 1)
-                            raise self.retry(countdown=1, max_retries=3)
-                        else:
-                            print(f"[SKIP] Wait time too long ({wait_time}s), marking batch as None")
-                            for repo_key in repo_keys:
-                                results[repo_key] = None
-                else:
-                    # Other 403 error (permissions, abuse detection, etc.)
-                    print(f"[403_ERROR] Resource: {resource}, Remaining: {remaining}, not rate limit")
-                    
-                    # Try switching token once in case it's a token-specific issue
-                    new_token = token_manager.get_token()
-                    if new_token != token and self.request.retries < 1:
-                        print(f"[TOKEN] Trying different token")
-                        raise self.retry(countdown=2, max_retries=3)
-                    else:
-                        print(f"[SKIP] Marking batch as None")
-                        for repo_key in repo_keys:
-                            results[repo_key] = None
-            except ValueError as e:
-                print(f"[ERROR] Could not parse headers: {e}")
-                for repo_key in repo_keys:
-                    results[repo_key] = None
-        else:
-            # Other HTTP error - retry
-            print(f"[ERROR] HTTP {response.status_code} in batch, retrying")
-            raise self.retry(countdown=5, max_retries=3)
+                # Other HTTP error - wait and retry
+                print(f"[ERROR] HTTP {response.status_code} in batch (attempt {attempt}), waiting 5s")
+                time.sleep(5)
+                continue  # Retry the request
 
-        return results
-
-    except requests.exceptions.Timeout:
-        print(f"[ERROR] Timeout in batch of {len(repos_batch)} repos, retrying")
-        raise self.retry(countdown=10, max_retries=3)
-    except Exception as e:
-        print(f"[ERROR] Exception in batch: {type(e).__name__}: {e}")
-        if self.request.retries < 3:
-            print(f"[RETRY] Attempt {self.request.retries + 1}/3, retrying in 10s")
-            raise self.retry(exc=e, countdown=10, max_retries=3)
-        else:
-            # Final failure after all retries - raise exception to abort
-            print(f"[FATAL] All retries exhausted, aborting task")
-            raise Exception(f"Failed to verify batch after {self.request.retries + 1} attempts: {e}")
+        except requests.exceptions.Timeout:
+            print(f"[ERROR] Timeout in batch of {len(repos_batch)} repos (attempt {attempt}), waiting 10s")
+            time.sleep(10)
+            continue  # Retry the request
+        except Exception as e:
+            print(f"[ERROR] Exception in batch (attempt {attempt}): {type(e).__name__}: {e}")
+            print(f"[RETRY] Waiting 10s before retry")
+            time.sleep(10)
+            continue  # Retry the request
