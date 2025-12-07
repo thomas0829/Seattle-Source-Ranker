@@ -1,16 +1,16 @@
 {
-  "generated_at": "2025-12-04T22:15:21.986829",
+  "generated_at": "2025-12-06T23:19:14.990133",
   "statistics": {
-    "total_seattle_projects": 1025,
-    "matched_count": 25,
-    "unmatched_count": 1000,
-    "match_rate": "2.44%"
+    "total_seattle_projects": 1071,
+    "matched_count": 28,
+    "unmatched_count": 1043,
+    "match_rate": "2.61%"
   },
   "matched_projects": [
     {
       "owner": "uiri",
       "repo": "toml",
-      "stars": 1134,
+      "stars": 1136,
       "description": "Python lib for TOML",
       "url": "https://github.com/uiri/toml",
       "pypi_rank": 241,
@@ -40,12 +40,22 @@
     {
       "owner": "toumorokoshi",
       "repo": "deepmerge",
-      "stars": 201,
+      "stars": 202,
       "description": "A deep merging tool for Python core data structures",
       "url": "https://github.com/toumorokoshi/deepmerge",
       "pypi_rank": 1403,
       "pypi_downloads": 6049366,
       "pypi_package": "deepmerge"
+    },
+    {
+      "owner": "ekzhu",
+      "repo": "datasketch",
+      "stars": 2829,
+      "description": "MinHash, LSH, LSH Forest, Weighted MinHash, HyperLogLog, HyperLogLog++, LSH Ensemble and HNSW",
+      "url": "https://github.com/ekzhu/datasketch",
+      "pypi_rank": 1526,
+      "pypi_downloads": 5100237,
+      "pypi_package": "datasketch"
     },
     {
       "owner": "auth0",
@@ -60,7 +70,7 @@
     {
       "owner": "spyoungtech",
       "repo": "grequests",
-      "stars": 4578,
+      "stars": 4580,
       "description": "Requests + Gevent = <3",
       "url": "https://github.com/spyoungtech/grequests",
       "pypi_rank": 4888,
@@ -70,12 +80,22 @@
     {
       "owner": "awslabs",
       "repo": "gluonts",
-      "stars": 5073,
+      "stars": 5080,
       "description": "Probabilistic time series modeling in Python",
       "url": "https://github.com/awslabs/gluonts",
       "pypi_rank": 4890,
       "pypi_downloads": 537989,
       "pypi_package": "gluonts"
+    },
+    {
+      "owner": "EntilZha",
+      "repo": "PyFunctional",
+      "stars": 2483,
+      "description": "Python library for creating data pipelines with chain functional programming",
+      "url": "https://github.com/EntilZha/PyFunctional",
+      "pypi_rank": 5342,
+      "pypi_downloads": 442934,
+      "pypi_package": "pyfunctional"
     },
     {
       "owner": "Parallels",
@@ -86,6 +106,16 @@
       "pypi_rank": 6054,
       "pypi_downloads": 328702,
       "pypi_package": "rq-dashboard"
+    },
+    {
+      "owner": "kmcgrady",
+      "repo": "streamlit-autorefresh",
+      "stars": 220,
+      "description": "An autorefresh component for Streamlit apps",
+      "url": "https://github.com/kmcgrady/streamlit-autorefresh",
+      "pypi_rank": 6418,
+      "pypi_downloads": 299984,
+      "pypi_package": "streamlit-autorefresh"
     },
     {
       "owner": "bgreenlee",
@@ -120,7 +150,7 @@
     {
       "owner": "timesler",
       "repo": "facenet-pytorch",
-      "stars": 5071,
+      "stars": 5078,
       "description": "Pretrained Pytorch face detection (MTCNN) and facial recognition (InceptionResnet) models",
       "url": "https://github.com/timesler/facenet-pytorch",
       "pypi_rank": 8420,
@@ -130,7 +160,7 @@
     {
       "owner": "ryanmcgrath",
       "repo": "twython",
-      "stars": 1870,
+      "stars": 1869,
       "description": "Actively maintained, pure Python wrapper for the Twitter API. Supports both normal and streaming Twitter APIs.",
       "url": "https://github.com/ryanmcgrath/twython",
       "pypi_rank": 8684,
@@ -150,7 +180,7 @@
     {
       "owner": "allenai",
       "repo": "beaker-gantry",
-      "stars": 27,
+      "stars": 28,
       "description": "Gantry is a CLI that streamlines running experiments in Beaker",
       "url": "https://github.com/allenai/beaker-gantry",
       "pypi_rank": 9552,
@@ -230,7 +260,7 @@
     {
       "owner": "allenai",
       "repo": "scispacy",
-      "stars": 1901,
+      "stars": 1903,
       "description": "A full spaCy pipeline and models for scientific/biomedical documents.",
       "url": "https://github.com/allenai/scispacy",
       "pypi_rank": 14399,
@@ -261,8 +291,8 @@
   "categories": {
     "mega": 0,
     "major": 2,
-    "popular": 3,
-    "notable": 10,
+    "popular": 4,
+    "notable": 12,
     "moderate": 10,
     "emerging": 0
   }
