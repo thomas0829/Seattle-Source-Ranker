@@ -1,15 +1,15 @@
 {
   "languages": {
     "Other": {
-      "total": 122239,
+      "total": 122249,
       "pages": 2445
     },
     "JavaScript": {
-      "total": 96395,
+      "total": 96397,
       "pages": 1928
     },
     "Python": {
-      "total": 53883,
+      "total": 53886,
       "pages": 1078
     },
     "HTML": {
@@ -21,7 +21,7 @@
       "pages": 548
     },
     "TypeScript": {
-      "total": 17488,
+      "total": 17491,
       "pages": 350
     },
     "Jupyter Notebook": {
@@ -45,18 +45,18 @@
       "pages": 249
     },
     "All": {
-      "total": 432439,
+      "total": 432457,
       "pages": 200,
       "max_score": 8737,
       "min_score": 1261.6000000000001
     },
     "Python_PyPI": {
-      "total": 53883,
+      "total": 53886,
       "pages": 1078,
       "max_score": 8952,
       "min_score": 1617
     }
   },
   "page_size": 50,
-  "last_updated": "2025-12-06 19:21:27 PST"
+  "last_updated": "2025-12-06 23:00:51 PST"
 }
