@@ -1366,7 +1366,7 @@ export default function OverallRankingsPage() {
                                         {debouncedSearchQuery.trim() && Object.keys(searchMatchCounts).length > 0 ? (
                                             `(${Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0).toLocaleString()} matches)`
                                         ) : (
-                                            `(${Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI').reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
+                                            `(${Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI' && l !== 'All').reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
                                         )}
                 </span>
                                 )}
@@ -1544,7 +1544,7 @@ export default function OverallRankingsPage() {
                         of{" "}
                         {Math.min(
                             metadata
-                                ? Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI').reduce(
+                                ? Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI' && l !== 'All').reduce(
                                     (sum, lang) => sum + metadata.languages[lang].total,
                                     0
                                 )
