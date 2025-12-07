@@ -204,11 +204,19 @@ jobs:
         
         echo "[OK] Collection verification passed: $LATEST_PROJECTS"
     
-    - name: Update Top PyPI packages ranking
+    - name: Update seattle_users.json from timestamped file
       run: |
-        echo "[PYPI] Updating Top PyPI packages ranking..."
-        python3 scripts/update_top_pypi_packages.py
-        echo "[OK] Top PyPI packages ranking checked"
+        echo "[COPY] Updating seattle_users.json..."
+        
+        # Copy latest seattle_users_*.json to seattle_users.json
+        LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
+        if [ -n "$LATEST_USERS" ]; then
+          cp "$LATEST_USERS" data/seattle_users.json
+          echo "[OK] Updated seattle_users.json from $LATEST_USERS"
+        else
+          echo "[WARN] No timestamped user file found (likely due to skip_graphql=true)"
+          echo "[INFO] seattle_users.json will not be updated this run"
+        fi
     
     - name: Generate PyPI projects list
       run: |
@@ -217,17 +225,29 @@ jobs:
         python3 scripts/generate_pypi_projects.py "$LATEST_PROJECTS"
         echo "[OK] PyPI projects list generated"
     
-    - name: Verify PyPI package owners (daily)
+    - name: Update Top PyPI packages ranking (monthly check)
       run: |
-        echo "[VERIFY] Verifying PyPI package owners..."
-        python3 scripts/verify_pypi_owners.py
-        echo "[OK] PyPI ownership verification completed"
+        echo "[PYPI] Checking for Top PyPI packages updates..."
+        
+        # Check if update is needed
+        python3 scripts/update_top_pypi_packages.py
+        
+        # Check if top_pypi_packages.json was modified
+        if git diff --quiet data/top_pypi_packages.json; then
+          echo "TOP_PYPI_UPDATED=false" >> $GITHUB_ENV
+          echo "[OK] Top PyPI already up to date"
+        else
+          echo "TOP_PYPI_UPDATED=true" >> $GITHUB_ENV
+          echo "[OK] Top PyPI updated to new version"
+        fi
     
-    - name: Extract Top PyPI matches
+    - name: Extract Top PyPI matches (only if Top PyPI updated)
+      if: env.TOP_PYPI_UPDATED == 'true'
       run: |
-        echo "[MATCH] Extracting Seattle projects in Top PyPI..."
+        echo "[MATCH] Top PyPI was updated, extracting matches..."
         python3 scripts/extract_top_pypi_matches.py
-        echo "[OK] Top PyPI matches extracted"
+        python3 scripts/verify_pypi_owners.py
+        echo "[OK] Top PyPI matches extracted and verified"
     
     - name: Validate and enrich data (secondary update)
       run: |
@@ -251,19 +271,6 @@ jobs:
         echo "[DATA] Generating frontend data with topics..."
         python3 scripts/generate_frontend_data.py
         echo "[OK] Frontend data generated with topics support"
-    
-    - name: Update standard data files
-      run: |
-        echo "[COPY] Updating standard data files from timestamped versions..."
-        
-        # Copy latest seattle_users_*.json to seattle_users.json
-        LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
-        if [ -n "$LATEST_USERS" ]; then
-          cp "$LATEST_USERS" data/seattle_users.json
-          echo "[OK] Updated seattle_users.json from $LATEST_USERS"
-        else
-          echo "[SKIP] No timestamped user file found"
-        fi
     
     - name: Clean temporary timestamped files
       run: |
