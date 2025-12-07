@@ -1,10 +1,9 @@
 {
-  "generated_at": "2025-12-06T23:19:14.990133",
+  "generated_at": "2025-12-07T03:24:32.776482",
   "statistics": {
-    "total_seattle_projects": 1071,
-    "matched_count": 28,
-    "unmatched_count": 1043,
-    "match_rate": "2.61%"
+    "total_verified": 26,
+    "false_positives": 0,
+    "no_github_link": 2
   },
   "matched_projects": [
     {
@@ -15,7 +14,9 @@
       "url": "https://github.com/uiri/toml",
       "pypi_rank": 241,
       "pypi_downloads": 80017330,
-      "pypi_package": "toml"
+      "pypi_package": "toml",
+      "verification_status": "verified",
+      "pypi_github": "uiri/toml"
     },
     {
       "owner": "clarketm",
@@ -25,7 +26,9 @@
       "url": "https://github.com/clarketm/mergedeep",
       "pypi_rank": 640,
       "pypi_downloads": 23360196,
-      "pypi_package": "mergedeep"
+      "pypi_package": "mergedeep",
+      "verification_status": "verified",
+      "pypi_github": "clarketm/mergedeep"
     },
     {
       "owner": "SecurityInnovation",
@@ -35,17 +38,9 @@
       "url": "https://github.com/SecurityInnovation/PGPy",
       "pypi_rank": 1380,
       "pypi_downloads": 6237195,
-      "pypi_package": "pgpy"
-    },
-    {
-      "owner": "toumorokoshi",
-      "repo": "deepmerge",
-      "stars": 202,
-      "description": "A deep merging tool for Python core data structures",
-      "url": "https://github.com/toumorokoshi/deepmerge",
-      "pypi_rank": 1403,
-      "pypi_downloads": 6049366,
-      "pypi_package": "deepmerge"
+      "pypi_package": "pgpy",
+      "verification_status": "verified",
+      "pypi_github": "securityinnovation/pgpy"
     },
     {
       "owner": "ekzhu",
@@ -55,7 +50,9 @@
       "url": "https://github.com/ekzhu/datasketch",
       "pypi_rank": 1526,
       "pypi_downloads": 5100237,
-      "pypi_package": "datasketch"
+      "pypi_package": "datasketch",
+      "verification_status": "verified",
+      "pypi_github": "ekzhu/datasketch"
     },
     {
       "owner": "auth0",
@@ -65,7 +62,9 @@
       "url": "https://github.com/auth0/auth0-python",
       "pypi_rank": 2030,
       "pypi_downloads": 2900996,
-      "pypi_package": "auth0-python"
+      "pypi_package": "auth0-python",
+      "verification_status": "verified",
+      "pypi_github": "auth0/auth0-python"
     },
     {
       "owner": "spyoungtech",
@@ -75,17 +74,21 @@
       "url": "https://github.com/spyoungtech/grequests",
       "pypi_rank": 4888,
       "pypi_downloads": 538158,
-      "pypi_package": "grequests"
+      "pypi_package": "grequests",
+      "verification_status": "verified",
+      "pypi_github": "spyoungtech/grequests"
     },
     {
       "owner": "awslabs",
       "repo": "gluonts",
-      "stars": 5080,
+      "stars": 5081,
       "description": "Probabilistic time series modeling in Python",
       "url": "https://github.com/awslabs/gluonts",
       "pypi_rank": 4890,
       "pypi_downloads": 537989,
-      "pypi_package": "gluonts"
+      "pypi_package": "gluonts",
+      "verification_status": "verified",
+      "pypi_github": "awslabs/gluonts"
     },
     {
       "owner": "EntilZha",
@@ -95,7 +98,9 @@
       "url": "https://github.com/EntilZha/PyFunctional",
       "pypi_rank": 5342,
       "pypi_downloads": 442934,
-      "pypi_package": "pyfunctional"
+      "pypi_package": "pyfunctional",
+      "verification_status": "verified",
+      "pypi_github": "entilzha/pyfunctional"
     },
     {
       "owner": "Parallels",
@@ -105,7 +110,9 @@
       "url": "https://github.com/Parallels/rq-dashboard",
       "pypi_rank": 6054,
       "pypi_downloads": 328702,
-      "pypi_package": "rq-dashboard"
+      "pypi_package": "rq-dashboard",
+      "verification_status": "verified",
+      "pypi_github": "parallels/rq-dashboard"
     },
     {
       "owner": "kmcgrady",
@@ -115,7 +122,9 @@
       "url": "https://github.com/kmcgrady/streamlit-autorefresh",
       "pypi_rank": 6418,
       "pypi_downloads": 299984,
-      "pypi_package": "streamlit-autorefresh"
+      "pypi_package": "streamlit-autorefresh",
+      "verification_status": "verified",
+      "pypi_github": "kmcgrady/streamlit-autorefresh"
     },
     {
       "owner": "bgreenlee",
@@ -125,7 +134,9 @@
       "url": "https://github.com/bgreenlee/pygtail",
       "pypi_rank": 7977,
       "pypi_downloads": 180800,
-      "pypi_package": "pygtail"
+      "pypi_package": "pygtail",
+      "verification_status": "verified",
+      "pypi_github": "bgreenlee/pygtail"
     },
     {
       "owner": "Parallels",
@@ -135,7 +146,9 @@
       "url": "https://github.com/Parallels/artifactory",
       "pypi_rank": 8059,
       "pypi_downloads": 176811,
-      "pypi_package": "artifactory"
+      "pypi_package": "artifactory",
+      "verification_status": "verified",
+      "pypi_github": "parallels/artifactory"
     },
     {
       "owner": "eugeniy",
@@ -145,7 +158,9 @@
       "url": "https://github.com/eugeniy/pytest-tornado",
       "pypi_rank": 8241,
       "pypi_downloads": 169407,
-      "pypi_package": "pytest-tornado"
+      "pypi_package": "pytest-tornado",
+      "verification_status": "verified",
+      "pypi_github": "eugeniy/pytest-tornado"
     },
     {
       "owner": "timesler",
@@ -155,7 +170,9 @@
       "url": "https://github.com/timesler/facenet-pytorch",
       "pypi_rank": 8420,
       "pypi_downloads": 161874,
-      "pypi_package": "facenet-pytorch"
+      "pypi_package": "facenet-pytorch",
+      "verification_status": "verified",
+      "pypi_github": "timesler/facenet-pytorch"
     },
     {
       "owner": "ryanmcgrath",
@@ -165,7 +182,9 @@
       "url": "https://github.com/ryanmcgrath/twython",
       "pypi_rank": 8684,
       "pypi_downloads": 149825,
-      "pypi_package": "twython"
+      "pypi_package": "twython",
+      "verification_status": "verified",
+      "pypi_github": "ryanmcgrath/twython"
     },
     {
       "owner": "armon",
@@ -175,17 +194,9 @@
       "url": "https://github.com/armon/pypred",
       "pypi_rank": 8685,
       "pypi_downloads": 149789,
-      "pypi_package": "pypred"
-    },
-    {
-      "owner": "allenai",
-      "repo": "beaker-gantry",
-      "stars": 28,
-      "description": "Gantry is a CLI that streamlines running experiments in Beaker",
-      "url": "https://github.com/allenai/beaker-gantry",
-      "pypi_rank": 9552,
-      "pypi_downloads": 119275,
-      "pypi_package": "beaker-gantry"
+      "pypi_package": "pypred",
+      "verification_status": "verified",
+      "pypi_github": "armon/pypred"
     },
     {
       "owner": "amykyta3",
@@ -195,7 +206,9 @@
       "url": "https://github.com/amykyta3/git-me-the-url",
       "pypi_rank": 11034,
       "pypi_downloads": 93083,
-      "pypi_package": "git-me-the-url"
+      "pypi_package": "git-me-the-url",
+      "verification_status": "verified",
+      "pypi_github": "amykyta3/git-me-the-url"
     },
     {
       "owner": "JASchilz",
@@ -205,7 +218,9 @@
       "url": "https://github.com/JASchilz/surrogate",
       "pypi_rank": 11785,
       "pypi_downloads": 79402,
-      "pypi_package": "surrogate"
+      "pypi_package": "surrogate",
+      "verification_status": "verified",
+      "pypi_github": "jaschilz/surrogate"
     },
     {
       "owner": "spyoungtech",
@@ -215,7 +230,9 @@
       "url": "https://github.com/spyoungtech/json-five",
       "pypi_rank": 12781,
       "pypi_downloads": 66327,
-      "pypi_package": "json-five"
+      "pypi_package": "json-five",
+      "verification_status": "verified",
+      "pypi_github": "spyoungtech/json-five"
     },
     {
       "owner": "xuhdev",
@@ -225,7 +242,9 @@
       "url": "https://github.com/xuhdev/flake8-executable",
       "pypi_rank": 12788,
       "pypi_downloads": 66219,
-      "pypi_package": "flake8-executable"
+      "pypi_package": "flake8-executable",
+      "verification_status": "verified",
+      "pypi_github": "xuhdev/flake8-executable"
     },
     {
       "owner": "gordonwatts",
@@ -235,7 +254,9 @@
       "url": "https://github.com/gordonwatts/make-it-sync",
       "pypi_rank": 13195,
       "pypi_downloads": 61947,
-      "pypi_package": "make-it-sync"
+      "pypi_package": "make-it-sync",
+      "verification_status": "verified",
+      "pypi_github": "gordonwatts/make-it-sync"
     },
     {
       "owner": "allenai",
@@ -245,7 +266,9 @@
       "url": "https://github.com/allenai/prior",
       "pypi_rank": 13713,
       "pypi_downloads": 57011,
-      "pypi_package": "prior"
+      "pypi_package": "prior",
+      "verification_status": "verified",
+      "pypi_github": "allenai/prior"
     },
     {
       "owner": "allenai",
@@ -255,7 +278,9 @@
       "url": "https://github.com/allenai/bettermap",
       "pypi_rank": 13877,
       "pypi_downloads": 55717,
-      "pypi_package": "bettermap"
+      "pypi_package": "bettermap",
+      "verification_status": "verified",
+      "pypi_github": "allenai/bettermap"
     },
     {
       "owner": "allenai",
@@ -265,7 +290,9 @@
       "url": "https://github.com/allenai/scispacy",
       "pypi_rank": 14399,
       "pypi_downloads": 51066,
-      "pypi_package": "scispacy"
+      "pypi_package": "scispacy",
+      "verification_status": "verified",
+      "pypi_github": "allenai/scispacy"
     },
     {
       "owner": "Teradata",
@@ -275,7 +302,9 @@
       "url": "https://github.com/Teradata/dbt-teradata",
       "pypi_rank": 14468,
       "pypi_downloads": 50537,
-      "pypi_package": "dbt-teradata"
+      "pypi_package": "dbt-teradata",
+      "verification_status": "verified",
+      "pypi_github": "teradata/dbt-teradata"
     },
     {
       "owner": "basnijholt",
@@ -285,15 +314,9 @@
       "url": "https://github.com/basnijholt/slurm-usage",
       "pypi_rank": 14803,
       "pypi_downloads": 48129,
-      "pypi_package": "slurm-usage"
+      "pypi_package": "slurm-usage",
+      "verification_status": "verified",
+      "pypi_github": "basnijholt/slurm-usage"
     }
-  ],
-  "categories": {
-    "mega": 0,
-    "major": 2,
-    "popular": 4,
-    "notable": 12,
-    "moderate": 10,
-    "emerging": 0
-  }
+  ]
 }
