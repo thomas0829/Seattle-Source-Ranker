@@ -36,14 +36,14 @@ def get_local_last_update(data_dir: Path) -> str:
 
 def download_remote_data(url: str) -> dict:
     """Download top PyPI packages data from remote URL."""
-    print(f"📥 Downloading from: {url}")
+    print(f"[DOWNLOAD] Downloading from: {url}")
     
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
             data = json.loads(response.read())
         return data
     except Exception as e:
-        print(f"❌ Failed to download: {e}")
+        print(f"[ERROR] Failed to download: {e}")
         return None
 
 
@@ -54,7 +54,7 @@ def save_data(data: dict, data_dir: Path):
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     
-    print(f"✅ Saved to: {output_file}")
+    print(f"[SAVE] Saved to: {output_file}")
 
 
 def main():
@@ -70,33 +70,33 @@ def main():
     # Get local version timestamp
     local_update = get_local_last_update(data_dir)
     if local_update:
-        print(f"📂 Local version: {local_update}")
+        print(f"[LOCAL] Local version: {local_update}")
     else:
-        print("📂 Local version: Not found")
+        print("[LOCAL] Local version: Not found")
     
     # Download remote version
     remote_data = download_remote_data(GITHUB_RAW_URL)
     if not remote_data:
-        print("❌ Update failed - could not download remote data")
+        print("[ERROR] Update failed - could not download remote data")
         sys.exit(1)
     
     remote_update = remote_data.get('last_update')
-    print(f"🌐 Remote version: {remote_update}")
+    print(f"[REMOTE] Remote version: {remote_update}")
     
     # Check if update is needed
     if local_update and local_update == remote_update:
-        print("✅ Already up to date - no update needed")
+        print("[OK] Already up to date - no update needed")
         sys.exit(0)
     
     # Update local file
-    print(f"\n🔄 Updating from {local_update or 'None'} → {remote_update}")
+    print(f"\n[UPDATE] Updating from {local_update or 'None'} -> {remote_update}")
     save_data(remote_data, data_dir)
     
     # Show statistics
     total_packages = remote_data.get('total_rows', 0)
-    print(f"\n📊 Total packages: {total_packages:,}")
-    print(f"📅 Last update: {remote_update}")
-    print("\n✅ Update completed successfully!")
+    print(f"\n[INFO] Total packages: {total_packages:,}")
+    print(f"[INFO] Last update: {remote_update}")
+    print("\n[OK] Update completed successfully!")
 
 
 if __name__ == "__main__":

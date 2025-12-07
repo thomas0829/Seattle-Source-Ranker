@@ -218,6 +218,12 @@ jobs:
           echo "[INFO] seattle_users.json will not be updated this run"
         fi
     
+    - name: Update PyPI Official package index (daily)
+      run: |
+        echo "[PYPI] Updating PyPI official package index..."
+        python3 scripts/update_pypi_official_index.py
+        echo "[OK] PyPI official index updated"
+    
     - name: Generate PyPI projects list
       run: |
         echo "[PKG] Checking Python projects on PyPI..."
