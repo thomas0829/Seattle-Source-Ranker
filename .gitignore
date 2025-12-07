@@ -217,6 +217,9 @@ logs/
 # Collection success markers
 .collection_success
 
+# Prevent data files from being created in wrong locations
+src/seattle_source_ranker/data/
+
 # Generated frontend data (auto-generated during deployment)
 # Only needed in gh-pages branch, not in main
 frontend/public/pages/
