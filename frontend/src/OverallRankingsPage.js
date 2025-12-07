@@ -1425,13 +1425,8 @@ export default function OverallRankingsPage() {
                             // Fallback to linear scale if scores not loaded yet
                             barWidth = (repo.score / maxScore) * 100;
                         }
-                        // Handle score display: remove "0.", e.g., 0.88 -> 88, 1.23 -> 123
-                        let displayScore;
-                        if (repo.score < 1) {
-                            displayScore = (repo.score * 100).toFixed(0);
-                        } else {
-                            displayScore = (repo.score * 100).toFixed(0);
-                        }
+                        // Display score directly (backend now returns 0-1000000 range)
+                        const displayScore = repo.score.toLocaleString();
 
                         // Extract project name (remove owner/ prefix)
                         const projectName = repo.name.includes("/")

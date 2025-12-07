@@ -82,7 +82,7 @@ export default function ScoringPage() {
                     2. Overview of Score Factors
                 </h2>
                 <p>
-                    Each project receives an SSR score between roughly <strong>0–10,000</strong>,
+                    Each project receives an SSR score between roughly <strong>0–1,000,000</strong>,
                     built from six components:
                 </p>
 
@@ -163,11 +163,11 @@ export default function ScoringPage() {
     age_factor()      * 0.10 +
     activity_factor() * 0.10 +
     health_factor()   * 0.10
-) * 10000`}</pre>
+) * 1000000`}</pre>
 
                 <p style={{ marginTop: "10px" }}>
-                    The final multiplication by <code>10000</code> is purely for readability, so
-                    typical projects land in the range <strong>hundreds to several thousands</strong>.
+                    The final multiplication by <code>1000000</code> expands the score range to avoid collisions, so
+                    typical projects land in the range <strong>hundreds of thousands to nearly a million</strong>.
                 </p>
 
                 {/* 5. Factor definitions */}
@@ -238,12 +238,13 @@ export default function ScoringPage() {
 
                 {/* 6.5 Python PyPI Bonus */}
                 <h2 style={{ color: "#7dd3fc", marginTop: "30px" }}>
-                    6.5 Python Projects: PyPI Integration Bonus
+                    6.5 Python Projects: PyPI Integration Tiered Bonus
                 </h2>
                 <p>
-                    For <strong>Python projects specifically</strong>, Seattle Source Ranker applies an
-                    additional scoring enhancement to recognize packages that are published and distributed
-                    through the Python Package Index (PyPI).
+                    For <strong>Python projects specifically</strong>, Seattle Source Ranker applies a
+                    tiered scoring enhancement to recognize packages that are published and distributed
+                    through the Python Package Index (PyPI), with additional recognition for packages
+                    in the global Top 15,000 most-downloaded packages.
                 </p>
                 
                 <h3 style={{ color: "#bae6fd", marginTop: "10px" }}>Why PyPI Matters</h3>
@@ -269,9 +270,10 @@ export default function ScoringPage() {
                     </li>
                 </ul>
 
-                <h3 style={{ color: "#bae6fd", marginTop: "18px" }}>The PyPI Multiplier</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "18px" }}>The Tiered PyPI Multiplier</h3>
                 <p>
-                    Python projects that are published on PyPI receive a <strong>10% score bonus</strong>:
+                    Seattle Source Ranker uses a <strong>two-tier bonus system</strong> to reward PyPI publication
+                    and global impact:
                 </p>
 
                 <pre
@@ -283,35 +285,46 @@ export default function ScoringPage() {
                         color: "#9ecbff",
                         overflowX: "auto"
                     }}
-                >{`Python Project Final Score = Base SSR Score × 1.1  (if on PyPI)
-                               = Base SSR Score × 1.0  (if not on PyPI)`}</pre>
+                >{`Base Score Range: 0 to 1,000,000 points
+
+Tier 1 - Any PyPI Package:           Base Score × 1.05
+Tier 2 - Top 15k Global PyPI:        Base Score × 1.05 × 1.10 = × 1.155
+
+Examples:
+  Not on PyPI:       756,000 points → 756,000 final
+  Regular PyPI:      756,000 points → 793,800 final (+5%)
+  Top 15k PyPI:      756,000 points → 873,180 final (+15.5%)`}</pre>
 
                 <p style={{ marginTop: "10px" }}>
-                    This bonus is applied <em>after</em> the base SSR score calculation, ensuring that:
+                    This tiered system recognizes different levels of achievement:
                 </p>
                 <ul style={{ marginLeft: "20px" }}>
+                    <li><strong>Tier 1 (5% bonus)</strong> – Rewards the ~1,071 Seattle Python projects (2.7%) published to PyPI</li>
+                    <li><strong>Tier 2 (additional 10% bonus)</strong> – Honors the ~28 Seattle projects (0.07%) in the global Top 15,000 most-downloaded packages</li>
                     <li>Projects must still have strong fundamentals (stars, activity, health) to rank highly</li>
-                    <li>PyPI publication acts as a tiebreaker and quality signal, not a dominant factor</li>
-                    <li>The ranking remains fair to both published packages and development-focused repositories</li>
+                    <li>PyPI bonuses act as quality signals and tiebreakers, not dominant factors</li>
                 </ul>
 
-                <h3 style={{ color: "#bae6fd", marginTop: "18px" }}>PyPI Badge Indicator</h3>
+                <h3 style={{ color: "#bae6fd", marginTop: "18px" }}>PyPI Badge Indicators</h3>
                 <p>
                     On the <Link to="/python" style={{ color: "#38bdf8", textDecoration: "none" }}>Python Projects page</Link>,
-                    packages published to PyPI are marked with an animated{" "}
-                    <span style={{
-                        marginLeft: "8px",
-                        padding: "2px 6px",
-                        fontSize: "9px",
-                        fontWeight: "700",
-                        borderRadius: "3px",
-                        background: "linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444, #ec4899)",
-                        backgroundSize: "200% 100%",
-                        letterSpacing: "0.5px",
-                        textTransform: "uppercase",
-                        display: "inline-block"
-                    }}>PyPI</span>{" "}
-                    badge, making it easy to identify packages that are production-ready and pip-installable.
+                    packages are marked with distinctive badges:
+                </p>
+                <ul style={{ marginLeft: "20px" }}>
+                    <li>
+                        <strong>Regular PyPI packages</strong> show a rainbow-animated{" "}
+                        <span className="pypi-badge">PyPI</span>{" "}
+                        badge
+                    </li>
+                    <li>
+                        <strong>Top 15k Global PyPI packages</strong> show a luxury gold-to-purple gradient{" "}
+                        <span className="top-pypi-badge">Top 15k PyPI</span>{" "}
+                        badge
+                    </li>
+                </ul>
+                <p style={{ marginTop: "10px" }}>
+                    These badges make it easy to identify packages that are production-ready, pip-installable,
+                    and in the case of Top 15k packages, globally impactful with millions of downloads.
                 </p>
 
                 {/* 7. Why this is fairer than raw stars */}

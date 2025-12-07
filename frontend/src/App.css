@@ -842,6 +842,39 @@ tbody td {
   vertical-align: middle;
 }
 
+.top-pypi-badge {
+  margin-left: 8px;
+  padding: 3px 8px;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 15%, #ff6b6b 30%, #ee5a6f 45%, #c44569 60%, #8b5cf6 75%, #667eea 90%, #ffd700 100%);
+  background-size: 300% 300%;
+  animation: luxuryGradient 4s ease-in-out infinite;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+@keyframes luxuryGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Tooltip */
 .tooltip {
   display: none;
