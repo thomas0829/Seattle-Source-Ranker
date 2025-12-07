@@ -372,7 +372,7 @@ def main():
     
     # Add to metadata
     metadata['languages']['All'] = {
-        'total': len(all_projects_sorted),
+        'total': len(all_projects),  # Total number of all projects, not just top 10k displayed
         'pages': total_all_pages,
         'max_score': all_max_score,
         'min_score': all_min_score
