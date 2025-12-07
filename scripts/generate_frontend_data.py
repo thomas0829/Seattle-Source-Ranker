@@ -134,8 +134,8 @@ def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watch
     normalized_score = (stars_score + forks_score + watchers_score +
                        age_score + activity_score + health_score)
 
-    # Scale to 0-10000 for better readability
-    final_score = int(normalized_score * 10000)
+    # Scale to 0-1000000 to avoid score collisions
+    final_score = normalized_score * 1000000
 
     return final_score
 
@@ -240,6 +240,10 @@ def main():
         formatted = format_project(project, final_score, original_lang)
         by_language[category].append(formatted)
         all_projects.append(formatted)
+
+    # Round all scores to integers before sorting (since base is now 0-1000000)
+    for proj in all_projects:
+        proj['score'] = int(round(proj['score']))
 
     # Sort ALL projects globally by score and assign global rank
     all_projects.sort(key=lambda x: x['score'], reverse=True)
@@ -399,26 +403,55 @@ def main():
                     pypi_projects.add(full_name)
         print(f"  [OK] Loaded {len(pypi_projects):,} PyPI projects")
     
-    # Get Python projects and recalculate scores with PyPI bonus
+    # Load Top PyPI data
+    top_pypi_file = 'data/seattle_top_pypi_matches.json'
+    top_pypi_projects = set()
+    if os.path.exists(top_pypi_file):
+        with open(top_pypi_file, 'r', encoding='utf-8') as f:
+            top_pypi_data = json.load(f)
+            # Try different possible keys: matched_projects, projects, or matches
+            matches_list = top_pypi_data.get('matched_projects', 
+                          top_pypi_data.get('projects', 
+                          top_pypi_data.get('matches', [])))
+            for proj in matches_list:
+                owner = proj.get('owner', '')
+                # Try both 'name' and 'repo' keys
+                name = proj.get('name', proj.get('repo', ''))
+                if owner and name:
+                    full_name = f"{owner}/{name}".lower()
+                    top_pypi_projects.add(full_name)
+        print(f"  [OK] Loaded {len(top_pypi_projects):,} Top PyPI projects")
+    
+    # Get Python projects and recalculate scores with tiered PyPI bonus
     # Note: Make a DEEP COPY to avoid modifying the original by_language['Python']
     # which is used by Overall Rankings (pages/python/)
     if 'Python' in by_language:
         import copy
         python_pypi_projects = copy.deepcopy(by_language['Python'])
-        GITHUB_WEIGHT = 1.0
-        PYPI_BONUS = 0.1
+        PYPI_TIER1_MULTIPLIER = 1.05  # Any PyPI package
+        PYPI_TIER2_MULTIPLIER = 1.10  # Top 15k PyPI package
         
-        # Add PyPI bonus to scores
+        # Add tiered PyPI bonus to scores
         for proj in python_pypi_projects:
             project_key = proj['name'].lower()
-            on_pypi = project_key in pypi_projects
+            on_top_pypi = project_key in top_pypi_projects
+            # If it's top PyPI, it must be on PyPI
+            on_pypi = project_key in pypi_projects or on_top_pypi
             base_score = proj['score']
-            final_score = base_score * (GITHUB_WEIGHT + (PYPI_BONUS if on_pypi else 0))
-            proj['final_score'] = int(final_score)
+            
+            # Apply tiered multipliers
+            final_score = base_score
+            if on_pypi:
+                final_score *= PYPI_TIER1_MULTIPLIER
+            if on_top_pypi:
+                final_score *= PYPI_TIER2_MULTIPLIER
+            
+            proj['score'] = int(round(final_score))
             proj['on_pypi'] = on_pypi
+            proj['top_pypi'] = on_top_pypi
         
-        # Re-sort by final score
-        python_pypi_projects.sort(key=lambda x: x['final_score'], reverse=True)
+        # Re-sort by score (no separate final_score)
+        python_pypi_projects.sort(key=lambda x: x['score'], reverse=True)
         
         # Add python_rank to each project for consistent ranking
         for rank, proj in enumerate(python_pypi_projects, start=1):
@@ -438,10 +471,10 @@ def main():
             end_idx = min(start_idx + PAGE_SIZE, total_python_pypi)
             page_data = python_pypi_projects[start_idx:end_idx]
             
-            # Keep final_score and on_pypi for frontend display (remove python_rank as it's recalculated)
+            # Keep score (with PyPI bonus) and on_pypi for frontend display
             clean_data = []
             for proj in page_data:
-                # Keep all fields including final_score and on_pypi
+                # Keep all fields including score with PyPI bonus, on_pypi, and top_pypi
                 clean_data.append(proj)
             
             page_file = os.path.join(python_pypi_dir, f'page_{page_num + 1}.json')
@@ -455,7 +488,7 @@ def main():
         print(f"  [OK] Python+PyPI: {total_python_pypi:,} projects → {total_python_pypi_pages} pages (with PyPI bonus, for Python Rankings page)")
         
         # Calculate min and max scores for Python+PyPI
-        python_scores = [p['final_score'] for p in python_pypi_projects]
+        python_scores = [p['score'] for p in python_pypi_projects]
         python_max_score = max(python_scores) if python_scores else 0
         python_min_score = min(python_scores) if python_scores else 0
         
@@ -472,7 +505,7 @@ def main():
         python_owner_index = defaultdict(list)
         
         for proj in python_pypi_projects:
-            # Use final_score already calculated above (includes PyPI bonus)
+            # Use score already calculated above (includes PyPI bonus)
             python_owner_index[proj['owner']].append({
                 'name': proj['name'],
                 'owner': proj['owner'],
@@ -484,15 +517,15 @@ def main():
                 'language': 'Python',
                 'description': proj.get('description', ''),
                 'topics': proj.get('topics', []),
-                'score': proj['score'],
-                'final_score': proj['final_score'],  # Already calculated above
+                'score': proj['score'],  # Already includes PyPI bonus
                 'on_pypi': proj['on_pypi'],  # Already set above
+                'top_pypi': proj.get('top_pypi', False),
                 'python_rank': proj['python_rank']
             })
         
-        # Sort each owner's projects by final score
+        # Sort each owner's projects by score
         for owner in python_owner_index:
-            python_owner_index[owner].sort(key=lambda x: x['final_score'], reverse=True)
+            python_owner_index[owner].sort(key=lambda x: x['score'], reverse=True)
         
         # Split index by first character
         python_owner_groups = defaultdict(dict)

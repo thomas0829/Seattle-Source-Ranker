@@ -18,7 +18,8 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 - **432,457 projects** tracked across Seattle's developer community
 - **2,828,020 total stars** accumulated by Seattle projects
 - **28,256 users** collected in latest run
-- **1,071 Python projects** published on PyPI (1.99% of Python projects)
+- **1,071 Python projects** published on PyPI (2.74% of Python projects)
+- **28 Python projects** in global Top 15,000 PyPI packages (0.07% of Python projects)
 - Last updated: 2025-12-06 23:00:51 PST
 
 ---
@@ -64,7 +65,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
   - **Overall Rankings** - Top 10,000 projects across all languages
   - **Python Rankings** - Dedicated page with PyPI integration and bonus scoring
 - **Interactive UI** - React-based with real-time search, suggestions, and smooth pagination
-- **PyPI Integration** - Python projects receive 10% score bonus for PyPI publication
+- **Tiered PyPI Bonuses** - Python projects receive 5% bonus (any PyPI) + 10% bonus (Top 15k global)
 - **Smart Search** - Debounced search with owner and topic suggestions
 - **Glass Morphism Design** - Modern, professional aesthetic with smooth animations
 - **Comprehensive Documentation** - Dedicated pages for scoring methodology and data validation
@@ -72,7 +73,7 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 ### Technical Excellence
 - **Dual Data Sources** - Integrates GitHub API (user search via GraphQL, repository data via REST) and PyPI API (package verification)
 - **Rate Limit Optimization** - 6 GitHub tokens with intelligent rotation
-- **PyPI Detection** - Offline matching with 702k+ packages, 100% precision
+- **PyPI Detection** - Offline matching with 707k+ packages, 100% precision, tiered scoring for Top 15k
 - **Comprehensive Testing** - 225 tests covering all core functionality
   - Test Coverage: **56%** of library code (100% for scoring module, 97% for PyPI detection, 94% for token management)
   - Core modules at 94-100% coverage ensuring reliability
@@ -252,25 +253,37 @@ Score = (
     age_factor() × 0.10 +
     activity_factor() × 0.10 +
     health_factor() × 0.10
-) × 10000
+) × 1000000
 ```
 
-### Python Projects: PyPI Bonus (10%)
+### Python Projects: Tiered PyPI Bonuses
 
-Python projects published on PyPI receive an additional scoring enhancement:
+Python projects published on PyPI receive tiered scoring enhancements:
 
 ```
-Python Final Score = Base SSR Score × 1.1  (if on PyPI)
-                   = Base SSR Score × 1.0  (if not on PyPI)
+Base Score Range: 0-1,000,000 points
+
+Tier 1 - Any PyPI Package:           Base Score × 1.05
+Tier 2 - Top 15k Global PyPI:        Base Score × 1.05 × 1.10 = × 1.155
+
+Examples:
+  Not on PyPI:       756,000 points → 756,000 final
+  Regular PyPI:      756,000 points → 793,800 final (+5%)
+  Top 15k PyPI:      756,000 points → 873,180 final (+15.5%)
 ```
 
-**Why PyPI matters:**
+**Tier 1 - Any PyPI (5% bonus):**
+- Applies to ~1,071 packages (2.74% of Python projects)
 - **Distribution Commitment** - Package is ready for `pip install`
 - **Ecosystem Integration** - Can be used as a dependency in other projects
-- **Maintenance Signal** - Publication indicates production readiness
-- **Community Reach** - Discoverable beyond GitHub
 
-The 10% bonus rewards projects that contribute to Python's package ecosystem while maintaining fairness to development-focused repositories.
+**Tier 2 - Top 15k Global (additional 10% bonus):**
+- Applies to ~28 packages (0.07% of Python projects)
+- **Global Impact** - Millions of downloads worldwide
+- **Production Scale** - Among most-used Python packages
+- **Combined bonus**: ×1.155 total (+15.5%)
+
+The tiered system rewards both PyPI publication and global ecosystem impact while maintaining fairness to development-focused repositories.
 
 ### Why This Approach?
 
@@ -278,9 +291,11 @@ The 10% bonus rewards projects that contribute to Python's package ecosystem whi
 - **Age Maturity** - Rewards established projects (2-8 years), penalizes too new/old
 - **Recent Activity** - Prefers actively maintained projects
 - **Health Metrics** - Considers issue management quality relative to popularity
-- **PyPI Integration** - Recognizes production-ready Python packages
+- **Tiered PyPI Bonuses** - Recognizes both production-ready and globally-impactful Python packages
+- **Backend Calculation** - All scoring done in backend, frontend displays final scores
 
 Projects are ranked both **overall** and **by programming language** (11 categories).
+
 
 See [ARCHITECTURE.md](doc/ARCHITECTURE.md) for detailed factor calculations.
 

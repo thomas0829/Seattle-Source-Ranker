@@ -72,14 +72,29 @@
   ```json
   {
     "total_python_projects": 54188,
-    "pypi_projects": 1025,
-    "detection_rate": "1.89%",
+    "pypi_projects": 1071,
+    "detection_rate": "2.74%",
     "projects": [
       {
         "name": "requests",
         "owner": "psf",
         "stars": 51000,
         "on_pypi": true,
+        ...
+      }
+    ]
+  ```
+
+- `seattle_top_pypi_matches.json`: Top 15k Global PyPI packages
+  ```json
+  {
+    "total_matches": 28,
+    "matched_projects": [
+      {
+        "name": "facenet-pytorch",
+        "repo": "timesler/facenet-pytorch",
+        "stars": 5071,
+        "top_pypi": true,
         ...
       }
     ]
@@ -149,10 +164,16 @@ Base Score = (
     age_factor(created_at) × 0.10 +
     activity_factor(pushed_at) × 0.10 +
     health_factor(open_issues, stars) × 0.10
-) × 10000
+) × 1000000
 
-Final Score = Base Score × 1.1  (if Python + on PyPI)
-            = Base Score × 1.0  (otherwise)
+Final Score (Python only) = Base Score × 1.05      (if on PyPI)
+                          = Base Score × 1.05 × 1.10  (if Top 15k PyPI)
+                          = Base Score                 (otherwise)
+
+Tiered PyPI Bonuses:
+- Tier 1 (Any PyPI): ×1.05 multiplier (~1,071 packages, 2.74%)
+- Tier 2 (Top 15k Global): ×1.10 additional multiplier (~28 packages, 0.07%)
+- Combined: ×1.155 total bonus (+15.5%) for Top 15k packages
 ```
 
 **Key Functions**:
@@ -368,24 +389,28 @@ Midnight Seattle Time
          ▼
 ┌─────────────────────────────────────────────────┐
 │  3. PyPI Package Detector (Component 2)         │
-│  - PyPIChecker loads package cache (702k)       │
-│  - Matches Python projects (55k checked)        │
-│  - Identifies 10k PyPI packages (18%)           │
+│  - PyPIChecker loads package cache (707k)       │
+│  - Matches Python projects (54k checked)        │
+│  - Identifies 1,071 PyPI packages (2.74%)       │
+│  - Matches 28 Top 15k global packages (0.07%)   │
 └────────┬────────────────────────────────────────┘
          │ Outputs: seattle_pypi_projects.json
+         │          seattle_top_pypi_matches.json
          ▼
 ┌─────────────────────────────────────────────────┐
 │  4. SSR Scoring Engine (Component 3)            │
-│  - Calculates scores for all projects           │
-│  - Applies 1.1× bonus to Python+PyPI projects   │
+│  - Calculates base scores (0-1M range)          │
+│  - Applies tiered PyPI bonuses:                 │
+│    • ×1.05 for any PyPI (1,071 packages)        │
+│    • ×1.10 additional for Top 15k (28 packages) │
 │  - Sorts by score (highest first)               │
 └────────┬────────────────────────────────────────┘
          │ Scored projects data
          ▼
 ┌─────────────────────────────────────────────────┐
 │  5. Frontend Data Generator (Component 4)       │
-│  - Creates 200 overall ranking pages            │
-│  - Creates 50 Python ranking pages              │
+│  - Creates ~200 overall ranking pages           │
+│  - Creates ~782 Python ranking pages            │
 │  - Generates owner/topic search indices         │
 │  - Updates metadata.json                        │
 └────────┬────────────────────────────────────────┘
@@ -508,17 +533,21 @@ Midnight Seattle Time
                      ▼
         ┌────────────────────────────────────────┐
         │   Component 2: PyPI Detector           │
-        │  - Load 702k package cache             │
-        │  - Check 55k Python projects           │
-        │  - Detect 10k PyPI packages            │
+        │  - Load 707k package cache             │
+        │  - Check 54k Python projects           │
+        │  - Detect 1,071 PyPI packages          │
+        │  - Match 28 Top 15k global packages    │
         └────────────┬───────────────────────────┘
                      │
                      │ seattle_pypi_projects.json
+                     │ seattle_top_pypi_matches.json
                      ▼
         ┌────────────────────────────────────────┐
         │   Component 3: SSR Scoring Engine      │
-        │  - Calculate scores for all projects   │
-        │  - Apply PyPI bonus (1.1×)             │
+        │  - Calculate base scores (0-1M range)  │
+        │  - Apply tiered PyPI bonuses:          │
+        │    • ×1.05 (any PyPI)                  │
+        │    • ×1.10 (Top 15k, total ×1.155)     │
         │  - Sort by score descending            │
         └────────────┬───────────────────────────┘
                      │
@@ -526,8 +555,8 @@ Midnight Seattle Time
                      ▼
         ┌────────────────────────────────────────┐
         │   Component 4: Frontend Data Gen       │
-        │  - Create 200 overall pages            │
-        │  - Create 50 Python pages              │
+        │  - Create ~200 overall pages           │
+        │  - Create ~782 Python pages            │
         │  - Generate search indices             │
         │  - Update metadata.json                │
         └────────────┬───────────────────────────┘

@@ -87,14 +87,15 @@ export default function HomePage() {
                     </h2>
 
                 <p className="home-card-subtitle" style={{color: "white"}}>
-                    Dedicated rankings for Seattle&apos;s Python ecosystem with PyPI integration.
-                    Projects published on PyPI receive a 10% score multiplier, rewarding packages
-                    that contribute to Python&apos;s distribution ecosystem.
+                    Dedicated rankings for Seattle&apos;s Python ecosystem with tiered PyPI integration.
+                    Projects published on PyPI receive a 5% bonus, with Top 15k globally-downloaded
+                    packages earning an additional 10% bonus (15.5% total).
                 </p>
 
                 <p className="home-card-body" style={{color: "white"}}>
-                    The 1.1× multiplier recognizes the effort required to package and publish
-                    projects on PyPI, highlighting real-world packages available via pip install.
+                    The tiered system recognizes both PyPI publication (×1.05 for ~1,071 packages) and
+                    global impact (×1.10 additional for ~28 Top 15k packages). Look for rainbow PyPI
+                    badges and luxury gold-purple Top 15k badges.
                 </p>                    <div className="home-card-actions">
                         <Link to="/python-projects" className="primary-btn secondary glass-btn">
                             View Python Projects
