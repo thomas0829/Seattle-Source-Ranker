@@ -204,12 +204,30 @@ jobs:
         
         echo "[OK] Collection verification passed: $LATEST_PROJECTS"
     
+    - name: Update Top PyPI packages ranking
+      run: |
+        echo "[PYPI] Updating Top PyPI packages ranking..."
+        python3 scripts/update_top_pypi_packages.py
+        echo "[OK] Top PyPI packages ranking checked"
+    
     - name: Generate PyPI projects list
       run: |
         echo "[PKG] Checking Python projects on PyPI..."
         LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json | head -1)
         python3 scripts/generate_pypi_projects.py "$LATEST_PROJECTS"
         echo "[OK] PyPI projects list generated"
+    
+    - name: Verify PyPI package owners (daily)
+      run: |
+        echo "[VERIFY] Verifying PyPI package owners..."
+        python3 scripts/verify_pypi_owners.py
+        echo "[OK] PyPI ownership verification completed"
+    
+    - name: Extract Top PyPI matches
+      run: |
+        echo "[MATCH] Extracting Seattle projects in Top PyPI..."
+        python3 scripts/extract_top_pypi_matches.py
+        echo "[OK] Top PyPI matches extracted"
     
     - name: Validate and enrich data (secondary update)
       run: |
@@ -233,6 +251,19 @@ jobs:
         echo "[DATA] Generating frontend data with topics..."
         python3 scripts/generate_frontend_data.py
         echo "[OK] Frontend data generated with topics support"
+    
+    - name: Update standard data files
+      run: |
+        echo "[COPY] Updating standard data files from timestamped versions..."
+        
+        # Copy latest seattle_users_*.json to seattle_users.json
+        LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
+        if [ -n "$LATEST_USERS" ]; then
+          cp "$LATEST_USERS" data/seattle_users.json
+          echo "[OK] Updated seattle_users.json from $LATEST_USERS"
+        else
+          echo "[SKIP] No timestamped user file found"
+        fi
     
     - name: Clean temporary timestamped files
       run: |
