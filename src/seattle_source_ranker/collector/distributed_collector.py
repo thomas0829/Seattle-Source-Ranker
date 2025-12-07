@@ -636,21 +636,37 @@ class DistributedCollector:
         print(f"[OK] Found {len(usernames)} unique developers (requested: {max_users})")
 
         # Save to file
-        timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        usernames_file = os.path.join(project_root, "data", f"seattle_users_{timestamp}.json")
-        os.makedirs(os.path.dirname(usernames_file), exist_ok=True)
+        from pathlib import Path
+        project_root = Path.cwd()
+        data_dir = project_root / "data"
+        data_dir.mkdir(exist_ok=True)
+        
+        user_data = {
+            "total_users": len(usernames),
+            "collected_at": datetime.now(SEATTLE_TZ).isoformat(),
+            "query_strategy": "graphql multi-filter",
+            "filters_used": len(repo_filters),
+            "usernames": usernames
+        }
 
-        with open(usernames_file, "w", encoding="utf-8") as f:
-            json.dump({
-                "total_users": len(usernames),
-                "collected_at": datetime.now(SEATTLE_TZ).isoformat(),
-                "query_strategy": "graphql multi-filter",
-                "filters_used": len(repo_filters),
-                "usernames": usernames
-            }, f, indent=2, ensure_ascii=False)
-
-        print("[SAVE] Saved usernames to: {usernames_file}")
+        # Check if running in CI/GitHub Actions
+        is_ci = os.getenv('CI') == 'true' or os.getenv('GITHUB_ACTIONS') == 'true'
+        
+        if is_ci:
+            # CI: Save timestamped version for history
+            timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
+            usernames_file = data_dir / f"seattle_users_{timestamp}.json"
+            with open(usernames_file, "w", encoding="utf-8") as f:
+                json.dump(user_data, f, indent=2, ensure_ascii=False)
+            print(f"[SAVE] Saved usernames to: {usernames_file}")
+        
+        # Always save to standard filename (for both CI and local)
+        standard_file = data_dir / "seattle_users.json"
+        with open(standard_file, "w", encoding="utf-8") as f:
+            json.dump(user_data, f, indent=2, ensure_ascii=False)
+        
+        if not is_ci:
+            print(f"[SAVE] Saved usernames to: {standard_file}")
 
         return usernames
 
@@ -975,7 +991,8 @@ class DistributedCollector:
         self,
         max_users: int = 1000,
         start_user: int = 0,
-        output_file: str = None
+        output_file: str = None,
+        user_limit: int = None
     ) -> Dict[str, Any]:
         """
         Main collection workflow with support for segmented collection
@@ -984,10 +1001,15 @@ class DistributedCollector:
             max_users: Maximum users to search
             start_user: Starting user index (for segmented collection)
             output_file: Output file path (optional)
+            user_limit: Maximum users to collect (for test mode, overrides max_users)
 
         Returns:
             Collection results
         """
+        # Use user_limit if provided (test mode)
+        if user_limit is not None:
+            max_users = user_limit
+        
         print("[START] Starting Distributed Collection with Multi-Token Support")
         print(f"=" * 60)
         print(f"Max Users: {max_users}")
@@ -1101,6 +1123,12 @@ def main():
         action="store_true",
         help="Disable automatic worker management (you must start workers manually)"
     )
+    parser.add_argument(
+        "--user-limit",
+        type=int,
+        default=None,
+        help="Limit collection to specified number of users (for test mode, overrides --max-users)"
+    )
 
     args = parser.parse_args()
 
@@ -1139,7 +1167,8 @@ def main():
         results = collector.collect(
             max_users=args.max_users,
             start_user=args.start_user,
-            output_file=args.output
+            output_file=args.output,
+            user_limit=args.user_limit
         )
 
         print("\n[OK] Success! Results saved to: {args.output}")
