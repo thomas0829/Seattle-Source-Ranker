@@ -38,8 +38,10 @@
   
 - **generate_pypi_projects.py**: PyPI project list generator
   - Processes all Python projects (~54,188)
-  - Outputs `seattle_pypi_projects.json` (~1,025 packages)
-  - Detection rate: ~1.89% of Python projects are on PyPI
+  - Outputs `seattle_pypi_projects.json` (~1,071 packages)
+  - Outputs `seattle_top_pypi_matches.json` (~28 Top 15k packages)
+  - Detection rate: ~2.74% of Python projects are on PyPI
+  - Top 15k rate: ~0.07% of Python projects
   - Sorted by stars (most popular first)
 
 ### 3. Analysis Layer
@@ -71,13 +73,14 @@ Built with React, featuring:
 - Paginated view (50 projects/page)
 - Lazy loading for performance
 - Animated PyPI badge with rainbow gradient
+- Luxury Top 15k PyPI badge with gold-to-purple gradient
 - Slate blue theme with sky accents
 - Tech stack visualization
 
 ### 6. Automation Layer (`.github/workflows/`)
 - **collect-and-deploy.yml**: Daily automated workflow
   - Scheduled: Midnight Seattle time (08:00 UTC)
-  - Full collection → PyPI detection → Ranking → Verification → Deploy
+  - Full collection → PyPI detection → Top PyPI matching → Ranking → Verification → Deploy
   - Automatic README updates with latest stats
   - Commits user data and PyPI data to Git
   - Failure protection with rollback
@@ -105,17 +108,19 @@ Built with React, featuring:
 - **2,476,436 total stars** analyzed
 - **28,256 verified accounts** in Seattle area (users + organizations)
 - **54,188 Python projects** identified
-- **1,025 PyPI packages** detected (1.89% of Python projects)
+- **1,071 PyPI packages** detected (2.74% of Python projects)
+- **28 Top 15k Global PyPI packages** matched (0.07% of Python projects)
 - **707,093 PyPI packages** indexed for offline matching
 - **252MB** primary data file (local only, not in Git)
 - **3MB** PyPI projects data (in Git)
 - **12MB** PyPI packages index (in Git)
-- **9,632 paginated files** for frontend (50 projects each)
+- **7,265 paginated files** for frontend (50 projects each)
 
 ### PyPI Detection Performance
 - **Processing time**: <30 seconds for 54,188 Python projects
 - **Accuracy**: 100% precision (zero false positives)
-- **Detection rate**: 1.89% of Python projects are on PyPI
+- **Detection rate**: 2.74% of Python projects are on PyPI
+- **Top 15k rate**: 0.07% of Python projects (2.6% of PyPI packages)
 - **Matching strategies**: 5 methods (direct, underscore/dash conversion, prefix removal, manual mapping, signal verification)
 - **Cache duration**: 7 days for PyPI index
 
@@ -141,27 +146,35 @@ Built with React, featuring:
    ↓ Load 707k PyPI packages index
    ↓ Filter ~54,188 Python projects
    ↓ Strict matching with signal verification
-   ↓ ~1,025 packages detected (1.89% detection rate)
+   ↓ ~1,071 packages detected (2.74% detection rate)
    ↓ Zero false positives (100% precision)
    
-5. Multi-factor Scoring (SSR Algorithm)
+5. Top PyPI Matching (Global Impact)
+   ↓ Load Top 15,000 most-downloaded packages
+   ↓ Match against Seattle PyPI packages
+   ↓ ~28 Top 15k packages identified (0.07% of Python projects)
+   ↓ Represents global ecosystem impact
+   
+6. Multi-factor Scoring (SSR Algorithm)
    ↓ 6-dimension analysis
    ↓ Logarithmic scaling
+   ↓ Score range: 0-1,000,000 points
+   ↓ Tiered PyPI bonus: ×1.05 (any PyPI) + ×1.10 (Top 15k)
    ↓ Ranked output
    
-6. Language Classification
+7. Language Classification
    ↓ 11 major language categories
    ↓ Separate ranking per language
    
-7. Frontend Generation
+8. Frontend Generation
    ↓ Pagination (50/page)
    ↓ JSON file splitting
-   ↓ ~9,600 paginated files
+   ↓ ~7,265 paginated files
    
-8. Deployment & Git Commit
+9. Deployment & Git Commit
    ↓ GitHub Pages deployment
    ↓ Commit user data (seattle_users_*.json)
-   ↓ Commit PyPI data (seattle_pypi_projects.json, pypi_official_packages.json)
+   ↓ Commit PyPI data (seattle_pypi_projects.json, seattle_top_pypi_matches.json)
    ↓ Update README statistics
    ↓ Automatic daily updates
 ```
@@ -182,9 +195,37 @@ def calculate_ssr_score(repo):
     activity_score = calculate_recent_activity(updated_at) * 0.10
     health_score = calculate_repo_health(issues, pull_requests) * 0.10
     
-    return (stars_score + forks_score + watchers_score + 
-            age_score + activity_score + health_score)
+    base_score = (stars_score + forks_score + watchers_score + 
+                  age_score + activity_score + health_score)
+    
+    # Normalize to 0-1,000,000 range
+    normalized_score = base_score * 1_000_000
+    
+    # Apply tiered PyPI bonuses (Python projects only)
+    final_score = normalized_score
+    if on_pypi:
+        final_score *= 1.05  # Tier 1: Any PyPI package (+5%)
+    if on_top_pypi:
+        final_score *= 1.10  # Tier 2: Top 15k Global PyPI (+10%)
+    
+    # Combined: Top 15k packages get ×1.155 total bonus (+15.5%)
+    return round(final_score)
 ```
+
+### Tiered PyPI Bonus System
+- **Tier 1 - Any PyPI Package**: ×1.05 multiplier
+  - Applies to ~1,071 packages (2.74% of Python projects)
+  - Rewards publication, ecosystem integration, pip-installability
+  
+- **Tier 2 - Top 15k Global PyPI**: ×1.10 additional multiplier
+  - Applies to ~28 packages (0.07% of Python projects, 2.6% of PyPI packages)
+  - Honors global impact, millions of downloads
+  - Combined with Tier 1: ×1.155 total bonus (+15.5%)
+
+- **Score Range**: 0-1,000,000 points
+  - Avoids score collisions
+  - Frontend displays scores directly (no multiplier)
+  - Backend calculates all scoring logic
 
 ### Age Maturity Curve
 - **0-1 year**: 0.3-0.5 (new projects)

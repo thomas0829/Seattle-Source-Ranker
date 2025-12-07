@@ -1,5 +1,79 @@
 # Version History
 
+## Beta-v4.2 (2025-12-07) - Tiered PyPI Scoring System
+
+### Highlights
+- **Tiered PyPI bonuses** - Two-tier system: ×1.05 (any PyPI) + ×1.10 (Top 15k global)
+- **Score scale expansion** - Changed from 0-10,000 to 0-1,000,000 points to avoid collisions
+- **Top 15k PyPI integration** - 28 Seattle packages in global Top 15,000 most-downloaded
+- **Luxury badge design** - Gold-to-purple gradient badge for Top 15k packages
+- **Backend-only calculation** - Frontend displays scores directly, no frontend multipliers
+
+### Tiered Scoring System
+- **Tier 1 - Any PyPI Package**: ×1.05 multiplier
+  - Applies to ~1,071 packages (2.74% of Python projects)
+  - Rewards publication, ecosystem integration, pip-installability
+  
+- **Tier 2 - Top 15k Global PyPI**: ×1.10 additional multiplier
+  - Applies to ~28 packages (0.07% of Python projects)
+  - Honors global impact, millions of downloads
+  - Combined with Tier 1: ×1.155 total bonus (+15.5%)
+
+- **Rationale**: Simple tiered system easier to understand than complex gap-based bonuses
+- **Architecture**: Backend calculates all scoring, frontend only displays
+
+### Score Scale Enhancement
+- **Previous**: 0-10,000 range with frontend ×100 display multiplier
+- **Current**: 0-1,000,000 range calculated in backend
+- **Benefits**: 
+  - Avoids score collisions
+  - Cleaner architecture (no frontend calculation)
+  - Direct display without conversion
+- **Example**: Project with 756k base score → 793,800 (PyPI) or 873,180 (Top 15k)
+
+### Top 15k PyPI Integration
+- **Data source**: seattle_top_pypi_matches.json
+- **Coverage**: 28 Seattle packages in global Top 15,000
+- **Detection rate**: 0.07% of Python projects (2.6% of PyPI packages)
+- **Examples**: facenet-pytorch, azure-cli-core, azure-mgmt packages
+- **Flexible loading**: Supports 'matched_projects', 'projects', 'matches' keys and 'name'/'repo' fields
+
+### Frontend Enhancements
+- **Top 15k PyPI badge**:
+  - Luxury gold-to-purple gradient (7 colors)
+  - Glow effects: rgba(255, 215, 0, 0.4) and rgba(139, 92, 246, 0.2)
+  - 4-second animation with 300% background size
+  - Text: "TOP 15K PYPI" in bold uppercase
+  
+- **Badge priority**: Top 15k badge shown exclusively (hides regular PyPI badge)
+- **Regular PyPI badge**: Rainbow gradient retained for standard packages
+- **Display simplification**: Removed frontend score calculations
+
+### Backend Implementation
+- **generate_frontend_data.py**:
+  - Load Top PyPI data with fallback key matching
+  - Apply tiered multipliers: `final_score *= 1.05` then `*= 1.10`
+  - Ensure Top PyPI implies on_pypi flag
+  - Round scores to integers
+  - Use single 'score' field (removed separate 'final_score')
+
+- **Constants**:
+  - `PYPI_TIER1_MULTIPLIER = 1.05`
+  - `PYPI_TIER2_MULTIPLIER = 1.10`
+  - Combined effect: 1.05 × 1.10 = 1.155 (+15.5%)
+
+### Documentation Updates
+- **ARCHITECTURE.md**: Updated PyPI stats, tiered scoring formula, 0-1M scale
+- **ScoringPage.js**: Replaced 10% flat bonus with tiered system explanation
+- **HomePage.js**: Updated PyPI section with tiered bonus details
+- **All docs**: Corrected statistics (1,071 PyPI, 28 Top 15k, 2.74%, 0.07%)
+
+### Statistics Updates
+- **PyPI packages**: 1,025 → 1,071 (detection rate: 1.89% → 2.74%)
+- **Top 15k packages**: New - 28 packages (0.07% of Python projects)
+- **Paginated files**: 9,632 → 7,265 (optimized pagination)
+- **Score distribution**: More natural with 0-1M scale
+
 ## Beta-v4.1 (2025-12-05) - Python Page Optimization & Ranking Fix
 
 ### Highlights

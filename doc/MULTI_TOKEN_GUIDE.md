@@ -51,7 +51,7 @@ Seattle-Source-Ranker supports multi-token rotation to bypass GitHub API rate li
 - Users Processed: 28,111
 - Total Time: ~12 hours
 - Success Rate: 99.98%
-- Data Generated: 9,632 paginated JSON files
+- Data Generated: 7,265 paginated JSON files
 
 ---
 
@@ -132,7 +132,7 @@ After collection completes:
 python3 scripts/generate_frontend_data.py
 ```
 
-This creates 9,632+ paginated JSON files in `frontend/public/pages/`
+This creates 7,265+ paginated JSON files in `frontend/public/pages/`
 
 ---
 

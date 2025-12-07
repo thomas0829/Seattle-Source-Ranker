@@ -140,13 +140,15 @@ Projects are matched between GitHub and PyPI using:
 
 **Data Flow**:
 ```
-GitHub API → User Collection → Repository Collection → PyPI Matching → Scoring → Web Interface
+GitHub API → User Collection → Repository Collection → PyPI Matching → Top PyPI Matching → Scoring → Web Interface
 ```
 
 **Data Quality**:
 - **Coverage**: 28,256 Seattle users, 457,212 projects
 - **Precision**: 100% for PyPI matching (zero false positives)
-- **Detection Rate**: ~1.89% of Python projects are on PyPI (1,025 packages)
+- **Detection Rates**: 
+  - PyPI packages: ~2.74% of Python projects (1,071 packages)
+  - Top 15k Global: ~0.07% of Python projects (28 packages)
 - **Update Frequency**: Daily automated collection at midnight Seattle time
 
 ---
@@ -170,15 +172,15 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → S
 3. **Filter and Search**
    - Uses search bar to type "machine learning" 
    - System provides autocomplete suggestions for topics and owners
-   - Filters results to projects with PyPI badge (indicating production-ready packages)
+   - Filters results to projects with Top 15k PyPI badge (indicating globally-impactful packages)
 
 4. **Review Project Details**
    - Browses paginated results (50 projects per page)
    - For each project, sees:
-     * SSR Score (e.g., 8,432.15)
+     * SSR Score (e.g., 843,215 points)
      * Stars, Forks, Watchers counts
      * Last activity date
-     * PyPI badge (10% bonus applied)
+     * PyPI badges: rainbow (5% bonus) or luxury gold-purple (15.5% total bonus)
      * Topics/tags
      * Direct links to GitHub repository and owner profile
 
@@ -187,7 +189,7 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → S
    - Reviews their public contributions
    - Records candidate information for outreach
 
-**Expected Outcome**: Jessica identifies 5-10 high-quality Python developers with active PyPI packages, indicating production-level Python expertise. The SSR score helps her prioritize candidates by combining popularity with code quality and maintenance activity.
+**Expected Outcome**: Jessica identifies 5-10 high-quality Python developers with active PyPI packages, especially those in the Top 15k global packages, indicating production-level Python expertise and global impact. The SSR score helps her prioritize candidates by combining popularity with code quality and maintenance activity.
 
 ---
 

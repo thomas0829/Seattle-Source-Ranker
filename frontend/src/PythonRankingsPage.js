@@ -218,12 +218,9 @@ export default function PythonRankingsPage() {
                 const response = await fetch(`${process.env.PUBLIC_URL}/pages/python_pypi/page_${currentPage}.json`);
                 const pageData = await response.json();
                 
-                // Process with PyPI bonus (already calculated in backend)
+                // Process projects (backend already calculated PyPI bonus)
                 const scoredProjects = pageData.map((proj, idx) => {
                     const [owner, projectName] = proj.name.split('/');
-                    // Use final_score from backend (already includes PyPI bonus)
-                    const finalScore = proj.final_score || proj.score || 0;
-                    const baseScore = proj.score || 0;
                     
                     return {
                         ...proj,
@@ -231,9 +228,8 @@ export default function PythonRankingsPage() {
                         name: projectName,
                         full_name: proj.name,
                         url: proj.html_url,
-                        original_score: baseScore,
-                        final_score: finalScore,
                         on_pypi: proj.on_pypi || false,
+                        top_pypi: proj.top_pypi || false,
                         python_rank: proj.python_rank || ((currentPage - 1) * 50 + idx + 1)
                     };
                 });
@@ -359,9 +355,6 @@ export default function PythonRankingsPage() {
                     const filtered = allProjects
                         .map(proj => {
                             const [owner, projectName] = proj.name.split('/');
-                            // Use final_score from backend (already includes PyPI bonus)
-                            const finalScore = proj.final_score || proj.score || 0;
-                            const baseScore = proj.score || 0;
                             
                             return {
                                 ...proj,
@@ -369,9 +362,8 @@ export default function PythonRankingsPage() {
                                 name: projectName,
                                 full_name: proj.name,
                                 url: proj.html_url,
-                                original_score: baseScore,
-                                final_score: finalScore,
-                                on_pypi: proj.on_pypi || false
+                                on_pypi: proj.on_pypi || false,
+                                top_pypi: proj.top_pypi || false
                                 // Keep python_rank from page data - don't reassign
                             };
                         })
@@ -817,9 +809,9 @@ export default function PythonRankingsPage() {
                         {currentProjects.map((project, index) => {
                                     const displayRank = project.python_rank || (startIndex + index + 1);
                                     // Min-max normalization: last rank ≈ 0%, first rank = 100%
-                                    const barWidth = project.final_score > 0 && topScore && minScore && topScore !== minScore
-                                        ? ((project.final_score - minScore) / (topScore - minScore)) * 100
-                                        : (project.final_score > 0 && topScore ? (project.final_score / topScore) * 100 : 50)
+                                    const barWidth = project.score > 0 && topScore && minScore && topScore !== minScore
+                                        ? ((project.score - minScore) / (topScore - minScore)) * 100
+                                        : (project.score > 0 && topScore ? (project.score / topScore) * 100 : 50)
 
                                     return (
                                         <tr 
@@ -872,7 +864,10 @@ export default function PythonRankingsPage() {
                                                         </div>
                                                         <span className="project-name-below">
                                                             {project.name}
-                                                            {project.on_pypi && (
+                                                            {project.top_pypi && (
+                                                                <span className="top-pypi-badge">Top 15k PyPI</span>
+                                                            )}
+                                                            {project.on_pypi && !project.top_pypi && (
                                                                 <span className="pypi-badge">PyPI</span>
                                                             )}
                                                         </span>
@@ -915,7 +910,7 @@ export default function PythonRankingsPage() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="score-col">{project.final_score.toLocaleString()}</td>
+                                            <td className="score-col">{project.score.toLocaleString()}</td>
                                         </tr>
                                     );
                                 })}

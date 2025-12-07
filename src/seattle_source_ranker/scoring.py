@@ -8,6 +8,10 @@ and related utility functions for project ranking.
 import math
 from datetime import datetime, timezone
 
+# PyPI scoring configuration
+PYPI_TIER1_MULTIPLIER = 1.05  # Any PyPI package
+PYPI_TIER2_MULTIPLIER = 1.10  # Top 15k PyPI package
+
 
 def normalize(value, max_value):
     """Normalize value to 0-1 range"""
@@ -96,7 +100,8 @@ def health_factor(open_issues, stars):
     return 0.4
 
 
-def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watchers=None):
+def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watchers=None, 
+                          on_pypi=False, on_top_pypi=False):
     """
     Calculate SSR score for a GitHub project
     
@@ -105,9 +110,11 @@ def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watch
         _max_stars: (deprecated) Kept for backward compatibility
         _max_forks: (deprecated) Kept for backward compatibility
         _max_watchers: (deprecated) Kept for backward compatibility
+        on_pypi (bool): Whether the project is on PyPI
+        on_top_pypi (bool): Whether the project is in top 15k PyPI packages
         
     Returns:
-        float: SSR score (0-10000 range)
+        float: SSR score (0-1,000,000 range)
     """
     # Extract metrics with defaults
     stars = project.get('stars', 0)
@@ -127,7 +134,7 @@ def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watch
     activity_score = activity_factor(pushed_at, created_at) * 0.10
     health_score = health_factor(open_issues, stars) * 0.10
     
-    # Calculate final score
+    # Calculate base score
     total_score = (
         star_score +
         fork_score +
@@ -137,8 +144,17 @@ def calculate_github_score(project, _max_stars=None, _max_forks=None, _max_watch
         health_score
     )
     
-    # Scale to 0-10000
-    return total_score * 10000
+    # Scale to 0-1,000,000
+    base_score = total_score * 1000000
+    
+    # Apply tiered PyPI multipliers
+    final_score = base_score
+    if on_pypi:
+        final_score *= PYPI_TIER1_MULTIPLIER
+    if on_top_pypi:
+        final_score *= PYPI_TIER2_MULTIPLIER
+    
+    return round(final_score)
 
 
 __all__ = [
