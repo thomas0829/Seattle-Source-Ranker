@@ -349,8 +349,23 @@ class TestGlobalInstance:
 class TestEnvFileLoading:
     """Test loading tokens from environment variables"""
     
-    def test_load_from_env_variables(self, monkeypatch):
+    def test_load_from_env_variables(self, monkeypatch, tmp_path):
         """Test loading tokens from environment variables"""
+        # Clear any existing GITHUB_TOKEN_* env vars to ensure clean test
+        import os
+        for key in list(os.environ.keys()):
+            if key.startswith('GITHUB_TOKEN_'):
+                monkeypatch.delenv(key, raising=False)
+        
+        # Mock the .env.tokens file path to not exist
+        # by patching os.path.exists to return False for .env.tokens
+        original_exists = os.path.exists
+        def mock_exists(path):
+            if path and '.env.tokens' in str(path):
+                return False
+            return original_exists(path)
+        monkeypatch.setattr('os.path.exists', mock_exists)
+        
         # Set environment variables
         monkeypatch.setenv('GITHUB_TOKEN_1', 'ghp_token_one')
         monkeypatch.setenv('GITHUB_TOKEN_2', 'ghp_token_two')
