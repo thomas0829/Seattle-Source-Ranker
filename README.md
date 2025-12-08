@@ -379,7 +379,7 @@ Having issues? Check the **[Troubleshooting Guide](doc/TROUBLESHOOTING.md)** for
 
 ## Documentation
 
-### Course Required Specifications
+### Project Specifications
 - **[Functional Specification](doc/functional_specification.md)** - User requirements, data sources, use cases, and system overview
 - **[Component Specification](doc/component_specification.md)** - 7 software components, interactions, workflows, and implementation details
 
