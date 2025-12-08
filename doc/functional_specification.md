@@ -23,7 +23,7 @@ Seattle Source Ranker addresses these challenges by:
 - Rank projects using quality metrics beyond simple popularity
 - Support multiple user personas from recruiters to students
 - Maintain data freshness through automated daily updates
-- Serve as a tool for both Python package distribution (via pip install) and web-based exploration
+- Serve as both a Python library (installable from source) and web-based exploration tool
 
 ---
 
@@ -253,9 +253,11 @@ Frontend Data Generation → Web Interface Deployment
 
 **User Interactions**:
 
-1. **Install Package**
+1. **Clone and Install from Source**
    ```bash
-   pip install seattle-source-ranker
+   git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
+   cd Seattle-Source-Ranker
+   pip install -e .
    ```
 
 2. **Import and Use Scoring Module**
@@ -460,8 +462,3 @@ System runs daily via GitHub Actions:
 - Automated CI/CD via GitHub Actions
 - React component-based frontend architecture
 
----
-
-**Document Version**: 2.0  
-**Last Updated**: December 7, 2025  
-**Authors**: Seattle Source Ranker Team
