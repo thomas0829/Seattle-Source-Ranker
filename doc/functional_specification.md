@@ -400,7 +400,7 @@ pip install → Import modules → Call functions → Integrate into application
 
 ### Automated Data Pipeline
 System runs daily via GitHub Actions:
-1. **Collection**: GraphQL (users) → REST (repositories) → Validation (accessibility check)
+1. **Collection**: GraphQL (users) → REST (repositories) → GraphQL Validation (accessibility check)
 2. **Enrichment**: PyPI matching → SSR scoring
 3. **Deployment**: Frontend generation → GitHub Pages
 
@@ -456,7 +456,6 @@ System runs daily via GitHub Actions:
 
 ### Maintainability
 - ~225+ passing tests with pytest (~56% overall coverage, ~94-100% core modules)
-- Code quality score ≥ ~8.7/10 (pylint)
 - Modular architecture with clear separation of concerns
 - Comprehensive documentation in doc/ folder
 - Automated CI/CD via GitHub Actions
