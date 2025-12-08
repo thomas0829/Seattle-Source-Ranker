@@ -12,7 +12,7 @@ import math
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from scripts.generate_frontend_data import (
+from seattle_source_ranker.scoring import (
     normalize,
     log_normalize,
     age_factor,
@@ -159,6 +159,14 @@ class TestActivityFactor:
         score = activity_factor(pushed, created)
         # Should handle gracefully
         assert 0 <= score <= 1
+    
+    def test_activity_6_months_old(self):
+        """Test activity score for 6-month old push (180-365 days range)"""
+        created_2y = (datetime.now(timezone.utc) - timedelta(days=2*365)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        pushed_6m = (datetime.now(timezone.utc) - timedelta(days=180)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        score = activity_factor(pushed_6m, created_2y)
+        assert 0.5 <= score <= 0.7, f"6-month old push should score 0.5-0.7, got {score}"
 
 
 class TestHealthFactor:
@@ -194,13 +202,18 @@ class TestHealthFactor:
         """Test edge case with more issues than stars"""
         score = health_factor(1000, 100)
         assert score < 0.5, f"More issues than stars should score low, got {score}"
+    
+    def test_health_moderate_issue_ratio(self):
+        """Test 10-20% issue ratio (boundary case for 0.6 score)"""
+        score = health_factor(150, 1000)  # 15% issue rate
+        assert 0.5 <= score <= 0.7, f"15% issue ratio should score 0.5-0.7, got {score}"
 
 
 class TestCalculateGithubScore:
     """Test complete SSR scoring algorithm"""
     
     def test_score_range(self):
-        """Test that scores are in valid 0-10000 range"""
+        """Test that scores are in valid 0-1,000,000 range"""
         project = {
             'stars': 1000,
             'forks': 200,
@@ -209,9 +222,9 @@ class TestCalculateGithubScore:
             'pushed_at': '2025-11-01T00:00:00Z',
             'open_issues': 20
         }
-        score = calculate_github_score(project, 10000, 2000, 500)
+        score = calculate_github_score(project, 100000, 10000, 10000)
         
-        assert 0 <= score <= 10000, f"Score should be 0-10000, got {score}"
+        assert 0 <= score <= 1000000, f"Score should be 0-1,000,000, got {score}"
         assert isinstance(score, (int, float))
     
     def test_score_high_quality_project(self):
@@ -224,9 +237,9 @@ class TestCalculateGithubScore:
             'pushed_at': (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ"),       # Recent
             'open_issues': 50   # Healthy ratio
         }
-        score = calculate_github_score(project, 10000, 2000, 500)
+        score = calculate_github_score(project, 100000, 10000, 10000)
         
-        assert score > 5000, f"High-quality project should score > 5000, got {score}"
+        assert score > 500000, f"High-quality project should score > 500,000, got {score}"
     
     def test_score_low_quality_project(self):
         """Test low-quality project gets lower score"""
@@ -238,9 +251,9 @@ class TestCalculateGithubScore:
             'pushed_at': (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ"),    # Stale
             'open_issues': 50   # Many issues relative to stars
         }
-        score = calculate_github_score(project, 10000, 2000, 500)
+        score = calculate_github_score(project, 100000, 10000, 10000)
         
-        assert score < 3000, f"Low-quality project should score < 3000, got {score}"
+        assert score < 300000, f"Low-quality project should score < 300,000, got {score}"
     
     def test_score_missing_fields(self):
         """Test handling of projects with missing fields"""
@@ -252,8 +265,8 @@ class TestCalculateGithubScore:
         
         # Should not crash
         try:
-            score = calculate_github_score(project, 1000, 200, 100)
-            assert 0 <= score <= 10000
+            score = calculate_github_score(project, 100000, 10000, 10000)
+            assert 0 <= score <= 1000000
         except KeyError:
             # It's okay if it requires all fields
             pass
@@ -268,12 +281,12 @@ class TestCalculateGithubScore:
             'pushed_at': datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             'open_issues': 0
         }
-        score = calculate_github_score(project, 1000, 100, 50)
+        score = calculate_github_score(project, 100000, 10000, 10000)
         
         # Should handle gracefully
-        assert 0 <= score <= 10000
-        # Score might be higher than 2000 due to age/activity factors
-        assert score < 3000  # Relaxed threshold
+        assert 0 <= score <= 1000000
+        # Score might be higher than 200,000 due to age/activity factors
+        assert score < 300000  # Relaxed threshold
     
     def test_score_consistency(self):
         """Test that same project gets same score"""
@@ -286,8 +299,8 @@ class TestCalculateGithubScore:
             'open_issues': 25
         }
         
-        score1 = calculate_github_score(project, 5000, 1000, 200)
-        score2 = calculate_github_score(project, 5000, 1000, 200)
+        score1 = calculate_github_score(project, 100000, 10000, 10000)
+        score2 = calculate_github_score(project, 100000, 10000, 10000)
         
         assert score1 == score2, "Same project should get consistent score"
     
@@ -306,12 +319,12 @@ class TestCalculateGithubScore:
         score_low_max = calculate_github_score(project, 200, 40, 20)
         
         # Score with high max values (project is relatively small)
-        score_high_max = calculate_github_score(project, 10000, 2000, 500)
+        score_high_max = calculate_github_score(project, 100000, 10000, 10000)
         
         # Scores might be similar due to log scaling
         # Just verify they're in valid range
-        assert 0 <= score_low_max <= 10000
-        assert 0 <= score_high_max <= 10000
+        assert 0 <= score_low_max <= 1000000
+        assert 0 <= score_high_max <= 1000000
 
 
 class TestScoringEdgeCases:
@@ -330,7 +343,7 @@ class TestScoringEdgeCases:
         }
         
         # Should not crash
-        score = calculate_github_score(project, 1000, 100, 50)
+        score = calculate_github_score(project, 100000, 10000, 10000)
         assert isinstance(score, (int, float))
         assert score >= 0
     
@@ -346,9 +359,9 @@ class TestScoringEdgeCases:
         }
         
         score = calculate_github_score(project, 1000000, 100000, 50000)
-        # Log scaling might make this exceed 10000
-        assert 0 <= score <= 15000  # Allow some overflow for edge cases
-        assert score > 5000  # Should still score well
+        # Log scaling should keep this in range
+        assert 0 <= score <= 1500000  # Allow some overflow for edge cases
+        assert score > 500000  # Should still score well
 
 
 if __name__ == '__main__':

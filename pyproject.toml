@@ -21,6 +21,8 @@ dependencies = [
   "pydantic>=2.5.0",
   "pytest>=7.4.3",
   "pytest-asyncio>=0.21.1",
+  "pytest-cov>=4.1.0",
+  "pandas>=2.0.0",
 ]
 
 [build-system]
@@ -28,4 +30,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["distributed", "utils", "scripts"]
+package-dir = {"" = "src"}
+packages = ["seattle_source_ranker", "seattle_source_ranker.collector"]
+
+[tool.setuptools.package-data]
+seattle_source_ranker = ["*.json"]

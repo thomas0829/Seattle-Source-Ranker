@@ -37,7 +37,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip
-        pip install .
+        pip install -e .
     
     - name: Start Redis server
       run: |
@@ -66,7 +66,7 @@ jobs:
         
         # Count tokens
         TOKEN_COUNT=$(grep -c "^GITHUB_TOKEN_[0-9]=" .env.tokens)
-        echo "✅ Configured $TOKEN_COUNT GitHub tokens"
+        echo "[OK] Configured $TOKEN_COUNT GitHub tokens"
     
     - name: Check user data age
       id: check_user_data
@@ -74,68 +74,64 @@ jobs:
         python3 << 'PYTHON_EOF'
         import os
         import json
-        import glob
+        from pathlib import Path
         from datetime import datetime
         from zoneinfo import ZoneInfo
         
         SEATTLE_TZ = ZoneInfo("America/Los_Angeles")
         
-        # Check user data file (small, committed to Git)
-        user_files = glob.glob('data/seattle_users_*.json')
+        # Check for seattle_users.json
+        user_file = Path('data/seattle_users.json')
         
-        if not user_files:
-            print("❌ No user data found")
+        if not user_file.exists():
+            print("[ERROR] seattle_users.json not found")
             print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('skip_graphql=false\n')
             exit(0)
         
-        latest_user_file = max(user_files)
-        print(f"📁 Found user data: {latest_user_file}")
-        
-        # Parse timestamp from filename (format: seattle_users_YYYYMMDD_HHMMSS.json)
-        import os
-        filename = os.path.basename(latest_user_file)
+        print(f"[FILE] Found user data: {user_file.name}")
         
         try:
-            timestamp_str = filename.replace('seattle_users_', '').replace('.json', '')
-            date_part, time_part = timestamp_str.split('_')
+            # Read collected_at from file content
+            with open(user_file, 'r') as f:
+                data = json.load(f)
             
-            # Parse date and time from filename
-            year = int(date_part[0:4])
-            month = int(date_part[4:6])
-            day = int(date_part[6:8])
-            hour = int(time_part[0:2])
-            minute = int(time_part[2:4])
-            second = int(time_part[4:6])
+            collected_at = data.get('collected_at')
+            if not collected_at:
+                print("[WARNING] No collected_at timestamp in file")
+                print("   → Need full collection (GraphQL + REST API)")
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write('skip_graphql=false\n')
+                exit(0)
             
-            # Create datetime with Seattle timezone
-            file_time = datetime(year, month, day, hour, minute, second, tzinfo=SEATTLE_TZ)
+            # Parse ISO format timestamp
+            file_time = datetime.fromisoformat(collected_at)
             now = datetime.now(SEATTLE_TZ)
             hours_since = (now - file_time).total_seconds() / 3600
             
-            print(f"📅 File timestamp: {file_time.isoformat()}")
-            print(f"⏱️  Hours since: {hours_since:.1f}")
+            print(f"[DATE] File timestamp: {file_time.isoformat()}")
+            print(f"[TIME] Hours since: {hours_since:.1f}")
             
             if hours_since < 0:
-                print("⚠️  Timestamp in future")
+                print("[WARNING] Timestamp in future")
                 print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('skip_graphql=false\n')
             elif hours_since < 24:
-                print(f"✅ User data is fresh (< 24 hours)")
+                print(f"[OK] User data is fresh (< 24 hours)")
                 print("   → Skip GraphQL (reuse existing users)")
                 print("   → Only run REST API to collect projects")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('skip_graphql=true\n')
             else:
-                print(f"⏰ User data is old (≥ 24 hours)")
+                print(f"[TIME] User data is old (≥ 24 hours)")
                 print("   → Need full collection (GraphQL + REST API)")
                 with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                     f.write('skip_graphql=false\n')
         
         except Exception as e:
-            print(f"❌ Error parsing filename: {e}")
+            print(f"[ERROR] Error reading timestamp: {e}")
             print("   → Need full collection (GraphQL + REST API)")
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                 f.write('skip_graphql=false\n')
@@ -143,9 +139,9 @@ jobs:
     
     - name: Run distributed collection
       run: |
-        echo "🚀 Starting distributed collection..."
+        echo "[START] Starting distributed collection..."
         python3 << 'PYTHON_EOF'
-        from distributed.distributed_collector import DistributedCollector
+        from seattle_source_ranker.collector.distributed_collector import DistributedCollector
         import json
         import os
         import sys
@@ -159,13 +155,13 @@ jobs:
         
         if skip_graphql:
             print("=" * 60)
-            print("⚡ FAST MODE: Skipping GraphQL user search")
+            print("[FAST] FAST MODE: Skipping GraphQL user search")
             print("   Using existing user data from repository")
             print("   Only collecting projects via REST API")
             print("=" * 60)
         else:
             print("=" * 60)
-            print("🔄 FULL MODE: Running complete collection")
+            print("[FULL] FULL MODE: Running complete collection")
             print("   Step 1: GraphQL user search")
             print("   Step 2: REST API project collection")
             print("=" * 60)
@@ -177,14 +173,14 @@ jobs:
             concurrency=2
         )
         
-        # Collect data for 30,000 users
+        # Collect data - output to timestamped file
         timestamp = datetime.now(SEATTLE_TZ).strftime("%Y%m%d_%H%M%S")
         output_file = f"data/seattle_projects_{timestamp}.json"
         
         # The collector will automatically skip GraphQL if user file < 24h exists
         collector.collect(max_users=30000, output_file=output_file)
         
-        print(f"✅ Collection completed: {output_file}")
+        print(f"[OK] Collection completed: {output_file}")
         
         # Create success marker
         with open('data/.collection_success', 'w') as f:
@@ -196,69 +192,121 @@ jobs:
       run: |
         # Verify collected data
         if [ ! -f "data/.collection_success" ]; then
-          echo "❌ Collection failed - success marker not found"
+          echo "[ERROR] Collection failed - success marker not found"
           exit 1
         fi
         
-        if [ ! -f "data/seattle_projects_"*.json ]; then
-          echo "❌ Collection failed - projects data not found"
+        LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json 2>/dev/null | head -1)
+        if [ -z "$LATEST_PROJECTS" ]; then
+          echo "[ERROR] Collection failed - no projects data found"
           exit 1
         fi
         
-        echo "✅ Collection verification passed"
+        echo "[OK] Collection verification passed: $LATEST_PROJECTS"
     
-    - name: Clean temporary files
+    - name: Update seattle_users.json from timestamped file
       run: |
-        echo "🧹 Cleaning temporary files..."
-        cd data
+        echo "[COPY] Updating seattle_users.json..."
         
-        # Only delete success marker (temporary file)
-        rm -f .collection_success
-        
-        # Note: Keep all seattle_projects_*.json and seattle_users_*.json files
-        # They are not pushed to Git anyway (projects too large, users already in repo)
-        
-        echo "✅ Old data files cleaned"
-        echo "📁 Remaining files:"
-        ls -lh *.json
+        # Copy latest seattle_users_*.json to seattle_users.json
+        LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
+        if [ -n "$LATEST_USERS" ]; then
+          cp "$LATEST_USERS" data/seattle_users.json
+          echo "[OK] Updated seattle_users.json from $LATEST_USERS"
+        else
+          echo "[WARN] No timestamped user file found (likely due to skip_graphql=true)"
+          echo "[INFO] seattle_users.json will not be updated this run"
+        fi
     
-    - name: Update README with latest stats
+    - name: Update PyPI Official package index (daily)
       run: |
-        python3 scripts/update_readme.py
+        echo "[PYPI] Updating PyPI official package index..."
+        python3 scripts/update_pypi_official_index.py
+        echo "[OK] PyPI official index updated"
     
     - name: Generate PyPI projects list
       run: |
-        echo "📦 Checking Python projects on PyPI..."
-        python3 scripts/generate_pypi_projects.py
-        echo "✅ PyPI projects list generated"
-    
-    - name: Update watchers data
-      run: |
-        echo "👁️ Updating watchers data with GraphQL..."
+        echo "[PKG] Checking Python projects on PyPI..."
         LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json | head -1)
-        echo "Processing: $LATEST_PROJECTS"
+        python3 scripts/generate_pypi_projects.py "$LATEST_PROJECTS"
+        echo "[OK] PyPI projects list generated"
+    
+    - name: Update Top PyPI packages ranking (monthly check)
+      run: |
+        echo "[PYPI] Checking for Top PyPI packages updates..."
+        
+        # Check if update is needed
+        python3 scripts/update_top_pypi_packages.py
+        
+        # Check if top_pypi_packages.json was modified
+        if git diff --quiet data/top_pypi_packages.json; then
+          echo "TOP_PYPI_UPDATED=false" >> $GITHUB_ENV
+          echo "[OK] Top PyPI already up to date"
+        else
+          echo "TOP_PYPI_UPDATED=true" >> $GITHUB_ENV
+          echo "[OK] Top PyPI updated to new version"
+        fi
+    
+    - name: Extract Top PyPI matches (only if Top PyPI updated)
+      if: env.TOP_PYPI_UPDATED == 'true'
+      run: |
+        echo "[MATCH] Top PyPI was updated, extracting matches..."
+        python3 scripts/extract_top_pypi_matches.py
+        python3 scripts/verify_pypi_owners.py
+        echo "[OK] Top PyPI matches extracted and verified"
+    
+    - name: Validate and enrich data (secondary update)
+      run: |
+        echo "[VALIDATE] Running secondary validation and enrichment..."
+        LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json | head -1)
+        echo "[FILE] Processing: $LATEST_PROJECTS"
+        
         # Start Celery workers
         bash scripts/start_workers.sh
         
-        # Run secondary update
+        # Run secondary update (validate, remove invalid, update watchers)
+        # Output will be saved to data/seattle_projects.json (standard filename)
         python3 scripts/secondary_update.py "$LATEST_PROJECTS"
         
         # Stop workers
         bash scripts/stop_workers.sh
-        echo "✅ Watchers data updated (validated and enriched)"
+        echo "[OK] Data validated and enriched → data/seattle_projects.json"
     
     - name: Generate frontend paginated data
       run: |
-        echo "📊 Generating frontend data with topics..."
+        echo "[DATA] Generating frontend data with topics..."
         python3 scripts/generate_frontend_data.py
-        echo "✅ Frontend data generated with topics support"
+        echo "[OK] Frontend data generated with topics support"
+    
+    - name: Clean temporary timestamped files
+      run: |
+        echo "[CLEAN] Cleaning temporary timestamped files..."
+        cd data
+        
+        # Delete timestamped project files (keep only seattle_projects.json)
+        ls -t seattle_projects_*.json 2>/dev/null | xargs -r rm -v
+        echo "[OK] Removed timestamped project files"
+        
+        # Delete old timestamped user files (keep only seattle_users.json)
+        if [ -f "seattle_users.json" ]; then
+          ls seattle_users_*.json 2>/dev/null | xargs -r rm -v
+          echo "[OK] Removed timestamped user files"
+        fi
+        
+        # Delete success marker
+        rm -f .collection_success
+        
+        echo "[FILES] Remaining data files:"
+        ls -lh *.json 2>/dev/null | awk '{print $9, $5}'
     
     - name: Copy PyPI data to frontend
       run: |
-        echo "📦 Copying PyPI data to frontend..."
+        echo "[PKG] Copying PyPI data to frontend..."
+        # Remove symlink if exists and create directory
+        rm -rf frontend/public/data
         mkdir -p frontend/public/data
         cp data/seattle_pypi_projects.json frontend/public/data/
-        echo "✅ PyPI data copied to frontend/public/data/"
+        echo "[OK] PyPI data copied to frontend/public/data/"
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -283,48 +331,45 @@ jobs:
         user_email: 'github-actions[bot]@users.noreply.github.com'
         commit_message: 'Deploy: Update with latest data'
     
-    - name: Commit user data (not projects - too large)
+    - name: Update README with latest stats
+      run: |
+        echo "[README] Updating README.md with collection statistics..."
+        python3 scripts/update_readme.py
+        echo "[OK] README.md updated"
+    
+    - name: Commit user data and PyPI data
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Verify the new user file is valid
-        echo "🔍 Verifying new user file..."
-        LATEST_FILE=$(ls -t data/seattle_users_*.json | head -1)
-        echo "Latest file: $LATEST_FILE"
+        echo "[CHECK] Verifying data files..."
         
-        # Check if file exists and is valid JSON
-        if [ ! -f "$LATEST_FILE" ]; then
-          echo "❌ Error: Latest user file not found"
-          exit 1
-        fi
-        
-        # Check if it contains important organizations (allenai, awslabs)
-        if ! grep -q '"allenai"' "$LATEST_FILE"; then
-          echo "⚠️  Warning: allenai not found in new file"
-          echo "Skipping old file removal for safety"
+        # Verify seattle_users.json exists and is valid
+        if [ -f "data/seattle_users.json" ]; then
+          USER_COUNT=$(jq -r '.total_users // 0' "data/seattle_users.json" 2>/dev/null || echo "0")
+          echo "[OK] seattle_users.json: $USER_COUNT users"
         else
-          echo "✅ Verification passed: allenai found"
-          
-          # Remove old user files (keep only the latest one)
-          echo "🧹 Cleaning up old user files..."
-          cd data
-          ls -t seattle_users_*.json | tail -n +2 | xargs -r rm -v
-          cd ..
+          echo "[WARNING] seattle_users.json not found"
         fi
         
-        # Only add user files (small enough for Git)
-        # Projects files are too large (252MB) and exceed Git LFS quota
-        # Also add README.md with updated stats
-        # Add PyPI data files: seattle_pypi_projects.json and pypi_official_packages.json
-        git add data/seattle_users_*.json data/seattle_pypi_projects.json data/pypi_official_packages.json README.md
+        # Verify seattle_pypi_projects.json exists
+        if [ -f "data/seattle_pypi_projects.json" ]; then
+          PYPI_COUNT=$(jq -r '.projects_on_pypi // 0' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0")
+          echo "[OK] seattle_pypi_projects.json: $PYPI_COUNT projects"
+        else
+          echo "[WARNING] seattle_pypi_projects.json not found"
+        fi
+        
+        # Add standard filenames (no timestamps)
+        # Note: seattle_projects.json is managed by Git LFS
+        git add data/seattle_users.json data/seattle_pypi_projects.json data/pypi_official_packages.json data/seattle_top_pypi_matches.json data/top_pypi_packages.json README.md 2>/dev/null || true
         
         # Check if there are changes
         if git diff --staged --quiet; then
-          echo "✅ No changes to user data, PyPI data, or README"
+          echo "[OK] No changes to commit"
         else
-          echo "📤 Committing updated user data, PyPI data, and README"
-          git commit -m "chore: Update user data, PyPI data, and README - $(date +'%Y-%m-%d')"
+          echo "[COMMIT] Committing updated data and README"
+          git commit -m "chore: Update data and README - $(date +'%Y-%m-%d %H:%M PST' -d 'TZ=\"America/Los_Angeles\"')"
           git push
         fi
     
@@ -334,29 +379,24 @@ jobs:
         echo "## Collection Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # Find the latest projects file
-        LATEST_PROJECTS=$(ls -t data/seattle_projects_*.json 2>/dev/null | head -1)
-        
-        if [ -f "$LATEST_PROJECTS" ]; then
-          # Use -r for raw output and handle potential null/missing fields
-          USERS=$(jq -r '.successful_users // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
-          PROJECTS=$(jq -r '.total_projects // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
-          STARS=$(jq -r '.total_stars // 0' "$LATEST_PROJECTS" 2>/dev/null || echo "0")
+        # Check standard filename (after secondary_update.py)
+        if [ -f "data/seattle_projects.json" ]; then
+          USERS=$(jq -r '.successful_users // 0' "data/seattle_projects.json" 2>/dev/null || echo "0")
+          PROJECTS=$(jq -r '.total_projects // 0' "data/seattle_projects.json" 2>/dev/null || echo "0")
+          STARS=$(jq -r '.total_stars // 0' "data/seattle_projects.json" 2>/dev/null || echo "0")
           
-          echo "- 👥 Users: **$USERS**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 Projects: **$PROJECTS**" >> $GITHUB_STEP_SUMMARY
-          echo "- ⭐ Stars: **$STARS**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📁 File: \`$(basename $LATEST_PROJECTS)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Users:** $USERS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Projects:** $PROJECTS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Stars:** $STARS" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** \`seattle_projects.json\`" >> $GITHUB_STEP_SUMMARY
         else
           echo "⚠️ Projects data file not found" >> $GITHUB_STEP_SUMMARY
         fi
         
-        # Also show user data info
-        LATEST_USERS=$(ls -t data/seattle_users_*.json 2>/dev/null | head -1)
-        if [ -f "$LATEST_USERS" ]; then
-          USER_COUNT=$(jq -r '.total_users // 0' "$LATEST_USERS" 2>/dev/null || echo "0")
-          echo "- 📋 User accounts collected: **$USER_COUNT**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📄 User file: \`$(basename $LATEST_USERS)\`" >> $GITHUB_STEP_SUMMARY
+        # Show user data info
+        if [ -f "data/seattle_users.json" ]; then
+          USER_COUNT=$(jq -r '.total_users // 0' "data/seattle_users.json" 2>/dev/null || echo "0")
+          echo "- **User Accounts:** $USER_COUNT" >> $GITHUB_STEP_SUMMARY
         fi
         
         # Show PyPI data info
@@ -365,7 +405,7 @@ jobs:
           TOTAL_PYTHON=$(jq -r '.total_python_projects // 0' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0")
           DETECTION_RATE=$(jq -r '.detection_rate // "0%"' "data/seattle_pypi_projects.json" 2>/dev/null || echo "0%")
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 PyPI Statistics" >> $GITHUB_STEP_SUMMARY
-          echo "- 🐍 Total Python projects: **$TOTAL_PYTHON**" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 On PyPI: **$PYPI_COUNT** ($DETECTION_RATE)" >> $GITHUB_STEP_SUMMARY
+          echo "### PyPI Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Python Projects:** $TOTAL_PYTHON" >> $GITHUB_STEP_SUMMARY
+          echo "- **On PyPI:** $PYPI_COUNT ($DETECTION_RATE)" >> $GITHUB_STEP_SUMMARY
         fi

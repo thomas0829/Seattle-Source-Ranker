@@ -1,6 +1,6 @@
 # Seattle Source Ranker
 
-[![Beta Version](https://img.shields.io/badge/version-Beta--v4.0-orange)](https://github.com/thomas0829/Seattle-Source-Ranker/releases/tag/Beta-v4.0)
+[![Beta Version](https://img.shields.io/badge/version-Beta--v4.2-orange)](https://github.com/thomas0829/Seattle-Source-Ranker/releases/tag/Beta-v4.2)
 [![Last Updated](https://img.shields.io/badge/auto--update-daily-brightgreen.svg)](https://github.com/thomas0829/Seattle-Source-Ranker/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -15,11 +15,12 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 ## Latest Statistics
 
-- **465,479 projects** tracked across Seattle's developer community
-- **2,831,821 total stars** accumulated by Seattle projects
-- **28,251 users** collected in latest run
-- **10,000 Python projects** published on PyPI (18.08% of Python projects)
-- Last updated: 2025-12-01 00:27:06 PST
+- **432,498 projects** tracked across Seattle's developer community
+- **2,828,357 total stars** accumulated by Seattle projects
+- **28,283 users** collected in latest run
+- **1,074 Python projects** published on PyPI (1.99% of Python projects)
+- **28 Python projects** in global Top 15,000 PyPI packages (0.07% of Python projects)
+- Last updated: 2025-12-07 11:52:52 PST
 
 ---
 
@@ -43,10 +44,10 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 
 | Team Member | Role | Contributions |
 |------------|------|---------------|
-| **thomas0829** | Project Architecture & System Design Lead | • Frontend/Backend system architecture<br>• GraphQL/REST API integration<br>• Distributed collection system (Celery + Redis)<br>• Rate limit handling & token rotation<br>• Python rankings with PyPI integration<br>• Performance optimization<br>• GitHub Actions automation |
-| **Wenshu0206** | Frontend Developer & UI/UX Designer | • React frontend development<br>• Component design & implementation<br>• User experience optimization<br>• Responsive layout design<br>• UI/UX testing & refinement |
-| **Muwen320** | Scoring Algorithm & Interpretability Specialist | • SSR scoring algorithm design<br>• Multi-factor ranking system<br>• Language classification logic<br>• Algorithm documentation<br>• Transparent scoring methodology |
-| **Chase-Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing<br>• Error handling & recovery |
+| **thomas0829** | Project Lead & Full-Stack Developer | • System architecture & distributed processing<br>• Frontend/Backend implementation<br>• GitHub API integration & optimization<br>• PyPI integration & Python rankings<br>• Automated deployment & CI/CD |
+| **Wenshu0206** | UI/UX Designer | • Mobile version design<br>• Homepage first version design |
+| **Muwen320** | Scoring Algorithm Specialist | • SSR scoring algorithm design<br>• Algorithm documentation |
+| **Chase-Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing |
 
 ---
 
@@ -64,15 +65,23 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
   - **Overall Rankings** - Top 10,000 projects across all languages
   - **Python Rankings** - Dedicated page with PyPI integration and bonus scoring
 - **Interactive UI** - React-based with real-time search, suggestions, and smooth pagination
-- **PyPI Integration** - Python projects receive 10% score bonus for PyPI publication
+- **Tiered PyPI Bonuses** - Python projects receive 5% bonus (any PyPI) + 10% bonus (Top 15k global)
 - **Smart Search** - Debounced search with owner and topic suggestions
 - **Glass Morphism Design** - Modern, professional aesthetic with smooth animations
 - **Comprehensive Documentation** - Dedicated pages for scoring methodology and data validation
 
 ### Technical Excellence
+- **Dual Data Sources** - Integrates GitHub API (user search via GraphQL, repository data via REST) and PyPI API (package verification)
 - **Rate Limit Optimization** - 6 GitHub tokens with intelligent rotation
-- **PyPI Detection** - Offline matching with 702k+ packages, 100% precision
-- **Comprehensive Testing** - 91 tests covering all core functionality
+- **PyPI Detection** - Offline matching with 707k+ packages, 100% precision, tiered scoring for Top 15k
+- **Comprehensive Testing** - 225 tests covering all core functionality
+  - Test Coverage: **56%** of library code (100% for scoring module, 97% for PyPI detection, 94% for token management)
+  - Core modules at 94-100% coverage ensuring reliability
+  - Python: pylint code quality checks (8.72/10)
+  - Frontend: JavaScript/JSX syntax validation, CSS structure checks
+  - Shell: Bash script syntax validation, GitHub Actions YAML validation
+  - Run tests: `pytest test/`
+  - Generate coverage report: `pytest --cov=src/seattle_source_ranker --cov-report=html`
 - **Organization Support** - Handles allenai, awslabs, FredHutch, and other Seattle organizations
 
 ---
@@ -82,7 +91,73 @@ A comprehensive tool that collects, analyzes, and ranks open source projects fro
 ### View Live Rankings
 Visit **[https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)** to explore Seattle's open source projects.
 
-### Run Locally
+### Installation
+
+```bash
+# Clone and install
+git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
+cd Seattle-Source-Ranker
+pip install -e .
+```
+
+### Simple Usage Examples
+
+The package can be used as a library for analyzing GitHub projects:
+
+#### Example 1: Calculate Project Score
+```python
+from seattle_source_ranker.scoring import calculate_github_score
+
+project = {
+    'stars': 1000,
+    'forks': 150,
+    'watchers': 200,
+    'open_issues': 25,
+    'created_at': '2020-01-01T00:00:00Z',
+    'pushed_at': '2024-11-15T10:30:00Z'
+}
+
+score = calculate_github_score(project)
+print(f"SSR Score: {score:.2f}")  # Output: SSR Score: 6842.35
+```
+
+#### Example 2: Check PyPI Publication
+```python
+from seattle_source_ranker.pypi import PyPIChecker
+
+checker = PyPIChecker()
+
+project = {
+    'name': 'requests',
+    'language': 'Python',
+    'topics': ['http', 'python'],
+    'description': 'Python HTTP library'
+}
+
+is_on_pypi = checker.check_project(project)
+print(f"On PyPI: {is_on_pypi}")  # Output: On PyPI: True
+```
+
+#### Example 3: Manage GitHub Tokens
+```python
+from seattle_source_ranker.tokens import TokenManager
+
+# Load tokens from .env.tokens or environment
+tm = TokenManager()
+
+# Get best available token
+token = tm.get_token()
+
+# Check rate limit
+limit_info = tm.check_rate_limit()
+print(f"Remaining: {limit_info['remaining']}")
+```
+
+See the **[examples/](examples/)** directory for more detailed usage examples.
+
+### Full Data Collection Pipeline
+
+For running the complete data collection system:
 
 **Prerequisites:**
 - Python 3.11+
@@ -91,20 +166,15 @@ Visit **[https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829
 
 **Installation:**
 ```bash
-# 1. Clone repository
-git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
-cd Seattle-Source-Ranker
-
-# 2. Install dependencies
+# Install with conda (includes all dependencies)
 conda env create -f environment.yml
 conda activate ssr
-# Or: pip install -e .
 
-# 3. Start Redis
+# Start Redis
 sudo systemctl start redis-server
 redis-cli ping  # Should return PONG
 
-# 4. Configure tokens (.env.tokens file)
+# Configure tokens in .env.tokens file
 GITHUB_TOKEN_1=ghp_your_token_here
 GITHUB_TOKEN_2=ghp_your_token_here
 # ... up to GITHUB_TOKEN_6
@@ -183,25 +253,37 @@ Score = (
     age_factor() × 0.10 +
     activity_factor() × 0.10 +
     health_factor() × 0.10
-) × 10000
+) × 1000000
 ```
 
-### Python Projects: PyPI Bonus (10%)
+### Python Projects: Tiered PyPI Bonuses
 
-Python projects published on PyPI receive an additional scoring enhancement:
+Python projects published on PyPI receive tiered scoring enhancements:
 
 ```
-Python Final Score = Base SSR Score × 1.1  (if on PyPI)
-                   = Base SSR Score × 1.0  (if not on PyPI)
+Base Score Range: 0-1,000,000 points
+
+Tier 1 - Any PyPI Package:           Base Score × 1.05
+Tier 2 - Top 15k Global PyPI:        Base Score × 1.05 × 1.10 = × 1.155
+
+Examples:
+  Not on PyPI:       756,000 points → 756,000 final
+  Regular PyPI:      756,000 points → 793,800 final (+5%)
+  Top 15k PyPI:      756,000 points → 873,180 final (+15.5%)
 ```
 
-**Why PyPI matters:**
+**Tier 1 - Any PyPI (5% bonus):**
+- Applies to ~1,071 packages (2.74% of Python projects)
 - **Distribution Commitment** - Package is ready for `pip install`
 - **Ecosystem Integration** - Can be used as a dependency in other projects
-- **Maintenance Signal** - Publication indicates production readiness
-- **Community Reach** - Discoverable beyond GitHub
 
-The 10% bonus rewards projects that contribute to Python's package ecosystem while maintaining fairness to development-focused repositories.
+**Tier 2 - Top 15k Global (additional 10% bonus):**
+- Applies to ~28 packages (0.07% of Python projects)
+- **Global Impact** - Millions of downloads worldwide
+- **Production Scale** - Among most-used Python packages
+- **Combined bonus**: ×1.155 total (+15.5%)
+
+The tiered system rewards both PyPI publication and global ecosystem impact while maintaining fairness to development-focused repositories.
 
 ### Why This Approach?
 
@@ -209,17 +291,19 @@ The 10% bonus rewards projects that contribute to Python's package ecosystem whi
 - **Age Maturity** - Rewards established projects (2-8 years), penalizes too new/old
 - **Recent Activity** - Prefers actively maintained projects
 - **Health Metrics** - Considers issue management quality relative to popularity
-- **PyPI Integration** - Recognizes production-ready Python packages
+- **Tiered PyPI Bonuses** - Recognizes both production-ready and globally-impactful Python packages
+- **Backend Calculation** - All scoring done in backend, frontend displays final scores
 
 Projects are ranked both **overall** and **by programming language** (11 categories).
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed factor calculations.
+
+See [ARCHITECTURE.md](doc/ARCHITECTURE.md) for detailed factor calculations.
 
 ---
 
 ## Troubleshooting
 
-Having issues? Check the **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** for:
+Having issues? Check the **[Troubleshooting Guide](doc/TROUBLESHOOTING.md)** for:
 - Common errors and solutions (Redis, rate limits, collection failures)
 - Frontend build issues
 - Frequently Asked Questions (watchers, tokens, file management)
@@ -228,11 +312,16 @@ Having issues? Check the **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** fo
 
 ## Documentation
 
-For detailed technical information:
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture, data flow, and component design
-- **[VERSION_HISTORY.md](docs/VERSION_HISTORY.md)** - Project changelog and version history
-- **[MULTI_TOKEN_GUIDE.md](docs/MULTI_TOKEN_GUIDE.md)** - GitHub token setup and rotation guide
-- **[USER_STORIES.md](docs/USER_STORIES.md)** - Use cases and target audiences
+### Design Specifications
+- **[Functional Specification](doc/functional_specification.md)** - User requirements, data sources, and use cases
+- **[Component Specification](doc/component_specification.md)** - Software components, interactions, and implementation plan
+
+### Technical Documentation
+- **[ARCHITECTURE.md](doc/ARCHITECTURE.md)** - Complete system architecture, data flow, and component design
+- **[VERSION_HISTORY.md](doc/VERSION_HISTORY.md)** - Project changelog and version history
+- **[MULTI_TOKEN_GUIDE.md](doc/MULTI_TOKEN_GUIDE.md)** - GitHub token setup and rotation guide
+- **[USER_STORIES.md](doc/USER_STORIES.md)** - Use cases and target audiences
+- **[TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ---
 
@@ -257,6 +346,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 *Statistics automatically updated by GitHub Actions.*
 
-Made with ❤️ for Seattle's tech community
+Made with <3 for Seattle's tech community
 
 </div>

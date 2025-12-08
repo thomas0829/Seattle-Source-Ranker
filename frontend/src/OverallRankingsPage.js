@@ -1,23 +1,38 @@
 // src/RankingsPage.js
 import React, { useEffect, useState, useRef } from "react";
 import "./App.css";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 export default function OverallRankingsPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [metadata, setMetadata] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
+    
+    // Initialize state from URL parameters
+    const [currentPage, setCurrentPage] = useState(() => {
+        const pageParam = searchParams.get('page');
+        return pageParam ? parseInt(pageParam, 10) : 1;
+    });
+    const [activeOwner, setActiveOwner] = useState(() => searchParams.get('search') || null);
+    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => searchParams.get('search') || '');
+    const [selectedLanguages, setSelectedLanguages] = useState(() => {
+        const langsParam = searchParams.get('langs');
+        return langsParam ? langsParam.split(',').filter(l => l) : [];
+    });
+    const [showAll, setShowAll] = useState(() => {
+        const langsParam = searchParams.get('langs');
+        return !langsParam || langsParam === '';
+    });
+    
     const [repos, setRepos] = useState([]);
     const [hoveredRepo, setHoveredRepo] = useState(null);
     const [maxScore, setMaxScore] = useState(1);
+    const [minScore, setMinScore] = useState(null);
+    const [topScore, setTopScore] = useState(null);
     const [repoDetails, setRepoDetails] = useState({});
     const [languages, setLanguages] = useState([]);
-    const [selectedLanguages, setSelectedLanguages] = useState([]);
-    const [showAll, setShowAll] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [pageCache, setPageCache] = useState({});
-    const [top10000Cache, setTop10000Cache] = useState(null); // Cache for top 10000 projects
     const timeoutRef = useRef(null);
     const searchTimeoutRef = useRef(null);
     const [pageInput, setPageInput] = useState(null);
@@ -27,11 +42,28 @@ export default function OverallRankingsPage() {
     const [searchSuggestions, setSearchSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+    const pageBeforeSearchRef = useRef(1);
     const searchWrapperRef = useRef(null);
     const [tooltipPosition, setTooltipPosition] = useState({});
+    const [updatingRows, setUpdatingRows] = useState(false);
+    const [tableFlash, setTableFlash] = useState(false);
+    // Skip scan animation on initial load if there's a search parameter
+    const skipScanAnimationRef = useRef(searchParams.get('search') !== null);
+    const previousFiltersRef = useRef({ languages: selectedLanguages, showAll, search: debouncedSearchQuery });
+    const tableFlashTimeoutRef = useRef(null);
+    const isInitialLoadRef = useRef(true); // Track if this is the initial page load
 
-    const [isScrolling, setIsScrolling] = useState(false);
-    const scrollTimeoutRef = useRef(null);
+    // Use refs to track current values without causing re-renders
+    const currentPageRef = useRef(currentPage);
+    const debouncedSearchQueryRef = useRef(debouncedSearchQuery);
+    
+    useEffect(() => {
+        currentPageRef.current = currentPage;
+    }, [currentPage]);
+    
+    useEffect(() => {
+        debouncedSearchQueryRef.current = debouncedSearchQuery;
+    }, [debouncedSearchQuery]);
 
     // Load metadata
     useEffect(() => {
@@ -40,33 +72,89 @@ export default function OverallRankingsPage() {
             .then((data) => {
                 setMetadata(data);
                 const langs = Object.keys(data.languages)
-                    .filter((lang) => lang !== "Other")
+                    .filter((lang) => lang !== "Other" && lang !== "All" && lang !== "Python_PyPI")
                     .sort((a, b) => data.languages[b].total - data.languages[a].total);
                 setLanguages(langs);
+                
+                // Get min/max scores from metadata (no need to load pages)
+                const allData = data.languages.All;
+                if (allData) {
+                    if (allData.max_score !== undefined) {
+                        setTopScore(allData.max_score);
+                    }
+                    if (allData.min_score !== undefined) {
+                        setMinScore(allData.min_score);
+                    }
+                }
             })
             .catch((err) => console.error("❌ Failed to load metadata:", err));
     }, []);
-
-    // Detect scrolling to pause background loading
+    
+    // Save scroll position before unload (for F5 refresh)
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolling(true);
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-            scrollTimeoutRef.current = setTimeout(() => {
-                setIsScrolling(false);
-            }, 150);
+        const handleBeforeUnload = () => {
+            sessionStorage.setItem('scrollPosition', window.pageYOffset.toString());
         };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, []);
+    
+    // Mark initial load as complete and restore scroll position after first data load
+    useEffect(() => {
+        if (repos.length > 0 && isInitialLoadRef.current) {
+            isInitialLoadRef.current = false;
+            
+            // Restore scroll position with smooth animation after a short delay to ensure content is rendered
+            const savedScrollPosition = sessionStorage.getItem('scrollPosition');
+            if (savedScrollPosition) {
+                setTimeout(() => {
+                    window.scrollTo({ top: parseInt(savedScrollPosition, 10), behavior: 'smooth' });
+                    sessionStorage.removeItem('scrollPosition');
+                }, 100);
+            }
+        }
+    }, [repos]);
+
+    // Sync state when URL changes (browser back/forward)
+    useEffect(() => {
+        const searchParam = searchParams.get('search');
+        const pageParam = searchParams.get('page');
+        const langsParam = searchParams.get('langs');
+        
+        // Only update if values actually changed (to avoid infinite loops)
+        if (searchParam !== debouncedSearchQueryRef.current) {
+            const newSearch = searchParam || '';
+            setSearchQuery(newSearch);
+            setDebouncedSearchQuery(newSearch);
+            setActiveOwner(newSearch || null);
+            setShowSuggestions(false);
+            if (newSearch) {
+                skipScanAnimationRef.current = true;
+            }
+            if (!newSearch) {
+                setSearchMatchCounts({});
+            }
+        }
+        
+        // Update language filter
+        if (langsParam) {
+            const langs = langsParam.split(',').filter(l => l);
+            setSelectedLanguages(langs);
+            setShowAll(langs.length === 0);
+        } else if (!searchParam) {
+            setSelectedLanguages([]);
+            setShowAll(true);
+        }
+        
+        // Update page number
+        if (pageParam) {
+            const page = parseInt(pageParam, 10);
+            if (!isNaN(page) && page > 0 && page !== currentPageRef.current) {
+                setCurrentPage(page);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     // Generate search suggestions
     useEffect(() => {
@@ -334,27 +422,130 @@ export default function OverallRankingsPage() {
     }, [searchQuery]);
 
     // Handle search trigger (Enter key or button)
-    const triggerSearch = () => {
+    const triggerSearch = async () => {
+        const query = searchQuery.toLowerCase().trim();
+        
+        // Check if this might be an owner search by looking at the first character
+        const firstChar = query[0] && query[0].match(/[a-z0-9]/) ? query[0] : 'other';
+        let isOwnerSearch = false;
+        
+        // Quick check if owner exists in cache
+        if (ownerIndexCache[firstChar]) {
+            const ownerKey = Object.keys(ownerIndexCache[firstChar]).find(key => key.toLowerCase() === query);
+            isOwnerSearch = !!ownerKey;
+        }
+        
+        // If it's an owner search, skip scan animation (use row animation only)
+        if (isOwnerSearch) {
+            skipScanAnimationRef.current = true;
+            setTableFlash(false);
+        }
+        
         setDebouncedSearchQuery(searchQuery);
         setCurrentPage(1);
         setShowSuggestions(false);
+        // Update URL with search
+        const newParams = new URLSearchParams(searchParams);
+        if (searchQuery.trim()) {
+            newParams.set('search', searchQuery);
+        } else {
+            newParams.delete('search');
+        }
+        newParams.set('page', '1');
+        setSearchParams(newParams);
     };
 
-    // Handle owner click - search without showing suggestions
+    // Helper function to update page in URL
+    const updatePage = (newPage) => {
+        setCurrentPage(newPage);
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('page', newPage.toString());
+        // Clear search param if search query is empty
+        if (!searchQuery.trim()) {
+            newParams.delete('search');
+        }
+        setSearchParams(newParams);
+    };
+
+    // Handle owner click - search without showing suggestions, click again to clear
     const handleOwnerClick = (ownerName) => {
         setShowSuggestions(false);
         setSearchSuggestions([]);
-        setSearchQuery(ownerName);
-        setDebouncedSearchQuery(ownerName);
-        setCurrentPage(1);
+        
+        // ALWAYS skip scan animation for owner clicks - use row animation only
+        skipScanAnimationRef.current = true;
+        setTableFlash(false);
+        
+        // If clicking the same owner, clear search and return to previous page
+        if (activeOwner === ownerName) {
+            setSearchQuery('');
+            setDebouncedSearchQuery('');
+            setActiveOwner(null);
+            setSearchMatchCounts({});
+            // Return to the page we were on before the search
+            const returnPage = pageBeforeSearchRef.current;
+            setCurrentPage(returnPage);
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('search');
+            newParams.set('page', returnPage.toString());
+            setSearchParams(newParams);
+        } else {
+            // Remember current page before starting new owner search
+            pageBeforeSearchRef.current = currentPage;
+            // New owner search - reset to page 1
+            setSearchQuery(ownerName);
+            setDebouncedSearchQuery(ownerName);
+            setActiveOwner(ownerName);
+            setCurrentPage(1);
+            // Update URL with search parameter
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set('search', ownerName);
+            newParams.set('page', '1');
+            setSearchParams(newParams);
+        }
+        
+        // Scroll to position between header and search bar after data loads
+        setTimeout(() => {
+            const headerElement = document.querySelector('header');
+            if (headerElement) {
+                const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                // Use requestAnimationFrame for smoother scroll
+                requestAnimationFrame(() => {
+                    window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                });
+            }
+        }, 500);
+        
+        // Trigger table update animation after a tiny delay to let data prepare
+        setTimeout(() => {
+            setUpdatingRows(true);
+            setTimeout(() => setUpdatingRows(false), 600);
+        }, 50);
     };
 
     // Load page data based on selected languages and search
     useEffect(() => {
         if (!metadata) return;
 
+        // Clear tooltip when changing pages or filters
+        setHoveredRepo(null);
+
         const loadData = async () => {
-            // If showAll is true (no specific languages selected), show mixed content
+            // Check if filters actually changed (not just page number)
+            const filtersChanged = 
+                previousFiltersRef.current.search !== debouncedSearchQuery ||
+                previousFiltersRef.current.showAll !== showAll ||
+                JSON.stringify(previousFiltersRef.current.languages) !== JSON.stringify(selectedLanguages);
+            
+            // Only show loading for search queries (not for language filters or pagination)
+            const isSearchQuery = debouncedSearchQuery.trim() !== '';
+            const shouldShowLoading = isSearchQuery && filtersChanged && !skipScanAnimationRef.current;
+            
+            if (shouldShowLoading) {
+                setIsLoading(true);
+            }
+            
+            // Load data FIRST
             if (showAll && !debouncedSearchQuery.trim()) {
                 await loadMixedPage();
             } else if (debouncedSearchQuery.trim()) {
@@ -362,6 +553,44 @@ export default function OverallRankingsPage() {
             } else {
                 await loadSelectedLanguages();
             }
+            
+            // Close loading state after data is ready
+            if (shouldShowLoading) {
+                setIsLoading(false);
+            }
+            
+            // THEN trigger animation after data is ready
+            // But skip if we're returning from owner click (use row animation instead)
+            if (filtersChanged && !skipScanAnimationRef.current) {
+                // Clear any existing timeout to ensure immediate restart
+                if (tableFlashTimeoutRef.current) {
+                    clearTimeout(tableFlashTimeoutRef.current);
+                }
+                
+                // Force restart animation by briefly setting to false then true
+                setTableFlash(false);
+                requestAnimationFrame(() => {
+                    setTableFlash(true);
+                    tableFlashTimeoutRef.current = setTimeout(() => {
+                        setTableFlash(false);
+                        tableFlashTimeoutRef.current = null;
+                    }, 2000);
+                });
+            } else if (filtersChanged && skipScanAnimationRef.current) {
+                // Use row animation for owner searches
+                setUpdatingRows(true);
+                setTimeout(() => setUpdatingRows(false), 600);
+            }
+            
+            // Update previous filters AFTER animation trigger to ensure next comparison is correct
+            previousFiltersRef.current = { 
+                languages: [...selectedLanguages], 
+                showAll, 
+                search: debouncedSearchQuery 
+            };
+            
+            // Reset the flag after checking
+            skipScanAnimationRef.current = false;
         };
 
         loadData();
@@ -370,8 +599,8 @@ export default function OverallRankingsPage() {
 
     // Scroll to position between header and search bar when page changes
     useEffect(() => {
-        // Skip scroll on initial page load (page 1)
-        if (currentPage === 1) return;
+        // Skip scroll on initial page load
+        if (isInitialLoadRef.current) return;
         
         // Use setTimeout to ensure DOM is ready
         const timer = setTimeout(() => {
@@ -384,7 +613,7 @@ export default function OverallRankingsPage() {
         return () => clearTimeout(timer);
     }, [currentPage]);
 
-    // Load mixed page (all languages, lazy loading)
+    // Load mixed page (all languages, directly from pre-generated all/ pages)
     const loadMixedPage = async () => {
         const cacheKey = `mixed_${currentPage}`;
         if (pageCache[cacheKey]) {
@@ -392,165 +621,99 @@ export default function OverallRankingsPage() {
             return;
         }
 
-        setIsLoading(true);
-        const pageSize = 50;
-
-        // If we already have the top 10000 cached, use it directly
-        if (top10000Cache) {
-            const startIndex = (currentPage - 1) * pageSize;
-            const pageRepos = top10000Cache.slice(startIndex, startIndex + pageSize);
-            setRepos(pageRepos);
-            setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
-            setIsLoading(false);
-            return;
-        }
-
-        // For first page: load minimal data (just 2 pages per language)
-        // For other pages: load more progressively
-        const allReposForLoad = [];
-        const langsToLoad = showAll ? [...languages, 'Other'] : languages;
+        // Directly load from pages/all/page_X.json
+        const pageUrl = `${process.env.PUBLIC_URL}/pages/all/page_${currentPage}.json`;
         
-        // Optimize for first page - load minimal data
-        const quickLoadPages = currentPage === 1 ? 2 : Math.max(3, Math.ceil((currentPage * pageSize + 100) / langsToLoad.length / 50));
-        
-        // Load pages in parallel for better performance
-        const loadPromises = langsToLoad.map(async (lang) => {
-            const langRepos = [];
-            for (let page = 1; page <= quickLoadPages; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus");
-                const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
-
-                try {
-                    const response = await fetch(pageUrl);
-                    const pageData = await response.json();
-                    const reposWithCategory = pageData.map((repo) => ({
-                        ...repo,
-                        category: lang
-                    }));
-                    langRepos.push(...reposWithCategory);
-                } catch (err) {
-                    console.error(`Failed to load ${lang} page ${page}:`, err);
-                }
+        try {
+            const response = await fetch(pageUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
             }
-            return langRepos;
-        });
-
-        // Wait for all languages to load in parallel
-        const results = await Promise.all(loadPromises);
-        results.forEach(langRepos => allReposForLoad.push(...langRepos));
-
-        // Sort and display current page immediately
-        allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
-        const startIndex = (currentPage - 1) * pageSize;
-        const pageRepos = allReposForLoad.slice(startIndex, startIndex + pageSize);
-        
-        setRepos(pageRepos);
-        setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
-        
-        if (pageRepos.length > 0) {
-            const pageMax = Math.max(...pageRepos.map((r) => r.score));
-            if (pageMax > maxScore) setMaxScore(pageMax);
-        }
-        
-        setIsLoading(false);
-
-        // Load remaining data in background for future pages (only if on first page)
-        if (currentPage === 1 && !isScrolling) {
-            setTimeout(() => {
-                loadFullTop10000();
-            }, 100);
+            
+            const pageData = await response.json();
+            setRepos(pageData);
+            setPageCache((prev) => ({ ...prev, [cacheKey]: pageData }));
+            
+            if (pageData.length > 0) {
+                const pageMax = Math.max(...pageData.map((r) => r.score));
+                if (pageMax > maxScore) setMaxScore(pageMax);
+            }
+        } catch (err) {
+            console.error(`Failed to load page ${currentPage}:`, err);
+            setRepos([]);
         }
     };
 
-    // Load full top 10000 dataset
-    const loadFullTop10000 = async () => {
-        if (top10000Cache) return top10000Cache; // Already loaded
-        if (isScrolling) return; // Pause loading while scrolling
-
-        const allReposForLoad = [];
-        const langsToLoad = showAll ? [...languages, 'Other'] : languages;
-        const maxPagesToLoadPerLang = 100;
-
-        for (const lang of langsToLoad) {
-            const totalPagesForLang = metadata.languages[lang].pages;
-            const pagesToLoad = Math.min(maxPagesToLoadPerLang, totalPagesForLang);
-
-            for (let page = 1; page <= pagesToLoad; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus");
-                const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
-
-                try {
-                    const response = await fetch(pageUrl);
-                    const pageData = await response.json();
-                    const reposWithLang = pageData.map((repo) => ({
-                        ...repo,
-                        language: lang
-                    }));
-                    allReposForLoad.push(...reposWithLang);
-                } catch (err) {
-                    console.error(`Failed to load ${lang} page ${page}:`, err);
-                }
-            }
-        }
-
-        // Sort by global_rank to get the true top 10000
-        allReposForLoad.sort((a, b) => (a.global_rank || 999999) - (b.global_rank || 999999));
-        
-        // Take only projects with global_rank <= 10000
-        const top10000 = allReposForLoad.filter(repo => repo.global_rank && repo.global_rank <= 10000);
-        
-        // Cache the top 10000 for future use
-        setTop10000Cache(top10000);
-        return top10000;
-    };
-
-    // Load selected languages (need to load enough pages to get to current page)
+    // Load selected languages (need to load and mix multiple languages)
     const loadSelectedLanguages = async () => {
         const cacheKey = `langs_${selectedLanguages.join(",")}_${currentPage}`;
         if (pageCache[cacheKey]) {
             setRepos(pageCache[cacheKey]);
             return;
         }
-
-        setIsLoading(true);
         const pageSize = 50;
-        const MAX_PROJECTS = 10000;
+        
+        // If only one language selected, directly load from that language's pages (fast path)
+        if (selectedLanguages.length === 1) {
+            const lang = selectedLanguages[0];
+            const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
+            const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${currentPage}.json`;
+            
+            try {
+                const response = await fetch(pageUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const pageData = await response.json();
+                // Add category for display
+                const reposWithCategory = pageData.map((repo) => ({
+                    ...repo,
+                    category: lang
+                }));
+                
+                setRepos(reposWithCategory);
+                setPageCache((prev) => ({ ...prev, [cacheKey]: reposWithCategory }));
+                
+                if (reposWithCategory.length > 0) {
+                    const pageMax = Math.max(...reposWithCategory.map((r) => r.score));
+                    if (pageMax > maxScore) setMaxScore(pageMax);
+                }
+            } catch (err) {
+                console.error(`Failed to load ${lang} page ${currentPage}:`, err);
+                setRepos([]);
+            }
+            
+            return;
+        }
+        
+        // For multiple languages, load and mix from their respective pages
         const allReposForLoad = [];
 
-        // For selected languages, load pages in order (already sorted by score within each language)
-        // We want the top projects from each language, not by global rank
-        const maxPagesToLoad = Math.ceil(MAX_PROJECTS / pageSize);
-
+        // Load the current page from each selected language
         for (const lang of selectedLanguages) {
-            const totalPagesForLang = metadata.languages[lang].pages;
-            const pagesToLoad = Math.min(maxPagesToLoad, totalPagesForLang);
+            const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
+            const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${currentPage}.json`;
 
-            for (let page = 1; page <= pagesToLoad; page++) {
-                const langPath = lang.toLowerCase().replace(/\+/g, "plus");
-                const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
-
-                try {
-                    const response = await fetch(pageUrl);
-                    const pageData = await response.json();
-                    const reposWithCategory = pageData.map((repo) => ({
-                        ...repo,
-                        category: lang  // Use category field instead of overwriting language
-                    }));
-                    allReposForLoad.push(...reposWithCategory);
-                } catch (err) {
-                    console.error(`Failed to load ${lang} page ${page}:`, err);
-                }
+            try {
+                const response = await fetch(pageUrl);
+                if (!response.ok) continue;
+                const pageData = await response.json();
+                const reposWithCategory = pageData.map((repo) => ({
+                    ...repo,
+                    category: lang
+                }));
+                allReposForLoad.push(...reposWithCategory);
+            } catch (err) {
+                console.error(`Failed to load ${lang} page ${currentPage}:`, err);
             }
         }
 
-        // Sort by score (for selected languages, we show top scored projects, not global rank)
+        // Sort by score (descending) for mixed language view
         allReposForLoad.sort((a, b) => b.score - a.score);
         
-        // Limit to first 10000 projects
-        const limitedRepos = allReposForLoad.slice(0, MAX_PROJECTS);
-        
-        const startIndex = (currentPage - 1) * pageSize;
-        const pageRepos = limitedRepos.slice(startIndex, startIndex + pageSize);
+        // Take top 50 for this page
+        const pageRepos = allReposForLoad.slice(0, pageSize);
 
         setRepos(pageRepos);
         setPageCache((prev) => ({ ...prev, [cacheKey]: pageRepos }));
@@ -559,13 +722,10 @@ export default function OverallRankingsPage() {
             const pageMax = Math.max(...pageRepos.map((r) => r.score));
             if (pageMax > maxScore) setMaxScore(pageMax);
         }
-
-        setIsLoading(false);
     };
 
     // Load search results (use owner index for fast exact owner searches)
     const loadSearchResults = async () => {
-        setIsLoading(true);
         const query = debouncedSearchQuery.toLowerCase().trim();
         
         // Try to load owner index for exact match
@@ -633,15 +793,22 @@ export default function OverallRankingsPage() {
                 if (pageMax > maxScore) setMaxScore(pageMax);
             }
             
-            setIsLoading(false);
             return;
         }
         
         // Fall back to traditional search (for partial matches)
         // But only if query is at least 2 characters (avoid too broad searches)
+        // AND only if this is NOT an exact owner click (activeOwner === null means manual search)
+        if (activeOwner) {
+            // If activeOwner is set but we didn't find in index, no results
+            console.log(`⚠️ Owner '${query}' not found in index`);
+            setRepos([]);
+            setSearchMatchCounts({});
+            return;
+        }
+        
         if (query.length < 2) {
             console.log(`⏭️ Query too short, skipping search: '${query}'`);
-            setIsLoading(false);
             return;
         }
         
@@ -680,7 +847,7 @@ export default function OverallRankingsPage() {
 
                 for (let page = startPage; page <= endPage; page++) {
                     try {
-                        const langPath = lang.toLowerCase().replace(/\+/g, "plus");
+                        const langPath = lang.toLowerCase().replace(/\+/g, "plus").replace(/c#/g, "csharp").replace(/c\+\+/g, "cpp");
                         const pageUrl = `${process.env.PUBLIC_URL}/pages/${langPath}/page_${page}.json`;
                         const response = await fetch(pageUrl);
                         const pageData = await response.json();
@@ -763,14 +930,10 @@ export default function OverallRankingsPage() {
             const pageMax = Math.max(...pageRepos.map((r) => r.score));
             if (pageMax > maxScore) setMaxScore(pageMax);
         }
-
-        setIsLoading(false);
     };
 
     // Handle language checkbox toggle
     const handleLanguageToggle = (lang) => {
-        setShowAll(false); // Uncheck "All" when selecting specific languages
-        
         // Clear language-specific search when switching languages
         if (searchQuery.match(/^language:.+$/i)) {
             setSearchQuery('');
@@ -778,19 +941,44 @@ export default function OverallRankingsPage() {
             setSearchMatchCounts({});
         }
         
-        setSelectedLanguages((prev) => {
-            if (prev.includes(lang)) {
-                const newSelected = prev.filter((l) => l !== lang);
-                // If no languages selected, go back to "All"
-                if (newSelected.length === 0) {
-                    setShowAll(true);
-                }
-                return newSelected;
-            } else {
-                return [...prev, lang];
+        // Calculate new state first
+        const isCurrentlySelected = selectedLanguages.includes(lang);
+        let newLanguages;
+        let newShowAll;
+        
+        if (isCurrentlySelected) {
+            // Removing language
+            newLanguages = selectedLanguages.filter((l) => l !== lang);
+            newShowAll = newLanguages.length === 0;
+        } else {
+            // Adding language
+            newLanguages = [...selectedLanguages, lang];
+            newShowAll = false;
+        }
+        
+        // Update all states together
+        setSelectedLanguages(newLanguages);
+        setShowAll(newShowAll);
+        setCurrentPage(1);
+        
+        // Update URL
+        const newParams = new URLSearchParams(searchParams);
+        if (newLanguages.length > 0) {
+            newParams.set('langs', newLanguages.join(','));
+        } else {
+            newParams.delete('langs');
+        }
+        newParams.set('page', '1');
+        setSearchParams(newParams);
+        
+        // Scroll to table position (same as page navigation)
+        setTimeout(() => {
+            const headerElement = document.querySelector('header');
+            if (headerElement) {
+                const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
             }
-        });
-        setCurrentPage(1); // Reset to page 1 when filter changes
+        }, 100);
     };
 
     // Handle "All" checkbox toggle
@@ -806,6 +994,21 @@ export default function OverallRankingsPage() {
                 setDebouncedSearchQuery('');
                 setSearchMatchCounts({});
             }
+            
+            // Update URL - remove langs param
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('langs');
+            newParams.set('page', '1');
+            setSearchParams(newParams);
+            
+            // Scroll to table position (same as page navigation)
+            setTimeout(() => {
+                const headerElement = document.querySelector('header');
+                if (headerElement) {
+                    const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                    window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                }
+            }, 100);
         }
     };
 
@@ -814,36 +1017,26 @@ export default function OverallRankingsPage() {
         const MAX_PROJECTS = 10000;
         const MAX_PAGES = Math.ceil(MAX_PROJECTS / 50); // 200 pages
         
-        if (showAll && !debouncedSearchQuery.trim()) {
-            // Mixed mode: calculate total from all languages, limited to 10000
-            let total = 0;
-            languages.forEach((lang) => {
-                if (metadata.languages[lang]) {
-                    total += metadata.languages[lang].total;
-                }
-            });
-            const calculatedPages = Math.ceil(total / 50);
-            return Math.min(calculatedPages, MAX_PAGES);
-        } else if (!debouncedSearchQuery.trim() && selectedLanguages.length > 0) {
-            // Selected languages mode: calculate from selected languages, limited to 10000
-            let total = 0;
-            selectedLanguages.forEach((lang) => {
-                if (metadata.languages[lang]) {
-                    total += metadata.languages[lang].total;
-                }
-            });
-            const calculatedPages = Math.ceil(total / 50);
-            return Math.min(calculatedPages, MAX_PAGES);
-        } else if (debouncedSearchQuery.trim()) {
-            // Search mode: no limit, show all search results
+        if (debouncedSearchQuery.trim()) {
+            // Search mode: show all search results
             const totalMatches = Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0);
             if (totalMatches === 0) {
-                // Still loading search results
                 return currentPage;
             }
             return Math.ceil(totalMatches / 50);
+        } else if (selectedLanguages.length > 0) {
+            // Language filter mode: calculate based on filtered languages
+            // Each language shows up to 10000 projects, but total might be less
+            const totalProjectsInFilteredLanguages = selectedLanguages.reduce((sum, lang) => {
+                return sum + (metadata?.languages?.[lang]?.total || 0);
+            }, 0);
+            
+            // Cap at 10000 projects max
+            const actualProjects = Math.min(totalProjectsInFilteredLanguages, MAX_PROJECTS);
+            return Math.ceil(actualProjects / 50);
         } else {
-            return 1;
+            // All projects mode: maximum 200 pages (10000 projects)
+            return MAX_PAGES;
         }
     };
 
@@ -959,7 +1152,14 @@ export default function OverallRankingsPage() {
                                             setDebouncedSearchQuery(`language:${selectedText}`);
                                         }
                                     } else {
-                                        // For owner/topic suggestions, just search
+                                        // For owner/topic suggestions, set active owner and skip scan animation
+                                        if (suggestion.type === 'owner') {
+                                            // Skip scan animation for owner search (use row animation only)
+                                            skipScanAnimationRef.current = true;
+                                            setTableFlash(false);
+                                            setActiveOwner(selectedText);
+                                        }
+                                        
                                         setSearchQuery(selectedText);
                                         setDebouncedSearchQuery(selectedText);
                                         setShowSuggestions(false);
@@ -993,15 +1193,51 @@ export default function OverallRankingsPage() {
                         <button
                             className="clear-search-btn"
                             onClick={() => {
+                                // Clear any pending hover timeouts
+                                if (timeoutRef.current) {
+                                    clearTimeout(timeoutRef.current);
+                                }
+                                
+                                // Skip scan animation when clearing search (just show simple transition)
+                                skipScanAnimationRef.current = true;
+                                
+                                // Clear repos to force reload and avoid showing stale search results
+                                setRepos([]);
                                 setSearchQuery('');
                                 setDebouncedSearchQuery('');
-                                setCurrentPage(1);
+                                setHoveredRepo(null); // Clear any open tooltip
+                                // Return to the page we were on before the search
+                                const returnPage = pageBeforeSearchRef.current;
+                                setCurrentPage(returnPage);
                                 setPageCache({}); // Clear cache when clearing search
                                 setShowSuggestions(false);
                                 setSearchMatchCounts({});
+                                setActiveOwner(null);
                                 // Reset to "All" languages
                                 setShowAll(true);
                                 setSelectedLanguages([]);
+                                // Clear URL parameters
+                                const newParams = new URLSearchParams(searchParams);
+                                newParams.delete('search');
+                                newParams.set('page', returnPage.toString());
+                                setSearchParams(newParams);
+                                
+                                // Trigger row update animation
+                                setTimeout(() => {
+                                    setUpdatingRows(true);
+                                    setTimeout(() => setUpdatingRows(false), 600);
+                                }, 50);
+                                
+                                // Scroll to position between header and search bar
+                                setTimeout(() => {
+                                    const headerElement = document.querySelector('header');
+                                    if (headerElement) {
+                                        const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                                        requestAnimationFrame(() => {
+                                            window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                                        });
+                                    }
+                                }, 500);
                             }}
                             title="Clear search"
                         >
@@ -1045,7 +1281,14 @@ export default function OverallRankingsPage() {
                                                 setDebouncedSearchQuery(`language:${selectedText}`);
                                             }
                                         } else {
-                                            // For owner/topic suggestions, just search
+                                            // For owner/topic suggestions, check if it's an owner and skip scan animation
+                                            if (suggestion.type === 'owner') {
+                                                // Skip scan animation for owner search (use row animation only)
+                                                skipScanAnimationRef.current = true;
+                                                setTableFlash(false);
+                                                setActiveOwner(selectedText);
+                                            }
+                                            
                                             setSearchQuery(selectedText);
                                             setDebouncedSearchQuery(selectedText);
                                             setShowSuggestions(false);
@@ -1056,8 +1299,13 @@ export default function OverallRankingsPage() {
                                     }}
                                     onMouseEnter={() => setSelectedSuggestionIndex(index)}
                                 >
-                                    <span className="suggestion-icon">{suggestion.icon}</span>
-                                    <span className="suggestion-text">{suggestion.text}</span>
+                                    <div className="suggestion-left">
+                                        <span className="suggestion-icon">{suggestion.icon}</span>
+                                        <span className="suggestion-text">{suggestion.text}</span>
+                                    </div>
+                                    {suggestion.type === 'owner' && (
+                                        <span className="suggestion-badge">User</span>
+                                    )}
                                     {suggestion.type === 'language' && (
                                         <span className="suggestion-badge">Language</span>
                                     )}
@@ -1070,8 +1318,9 @@ export default function OverallRankingsPage() {
                     )}
                 </div>
                 {isLoading && (
-                    <div className="search-hint">
-                        <span className="spinner"></span> Searching...
+                    <div className="search-hint loading-indicator">
+                        <span className="spinner"></span>
+                        <span>Loading...</span>
                     </div>
                 )}
             </div>
@@ -1079,7 +1328,19 @@ export default function OverallRankingsPage() {
             {/* Language Filter Toggle Button */}
             <button 
                 className="filter-toggle-btn"
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => {
+                    const newShowFilters = !showFilters;
+                    setShowFilters(newShowFilters);
+                    
+                    // Scroll to filter button position when expanding or collapsing
+                    setTimeout(() => {
+                        const headerElement = document.querySelector('header');
+                        if (headerElement) {
+                            const headerBottom = headerElement.getBoundingClientRect().bottom + window.pageYOffset;
+                            window.scrollTo({ top: headerBottom - 20, behavior: 'smooth' });
+                        }
+                    }, 100);
+                }}
             >
                 <span>{showFilters ? '▼' : '▶'}</span> Filter by Language
                 {!showAll && selectedLanguages.length > 0 && !searchQuery.match(/^language:.+$/i) && (
@@ -1105,7 +1366,7 @@ export default function OverallRankingsPage() {
                                         {debouncedSearchQuery.trim() && Object.keys(searchMatchCounts).length > 0 ? (
                                             `(${Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0).toLocaleString()} matches)`
                                         ) : (
-                                            `(${Object.keys(metadata.languages).reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
+                                            `(${Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI' && l !== 'All').reduce((sum, lang) => sum + (metadata.languages[lang]?.total || 0), 0).toLocaleString()})`
                                         )}
                 </span>
                                 )}
@@ -1142,7 +1403,7 @@ export default function OverallRankingsPage() {
             )}
 
             {/* Ranking Table */}
-            <div className="ranking-table">
+            <div className={`ranking-table ${tableFlash ? 'table-flash' : ''}`}>
                 <table>
                     <thead>
                     <tr>
@@ -1154,16 +1415,18 @@ export default function OverallRankingsPage() {
                     </thead>
                     <tbody>
                     {repos.map((repo, index) => {
-                        // Use global rank if available, otherwise calculate
+                        // Use global rank if available, otherwise calculate from page
                         const displayRank = repo.global_rank || ((currentPage - 1) * 50 + index + 1);
-                        const barWidth = (repo.score / maxScore) * 100;
-                        // Handle score display: remove "0.", e.g., 0.88 -> 88, 1.23 -> 123
-                        let displayScore;
-                        if (repo.score < 1) {
-                            displayScore = (repo.score * 100).toFixed(0);
+                        // Use min-max normalization if we have topScore and minScore
+                        let barWidth;
+                        if (topScore !== null && minScore !== null && topScore !== minScore) {
+                            barWidth = ((repo.score - minScore) / (topScore - minScore)) * 100;
                         } else {
-                            displayScore = (repo.score * 100).toFixed(0);
+                            // Fallback to linear scale if scores not loaded yet
+                            barWidth = (repo.score / maxScore) * 100;
                         }
+                        // Display score directly (backend now returns 0-1000000 range)
+                        const displayScore = repo.score.toLocaleString();
 
                         // Extract project name (remove owner/ prefix)
                         const projectName = repo.name.includes("/")
@@ -1171,64 +1434,60 @@ export default function OverallRankingsPage() {
                             : repo.name;
 
                         return (
-                            <tr key={repo.name}>
+                            <tr 
+                                key={`${repo.name}-${displayRank}`}
+                                className={updatingRows ? 'row-updating' : ''}
+                                style={updatingRows ? { animationDelay: `${index * 0.03}s` } : {}}
+                            >
                                 <td className="rank-col">#{displayRank}</td>
                                 <td className="owner-col">
                                     <span
-                                        className="owner-link"
+                                        className={`owner-link ${activeOwner === repo.owner ? 'owner-active' : ''}`}
                                         onClick={() => handleOwnerClick(repo.owner)}
-                                        title={`Search for ${repo.owner}`}
+                                        title={activeOwner === repo.owner ? `Click to clear search` : `Search for ${repo.owner}`}
                                     >
                                         {repo.owner}
                                     </span>
                                 </td>
                                 <td className="chart-col">
-                                    <div
-                                        className="bar-container"
-                                        onMouseEnter={(e) => {
-                                            // Clear any pending close operations
-                                            if (timeoutRef.current) {
-                                                clearTimeout(timeoutRef.current);
-                                            }
-                                            
-                                            // Calculate tooltip position
-                                            const container = e.currentTarget;
-                                            const rect = container.getBoundingClientRect();
-                                            const viewportHeight = window.innerHeight;
-                                            const tooltipHeight = 200; // Approximate tooltip height
-                                            const spaceBelow = viewportHeight - rect.bottom;
-                                            
-                                            // If not enough space below, show tooltip above
-                                            const showAbove = spaceBelow < tooltipHeight + 20;
-                                            
-                                            setTooltipPosition({
-                                                [repo.name]: showAbove
-                                            });
-                                            setHoveredRepo(repo.name);
-                                            fetchRepoDetails(repo);
-                                        }}
-                                        onMouseLeave={() => {
-                                            // Delay close to allow mouse to move to tooltip
-                                            timeoutRef.current = setTimeout(() => {
-                                                setHoveredRepo(null);
-                                            }, 150);
-                                        }}
-                                    >
-                                        <a
-                                            href={repo.html_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="bar-link"
+                                    <div className="bar-container">
+                                        <div 
+                                            className="bar-wrapper-column"
+                                            onClick={() => window.open(repo.html_url, '_blank')}
+                                            style={{ cursor: 'pointer' }}
+                                            onMouseEnter={(e) => {
+                                                // Clear any pending close operations
+                                                if (timeoutRef.current) {
+                                                    clearTimeout(timeoutRef.current);
+                                                }
+                                                
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                const tooltipHeight = 200;
+                                                const viewportHeight = window.innerHeight;
+                                                const spaceBelow = viewportHeight - rect.bottom;
+                                                const showAbove = spaceBelow < tooltipHeight + 20;
+                                                
+                                                setTooltipPosition({
+                                                    [repo.name]: showAbove
+                                                });
+                                                setHoveredRepo(repo.name);
+                                                fetchRepoDetails(repo);
+                                            }}
+                                            onMouseLeave={() => {
+                                                timeoutRef.current = setTimeout(() => {
+                                                    setHoveredRepo(null);
+                                                }, 150);
+                                            }}
                                         >
                                             <div
                                                 className="bar"
                                                 style={{ width: `${barWidth}%` }}
                                             >
-                          <span className="project-name">
-                            {projectName}
-                          </span>
                                             </div>
-                                        </a>
+                                            <span className="project-name-below">
+                                                {projectName}
+                                            </span>
+                                        </div>
                                         {hoveredRepo === repo.name && (
                                             <div
                                                 className={`tooltip ${tooltipPosition[repo.name] ? 'tooltip-above' : ''}`}
@@ -1280,7 +1539,7 @@ export default function OverallRankingsPage() {
                         of{" "}
                         {Math.min(
                             metadata
-                                ? Object.keys(metadata.languages).reduce(
+                                ? Object.keys(metadata.languages).filter(l => l !== 'Python_PyPI' && l !== 'All').reduce(
                                     (sum, lang) => sum + metadata.languages[lang].total,
                                     0
                                 )
@@ -1339,7 +1598,7 @@ export default function OverallRankingsPage() {
                     <button
                         className="pagination-btn pagination-edge"
                         onClick={() => {
-                            setCurrentPage(1);
+                            updatePage(1);
                             setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
                         }}
                         disabled={currentPage === 1 || isLoading}
@@ -1350,7 +1609,7 @@ export default function OverallRankingsPage() {
                     
                     <button
                         className="pagination-btn"
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        onClick={() => updatePage(Math.max(1, currentPage - 1))}
                         disabled={currentPage === 1 || isLoading}
                         title="Previous page"
                     >
@@ -1374,7 +1633,7 @@ export default function OverallRankingsPage() {
                                     e.preventDefault();
                                     const pageNum = parseInt(pageInput);
                                     if (pageNum >= 1 && pageNum <= totalPages) {
-                                        setCurrentPage(pageNum);
+                                        updatePage(pageNum);
                                         setPageInput(null);
                                     }
                                     e.target.blur();
@@ -1405,7 +1664,7 @@ export default function OverallRankingsPage() {
                     
                     <button
                         className="pagination-btn"
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        onClick={() => updatePage(Math.min(totalPages, currentPage + 1))}
                         disabled={currentPage === totalPages || isLoading}
                         title="Next page"
                     >
@@ -1414,7 +1673,7 @@ export default function OverallRankingsPage() {
                     
                     <button
                         className="pagination-btn pagination-edge"
-                        onClick={() => setCurrentPage(totalPages)}
+                        onClick={() => updatePage(totalPages)}
                         disabled={currentPage === totalPages || isLoading}
                         title="Last page"
                     >
