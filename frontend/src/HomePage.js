@@ -5,7 +5,13 @@ import "./App.css";
 
 export default function HomePage() {
     const hasRestoredRef = useRef(false);
-    
+
+    useEffect(() => {
+        document.body.classList.add("is-homepage");
+        return () => document.body.classList.remove("is-homepage");
+    }, []);
+
+
     // Save scroll position before unload (for F5 refresh)
     useEffect(() => {
         const handleBeforeUnload = () => {

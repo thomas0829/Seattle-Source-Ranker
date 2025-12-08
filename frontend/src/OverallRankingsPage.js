@@ -1093,6 +1093,25 @@ export default function OverallRankingsPage() {
         );
     };
 
+    const [lastClickedRepo, setLastClickedRepo] = useState(null);
+
+    function handleBarClick(repo) {
+        const isMobile = window.innerWidth <= 768;
+
+        if (!isMobile) {
+            window.open(repo.html_url, "_blank");
+            return;
+        }
+
+        if (lastClickedRepo !== repo.name) {
+            setLastClickedRepo(repo.name);
+            setHoveredRepo(repo.name);
+            return;
+        }
+
+        window.open(repo.html_url, "_blank");
+    }
+
     return (
         <div className="container">
             <Link to="/" className="back-btn">
@@ -1453,7 +1472,8 @@ export default function OverallRankingsPage() {
                                     <div className="bar-container">
                                         <div 
                                             className="bar-wrapper-column"
-                                            onClick={() => window.open(repo.html_url, '_blank')}
+                                            // onClick={() => window.open(repo.html_url, '_blank')}
+                                            onClick={() => handleBarClick(repo)}
                                             style={{ cursor: 'pointer' }}
                                             onMouseEnter={(e) => {
                                                 // Clear any pending close operations
