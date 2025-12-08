@@ -14,36 +14,18 @@ metadata fields such as:
 - created_at / pushed_at (activity timestamps)
 
 What this script does:
-1. Field-level quality checks (missing rate, negative values, basic stats)
-2. Consistency checks (e.g., watchers ~= stars, pushed_at >= created_at)
-3. Simple outlier detection (suspicious repos for manual inspection)
+1. Schema checks (required fields exist)
+2. Field-level quality checks (missing rate, negative values, basic stats)
+3. Consistency checks (e.g., created_at <= pushed_at)
+4. Simple outlier detection (suspicious repos for manual inspection)
 
-Expected Input Fields
----------------------
-This script assumes data follows the JSON structure you provided:
-
-{
-  "name_with_owner": "altercation/solarized",
-  "name": "solarized",
-  "description": "...",
-  "url": "...",
-  "stars": 15942,
-  "forks": 3489,
-  "watchers": 15942,
-  "language": "Vim script",
-  "topics": [],
-  "created_at": "2011-02-18T05:18:27Z",
-  "updated_at": "2025-11-15T14:19:53Z",
-  "pushed_at": "2024-07-11T19:57:30Z",
-  "open_issues": 219,
-  "has_issues": true,
-  "owner": {
-    "login": "altercation",
-    "type": "User"
-  }
-}
-
-This script keeps all field names **exactly** as they appear above.
+Notes on watchers:
+------------------
+Earlier versions tried to enforce watchers ≈ stars. On modern GitHub APIs,
+"watchers" usually represents subscribers, not stargazers, so equality is NOT
+expected. In this improved version we:
+- keep watchers in the metric quality summary
+- REMOVE the equality check between watchers and stars
 """
 
 import argparse
@@ -53,6 +35,23 @@ from typing import Optional, List, Dict, Any
 
 import json
 import pandas as pd
+
+# -----------------------------
+# Required schema definition
+# -----------------------------
+
+# 你可以根据自己的数据结构再补充字段
+REQUIRED_FIELDS = [
+    "name_with_owner",
+    "name",
+    "stars",
+    "forks",
+    "watchers",
+    "open_issues",
+    "description",
+    "created_at",
+    "pushed_at",
+]
 
 
 # -----------------------------
@@ -88,6 +87,26 @@ def load_repos_df(
     if sqlite_path:
         return load_repos_from_sqlite(sqlite_path, table_name)
     raise ValueError("Either --repos-csv or --repos-sqlite must be provided.")
+
+
+# -----------------------------
+# Schema validation
+# -----------------------------
+
+def validate_schema(df: pd.DataFrame, required_fields: List[str]) -> None:
+    """
+    Ensure that all required fields exist in the dataframe.
+    If any are missing, raise a ValueError and stop validation.
+    """
+    missing = [f for f in required_fields if f not in df.columns]
+    if missing:
+        msg = (
+            "[ERROR] Missing required fields in repo dataset:\n"
+            f"  {missing}\n"
+            "Please check your data generation pipeline."
+        )
+        raise ValueError(msg)
+    print(f"[INFO] Schema validation passed. All required fields are present.")
 
 
 # -----------------------------
@@ -141,27 +160,16 @@ def compute_metric_quality(
 def check_consistency_rules(df: pd.DataFrame) -> Dict[str, Any]:
     """
     Validate cross-field logic:
-    - watchers should usually equal stars
-    - created_at <= pushed_at
+
+    - created_at <= pushed_at  (note: some GitHub edge cases such as forks
+      or imported history may legitimately violate this; treat as WARNING)
     - open_issues must be non-negative
+
+    We deliberately do NOT enforce any equality between watchers and stars
+    because the modern GitHub API semantics make them fundamentally different
+    metrics (subscribers vs stargazers).
     """
     results: Dict[str, Any] = {}
-
-    # watchers ≈ stars
-    if "watchers" in df.columns and "stars" in df.columns:
-        w = pd.to_numeric(df["watchers"], errors="coerce")
-        s = pd.to_numeric(df["stars"], errors="coerce")
-
-        valid = (~w.isna()) & (~s.isna())
-        mismatch = (w != s) & valid
-
-        results["watchers_vs_stars"] = {
-            "valid_count": int(valid.sum()),
-            "mismatch_count": int(mismatch.sum()),
-            "mismatch_rate": float(mismatch.sum() / valid.sum()) if valid.sum() else 0.0,
-        }
-    else:
-        results["watchers_vs_stars"] = {"info": "Missing fields: watchers or stars."}
 
     # created_at <= pushed_at
     if "created_at" in df.columns and "pushed_at" in df.columns:
@@ -175,9 +183,13 @@ def check_consistency_rules(df: pd.DataFrame) -> Dict[str, Any]:
             "valid_count": int(valid.sum()),
             "invalid_count": int(invalid.sum()),
             "invalid_rate": float(invalid.sum() / valid.sum()) if valid.sum() else 0.0,
+            "severity": "warning",   # fork / imported history can trigger this
         }
     else:
-        results["created_vs_pushed"] = {"info": "Missing created_at or pushed_at."}
+        results["created_vs_pushed"] = {
+            "info": "Missing created_at or pushed_at.",
+            "severity": "info",
+        }
 
     # open_issues >= 0
     if "open_issues" in df.columns:
@@ -187,9 +199,13 @@ def check_consistency_rules(df: pd.DataFrame) -> Dict[str, Any]:
         results["open_issues_non_negative"] = {
             "valid_count": int((~issues.isna()).sum()),
             "negative_count": int(negatives),
+            "severity": "error" if negatives > 0 else "ok",
         }
     else:
-        results["open_issues_non_negative"] = {"info": "Missing open_issues field."}
+        results["open_issues_non_negative"] = {
+            "info": "Missing open_issues field.",
+            "severity": "info",
+        }
 
     return results
 
@@ -214,7 +230,7 @@ def detect_outlier_repos(df: pd.DataFrame, top_n: int = 100) -> pd.DataFrame:
     candidates = []
 
     # High stars + missing description
-    if "stars" in df.columns:
+    if "stars" in df.columns and "description" in df.columns:
         high_star = df["stars"].fillna(0) >= 500
         no_desc = df["description"].fillna("").str.strip() == ""
         mask1 = high_star & no_desc
@@ -355,6 +371,10 @@ def main() -> None:
         sqlite_path=args.repos_sqlite,
         table_name=args.repos_table,
     )
+
+    # 1.5 Schema validation (new)
+    print("\n[STEP] Validating schema (required fields)...")
+    validate_schema(df, REQUIRED_FIELDS)
 
     # 2. Metric quality summary
     print("\n[STEP] Checking field quality (stars / forks / watchers / open_issues)...")
