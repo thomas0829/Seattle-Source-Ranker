@@ -409,6 +409,7 @@ header h1 {
   margin-right: 10px;
   cursor: pointer;
   accent-color: #0ea5e9;
+  flex-shrink: 0 !important;
 }
 
 .checkbox-text {
@@ -1528,16 +1529,26 @@ tbody td {
     align-self: flex-end;
   }
 
-  body.is-homepage .github-link {
-       position: static !important;
-       margin-top: 10px;
-       margin-left: auto;
-       margin-right: auto;
-       display: flex !important;
-       align-items: center !important;
-       justify-content: center !important;
-       width: fit-content;
-     }
+  /*body.is-homepage .github-link {*/
+  /*     position: static !important;*/
+  /*     margin-top: 10px;*/
+  /*     margin-left: auto;*/
+  /*     margin-right: auto;*/
+  /*     display: flex !important;*/
+  /*     align-items: center !important;*/
+  /*     justify-content: center !important;*/
+  /*     width: fit-content;*/
+  /*}*/
+  .github-link {
+    position: static !important;
+    margin-top: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: fit-content;
+  }
 }
 
 /* ============================================================
@@ -1721,7 +1732,38 @@ tbody td {
     margin-bottom: 18px !important;
   }
 }
-/* Prevent unwanted horizontal scroll on mobile */
-body, html {
-  overflow-x: hidden !important;
+
+/* ===================== */
+/*validation page */
+/* ===================== */
+pre {
+  background: #020617;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+  "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e5e7eb;
+
+  overflow-x: auto;
+  white-space: pre;
+}
+
+pre code {
+  white-space: pre;
+  display: block;
+}
+
+code:not(pre code) {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+@media (max-width: 768px) {
+  .lang-count {
+    display: none !important;
+  }
 }

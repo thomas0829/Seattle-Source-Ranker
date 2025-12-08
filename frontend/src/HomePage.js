@@ -11,7 +11,6 @@ export default function HomePage() {
         return () => document.body.classList.remove("is-homepage");
     }, []);
 
-
     // Save scroll position before unload (for F5 refresh)
     useEffect(() => {
         const handleBeforeUnload = () => {
