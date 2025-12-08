@@ -18,7 +18,8 @@ def main():
     # It will automatically load tokens from .env.tokens or environment variables
     try:
         token_manager = TokenManager()
-        print(f"✓ Loaded {len(token_manager.tokens)} GitHub tokens")
+        token_count = token_manager.get_token_count()
+        print(f"✓ Loaded {token_count} GitHub tokens")
     except ValueError as e:
         print(f"✗ Error: {e}")
         print("\nTo use this example, create a .env.tokens file with:")
@@ -29,18 +30,11 @@ def main():
     token = token_manager.get_token()
     print(f"\n✓ Current token: {token[:10]}...")
     
-    # Check rate limit for current token
-    try:
-        limit_info = token_manager.check_rate_limit()
-        print(f"\n✓ Rate limit info:")
-        print(f"  - Remaining: {limit_info['remaining']}/{limit_info['limit']}")
-        print(f"  - Reset time: {limit_info['reset']}")
-    except Exception as e:
-        print(f"✗ Could not check rate limit: {e}")
-    
-    # Rotate to next token
-    next_token = token_manager.rotate_token()
-    print(f"\n✓ Rotated to next token: {next_token[:10]}...")
+    # Get all tokens
+    all_tokens = token_manager.get_all_tokens()
+    print(f"\n✓ Total available tokens: {len(all_tokens)}")
+    for i, t in enumerate(all_tokens, 1):
+        print(f"  Token {i}: {t[:10]}...")
     
     print("\n" + "=" * 50)
     print("Example completed successfully!")
