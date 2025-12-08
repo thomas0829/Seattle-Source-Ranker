@@ -1,4 +1,4 @@
-# 📘 **Validation-Centric Overview**
+# 📘 **Validation Overview**
 
 Seattle-Source-Ranker provides a complete validation pipeline ensuring that all
 GitHub project data and ranking outputs are structurally correct, statistically
@@ -47,6 +47,7 @@ trustworthy ranking outputs.
 │ - python_ranking_validation  │  
 │ - repo_metrics_consistency   │  
 │ - repo_metrics_quality       │  
+│ - repo_metric_outliers.csv   │
 │ (validation_outputs/)        │  
 └─────────────────────────────┘
 ```
@@ -160,7 +161,8 @@ Seattle-Source-Ranker/
 │       ├── python_ranking_validation.txt
 │       ├── repo_metrics_consistency.txt
 │       ├── repo_metrics_quality.txt
-│       └── Seattle-Source-Ranker — Validation Summa.md
+│       ├── repo_metric_outliers.csv
+│       └── Seattle-Source-Ranker — Validation Summa.md 
 └── data/
 ```
 
