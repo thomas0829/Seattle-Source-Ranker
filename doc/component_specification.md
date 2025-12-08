@@ -17,7 +17,7 @@
 - `data/seattle_users.json`: User metadata (committed to Git)
   ```json
   {
-    "total_users": ~28000,
+    "total_users": 28283,
     "collected_at": "2025-12-07T02:25:22.634530-08:00",
     "query_strategy": "graphql multi-filter",
     "filters_used": 76,
@@ -42,7 +42,6 @@
         "language": "Python",
         "created_at": "2020-01-01T00:00:00Z",
         "pushed_at": "2024-12-01T10:00:00Z"
-        // ... more fields
       }
     ]
   }
@@ -88,7 +87,6 @@
         "owner": "psf",
         "stars": 51000,
         "on_pypi": true
-        // ... more fields
       }
     ]
   }
@@ -98,14 +96,13 @@
   ```json
   {
     "total_matches": 28,
-    "top_15k_rate": "~0.05-0.1%",
+    "top_15k_rate": "0.05-0.1%",
     "matched_projects": [
       {
         "name": "facenet-pytorch",
         "repo": "timesler/facenet-pytorch",
         "stars": 5071,
         "on_top_pypi": true
-        // ... more fields
       }
     ]
   }
@@ -179,8 +176,8 @@ Final Score (Python projects only):
 - Top 15k (Tier 2):  Base Score × 1.05 × 1.10 = × 1.155 (+15.5%)
 
 Tiered PyPI Bonuses:
-- Tier 1 (Any PyPI): ×1.05 multiplier (~1K+ packages, ~2-3%)
-- Tier 2 (Top 15k Global): ×1.10 additional multiplier (~30 packages, ~0.05-0.1%)
+- Tier 1 (Any PyPI): ×1.05 multiplier (1K+ packages, 2-3%)
+- Tier 2 (Top 15k Global): ×1.10 additional multiplier (30 packages, 0.05-0.1%)
 - Combined: ×1.155 total bonus for Top 15k packages
 ```
 
@@ -209,8 +206,8 @@ Tiered PyPI Bonuses:
 - `data/seattle_projects.json`: Final validated and enriched project data
   ```json
   {
-    "total_projects": 432498,  // After removing invalid repos
-    "total_stars": 2847621,   // Recalculated after filtering
+    "total_projects": 432498,
+    "total_stars": 2847621,
     "validated_repos": 427671,
     "removed_repos": 4827,
     "removal_reasons": {
@@ -224,9 +221,8 @@ Tiered PyPI Bonuses:
         "owner": "user",
         "stars": 1500,
         "forks": 200,
-        "watchers": 85,  // Real subscribers, not duplicate of stars
+        "watchers": 85,
         "validated": true
-        // ... more fields
       }
     ]
   }
@@ -272,8 +268,8 @@ Tiered PyPI Bonuses:
 
 **Outputs**:
 - Paginated project files (generated locally, not in Git):
-  - `frontend/public/pages/overall/page_1.json` through `page_~173.json` (50 projects each)
-  - `frontend/public/pages/python/page_1.json` through `page_~109.json`
+  - `frontend/public/pages/overall/page_1.json` through `page_173.json` (50 projects each)
+  - `frontend/public/pages/python/page_1.json` through `page_109.json`
   - Each file contains 50 projects
   
 - Metadata file:
@@ -286,7 +282,6 @@ Tiered PyPI Bonuses:
     "languages": {
       "Python": 54123,
       "JavaScript": 89456
-      // ... more languages
     }
   }
   ```
@@ -411,17 +406,17 @@ Tiered PyPI Bonuses:
 **React Components**:
 - `App.js`: Main router with 5 routes, GitHub source link
 - `HomePage.js`: Landing page with overview cards
-- `OverallRankingsPage.js`: Main rankings with language filters (~1687 lines)
+- `OverallRankingsPage.js`: Main rankings with language filters (1687 lines)
   - Multi-language selection
   - Owner/topic search with suggestions
   - Pagination with caching
   - URL state management
-- `PythonRankingsPage.js`: Python-specific rankings (~1029 lines)
+- `PythonRankingsPage.js`: Python-specific rankings (1029 lines)
   - PyPI badge display (rainbow + luxury)
   - Search and owner filtering
   - PyPI data integration
-- `ScoringPage.js`: Algorithm documentation (~411 lines)
-- `ValidationPage.js`: Data quality metrics (~479 lines)
+- `ScoringPage.js`: Algorithm documentation (411 lines)
+- `ValidationPage.js`: Data quality metrics (479 lines)
 
 **State Management**:
 - URL Parameters: `?page=1&search=owner&langs=JavaScript,Python`
@@ -542,11 +537,11 @@ Midnight Seattle Time
          ▼
 ┌─────────────────────────────────────────────────┐
 │  5. Frontend Data Generator (Component 4)       │
-│  - Creates ~200 overall ranking pages           │
-│  - Creates ~782 Python ranking pages            │
+│  - Creates 200 overall ranking pages           │
+│  - Creates 782 Python ranking pages            │
 │  - Generates owner/topic search indices         │
 │  - Updates metadata.json                        │
-└────────┬────────────────────────────────────────┘
+└────────┴───────────────────────────────────────┘
          │ Outputs: frontend/public/pages/*.json
          ▼
 ┌─────────────────────────────────────────────────┐
@@ -688,11 +683,11 @@ Midnight Seattle Time
                      ▼
         ┌────────────────────────────────────────┐
         │   Component 4: Frontend Data Gen       │
-        │  - Create ~200 overall pages           │
-        │  - Create ~782 Python pages            │
+        │  - Create 200 overall pages           │
+        │  - Create 782 Python pages            │
         │  - Generate search indices             │
         │  - Update metadata.json                │
-        └────────────┬───────────────────────────┘
+        └────────────┴────────────────────────────┘
                      │
                      │ frontend/public/pages/*.json
                      ▼
