@@ -171,7 +171,7 @@ pytest -m "not slow"
 ### With Coverage
 ```bash
 pip install pytest-cov
-pytest --cov=../utils --cov=../scripts --cov=../distributed --cov-report=html
+pytest --cov=src/seattle_source_ranker --cov-report=html
 # Open htmlcov/index.html
 ```
 
