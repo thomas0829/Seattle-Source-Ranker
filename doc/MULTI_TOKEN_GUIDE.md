@@ -8,23 +8,23 @@ Seattle-Source-Ranker supports multi-token rotation to bypass GitHub API rate li
 
 ## System Components
 
-### 1. TokenManager (`utils/token_manager.py`)
+### 1. TokenManager (`src/seattle_source_ranker/tokens.py`)
 - Automatically loads multiple tokens from `.env.tokens`
 - Thread-safe round-robin rotation
 - Supports environment variables and configuration files
 - Dynamic token selection based on rate limit status
 
-### 2. Collection Worker (`distributed/workers/collection_worker.py`)
+### 2. Collection Worker (`src/seattle_source_ranker/collector/collection_worker.py`)
 - Uses REST API with token rotation
 - Automatic fallback when tokens are rate-limited
 - Individual repo API calls for topics collection
 - 8 workers × 2 concurrency = 16 parallel tasks
 
-### 3. Distributed Collector (`distributed/distributed_collector.py`)
+### 3. Distributed Collector (`src/seattle_source_ranker/collector/distributed_collector.py`)
 - Batch processing with Celery + Redis
 - Automatic worker management
 - Progress monitoring and retry logic
-- Support for large-scale collections (481,323+ projects)
+- Support for large-scale collections (~430K+ projects)
 
 ### 4. Worker Startup Script (`scripts/start_workers.sh`)
 - Automatically loads all tokens from `.env.tokens`
@@ -46,12 +46,12 @@ Seattle-Source-Ranker supports multi-token rotation to bypass GitHub API rate li
 - Large collection (30,000 users): **~3.5 hours** [OK]
 - Suitable for GitHub Actions (6-hour limit)
 
-### Real Performance (481,323 Projects)
-- Workers: 8 workers × 2 concurrency
-- Users Processed: 28,111
-- Total Time: ~12 hours
-- Success Rate: 99.98%
-- Data Generated: 7,265 paginated JSON files
+### Real Performance (~430K+ Projects)
+- Workers: ~8 workers × ~2 concurrency
+- Users Processed: ~28K+
+- Total Time: ~60-90 minutes for full collection
+- Success Rate: ~99%+
+- Data Generated: ~8K+ paginated JSON files
 
 ---
 
@@ -85,8 +85,8 @@ GITHUB_TOKEN_3=ghp_zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 grep -c "^GITHUB_TOKEN_[0-9]=" .env.tokens
 # Should show: 3 (or your configured number)
 
-# Test token rotation
-python3 test_token_rotation.py
+# Test tokens via collection script
+python3 -c "from seattle_source_ranker.tokens import get_token_manager; tm = get_token_manager(); print(f'{len(tm.get_all_tokens())} tokens loaded')"
 ```
 
 ---
@@ -103,22 +103,22 @@ redis-server --daemonize yes
 bash scripts/start_workers.sh
 
 # 3. Collect 100 projects
-python3 distributed/distributed_collector.py --target 100 --max-users 50 --batch-size 10
+python3 -m seattle_source_ranker.collector.distributed_collector --target 100 --max-users 50 --batch-size 10
 ```
 
 ### Medium Collection (10,000 projects)
 
 ```bash
-python3 distributed/distributed_collector.py \
-    --target 10000 \
-    --max-users 1000 \
-    --batch-size 10
+python3 -m seattle_source_ranker.collector.distributed_collector \
+    --target 1000 \
+    --max-users 5000 \
+    --batch-size 50
 ```
 
 ### Large Collection (100,000+ projects)
 
 ```bash
-python3 distributed/distributed_collector.py \
+python3 -m seattle_source_ranker.collector.distributed_collector \
     --target 1000000 \
     --max-users 30000 \
     --batch-size 10
@@ -132,7 +132,7 @@ After collection completes:
 python3 scripts/generate_frontend_data.py
 ```
 
-This creates 7,265+ paginated JSON files in `frontend/public/pages/`
+This creates ~8K+ paginated JSON files in `frontend/public/pages/`
 
 ---
 
@@ -183,8 +183,8 @@ echo $GITHUB_TOKEN_1
 ### Workers Can't Find Tokens
 
 ```bash
-# Ensure correct directory
-cd /home/thomas/Seattle-Source-Ranker
+# Ensure you're in project root directory
+cd <project-root>
 bash scripts/start_workers.sh
 ```
 
@@ -234,7 +234,7 @@ Edit worker startup commands:
 
 ### Optimize Delays
 
-Edit `distributed/workers/collection_worker.py`:
+Edit `src/seattle_source_ranker/collector/collection_worker.py`:
 ```python
 time.sleep(0.05)  # Adjust between requests (default: 50ms)
 ```
@@ -243,12 +243,12 @@ time.sleep(0.05)  # Adjust between requests (default: 50ms)
 
 ## Best Practices
 
-1. **Start Small**: Test with 100-1000 projects before large collections
+1. **Start Small**: Test with ~100-1000 projects before large collections
 2. **Monitor Logs**: Watch for errors or rate limit warnings
 3. **Backup Data**: Collection data is saved incrementally
 4. **Use Multiple Tokens**: 3+ tokens recommended for large collections
-5. **Be Patient**: Large collections (100K+ projects) take hours
-6. **Check Disk Space**: 481K projects ≈ 260MB raw data + frontend files
+5. **Be Patient**: Large collections (~430K+ projects) take ~60-90 minutes
+6. **Check Disk Space**: ~430K projects ≈ ~200-300MB raw data + frontend files
 
 ---
 
@@ -265,7 +265,9 @@ time.sleep(0.05)  # Adjust between requests (default: 50ms)
 
 ## Additional Resources
 
-- [Architecture Details](ARCHITECTURE.md) - System architecture and technical implementation
+- [Functional Specification](functional_specification.md) - User profiles, use cases, data sources
+- [Component Specification](component_specification.md) - System components and workflows
+- [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
 - [User Stories](USER_STORIES.md) - Use cases and scenarios
 - [Version History](VERSION_HISTORY.md) - Project changelog
 - [GitHub API Documentation](https://docs.github.com/en/rest) - REST API reference

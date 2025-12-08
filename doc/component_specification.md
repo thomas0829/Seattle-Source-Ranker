@@ -9,32 +9,39 @@
 **Inputs**:
 - GitHub Personal Access Tokens (6 tokens for rate limit optimization)
 - Search parameters:
-  - Location filters (Seattle, Bellevue, Redmond, etc.)
-  - Quality filters (follower count, repository count thresholds)
-  - Batch size and worker configuration
+  - Location filters (76 pre-optimized GraphQL queries)
+  - Quality filters (repository count + follower count thresholds)
+  - Batch size and worker configuration (8 workers × 2 concurrency)
   
 **Outputs**:
-- `seattle_users_YYYYMMDD_HHMMSS.json`: User metadata
+- `data/seattle_users.json`: User metadata (committed to Git)
   ```json
   {
-    "total_users": 28256,
-    "collected_at": "2025-12-02T09:30:38",
+    "total_users": ~28000,
+    "collected_at": "2025-12-07T02:25:22.634530-08:00",
+    "query_strategy": "graphql multi-filter",
+    "filters_used": 76,
     "usernames": ["user1", "user2", ...]
   }
   ```
-- `seattle_projects_YYYYMMDD_HHMMSS.json`: Repository metadata
+- `data/seattle_projects.json`: Repository metadata (local only, not in Git)
   ```json
   {
-    "total_projects": 457212,
-    "total_stars": 2476436,
+    "total_projects": ~430000,
+    "total_stars": ~2800000,
+    "checked_users": ~28000,
+    "successful_users": ~23000,
+    "filtered_users": ~5000,
     "projects": [
       {
-        "name": "project-name",
+        "name_with_owner": "owner/repo",
+        "name": "repo",
         "owner": "username",
         "stars": 1500,
         "forks": 200,
         "language": "Python",
         "created_at": "2020-01-01T00:00:00Z",
+        "pushed_at": "2024-12-01T10:00:00Z",
         ...
       }
     ]
@@ -42,12 +49,12 @@
   ```
 
 **Key Functions**:
-- `DistributedCollector.collect_users()`: GraphQL-based user discovery
+- `DistributedCollector.collect_users()`: GraphQL-based user discovery with Union Types
 - `fetch_users_batch_task()`: Celery task for parallel repository collection
-- `TokenManager.get_token()`: Intelligent token rotation
-- `TokenManager.check_rate_limit()`: Monitor API usage
+- `get_token_manager().get_token()`: Intelligent token rotation
+- `TokenManager._check_token_rate_limit()`: Monitor API usage
 
-**Technologies**: Celery, Redis, GraphQL, REST API
+**Technologies**: Celery, Redis, GraphQL API v4, REST API v3, Python requests
 
 ---
 
@@ -56,7 +63,8 @@
 **Purpose**: Identify which GitHub Python projects are published on PyPI to award bonus scores for production-ready packages.
 
 **Inputs**:
-- `pypi_official_packages.json`: Cache of 702,223 PyPI package names
+- `data/pypi_official_packages.json`: Cache of 700K+ PyPI package names
+- `data/top_pypi_packages.json`: Top 15,000 most-downloaded PyPI packages  
 - Python projects from Data Collector:
   ```python
   {
@@ -68,12 +76,12 @@
   ```
 
 **Outputs**:
-- `seattle_pypi_projects.json`: Detected PyPI packages
+- `data/seattle_pypi_projects.json`: Detected PyPI packages (committed to Git)
   ```json
   {
-    "total_python_projects": 54188,
-    "pypi_projects": 1071,
-    "detection_rate": "2.74%",
+    "total_python_projects": ~54000,
+    "pypi_projects": ~1000,
+    "detection_rate": "~2-3%",
     "projects": [
       {
         "name": "requests",
@@ -83,39 +91,42 @@
         ...
       }
     ]
+  }
   ```
 
-- `seattle_top_pypi_matches.json`: Top 15k Global PyPI packages
+- `data/seattle_top_pypi_matches.json`: Top 15k Global PyPI packages (committed to Git)
   ```json
   {
-    "total_matches": 28,
+    "total_matches": ~30,
+    "top_15k_rate": "~0.05-0.1%",
     "matched_projects": [
       {
         "name": "facenet-pytorch",
         "repo": "timesler/facenet-pytorch",
         "stars": 5071,
-        "top_pypi": true,
+        "on_top_pypi": true,
         ...
       }
     ]
   }
   ```
-- Boolean classification for each Python project (on PyPI / not on PyPI)
 
 **Key Functions**:
 - `PyPIChecker.check_project(project)`: Determine if single project is on PyPI
-- `PyPIChecker.batch_check(projects)`: Efficient batch checking
+- `PyPIChecker.load_or_download_index()`: Load/refresh PyPI package cache
 - `PyPIChecker._normalize_name(name)`: Name normalization for matching
 - `PyPIChecker._has_strong_signals(project)`: Validate using topics/description
+- `generate_pypi_projects.py`: Main script to generate both output files
 
 **Matching Strategies**:
-1. Direct name match: `project-name` → `project-name`
-2. Prefix removal: `python-requests` → `requests`
+1. Direct name match: `project-name` → `project-name` (case-insensitive)
+2. Prefix removal: `python-requests` → `requests`, `py-test` → `test`
 3. Separator normalization: `my_package` ↔ `my-package`
-4. Manual mappings: `beautifulsoup` → `beautifulsoup4`
-5. Exclusion patterns: `awesome-*`, `*-tutorial`, `*-demo`
+4. Manual mappings: `beautifulsoup` → `beautifulsoup4`, `opencv` → `opencv-python`
+5. Exclusion patterns: `awesome-*`, `*-tutorial`, `*-demo`, generic names
+6. Signal verification: Topics (pypi, python-package), description keywords
 
-**Technologies**: Python requests library, JSON parsing, regex
+**Technologies**: Python requests library, JSON parsing, regex, offline caching
 
 ---
 
@@ -138,20 +149,16 @@
 - PyPI status from PyPI Detector (for Python projects)
 
 **Outputs**:
-- SSR Score (0-10,000 range):
+- SSR Score (0-1,000,000 range):
   ```python
   {
     "project_name": "example-project",
-    "ssr_score": 7245.32,
+    "ssr_score": 724532,  # After PyPI bonus if applicable
     "score_breakdown": {
-      "stars_score": 2800,
-      "forks_score": 1400,
-      "watchers_score": 700,
-      "age_score": 900,
-      "activity_score": 1000,
-      "health_score": 445.32
-    },
-    "pypi_bonus": 1.1  # 10% multiplier for Python+PyPI
+      "base_score": 687645,
+      "pypi_multiplier": 1.05,  # Tier 1 bonus if on PyPI
+      "top_pypi_multiplier": 1.10  # Tier 2 bonus if in Top 15k
+    }
   }
   ```
 
@@ -164,53 +171,121 @@ Base Score = (
     age_factor(created_at) × 0.10 +
     activity_factor(pushed_at) × 0.10 +
     health_factor(open_issues, stars) × 0.10
-) × 1000000
+) × 1,000,000
 
-Final Score (Python only) = Base Score × 1.05      (if on PyPI)
-                          = Base Score × 1.05 × 1.10  (if Top 15k PyPI)
-                          = Base Score                 (otherwise)
+Final Score (Python projects only):
+- Not on PyPI:       Base Score × 1.0
+- On PyPI (Tier 1):  Base Score × 1.05 (+5%)
+- Top 15k (Tier 2):  Base Score × 1.05 × 1.10 = × 1.155 (+15.5%)
 
 Tiered PyPI Bonuses:
-- Tier 1 (Any PyPI): ×1.05 multiplier (~1,071 packages, 2.74%)
-- Tier 2 (Top 15k Global): ×1.10 additional multiplier (~28 packages, 0.07%)
-- Combined: ×1.155 total bonus (+15.5%) for Top 15k packages
+- Tier 1 (Any PyPI): ×1.05 multiplier (~1K+ packages, ~2-3%)
+- Tier 2 (Top 15k Global): ×1.10 additional multiplier (~30 packages, ~0.05-0.1%)
+- Combined: ×1.155 total bonus for Top 15k packages
 ```
 
 **Key Functions**:
-- `calculate_github_score(project)`: Main scoring function
-- `age_factor(created_at)`: Project maturity scoring (peak at 3-5 years)
+- `calculate_github_score(project)`: Main scoring function in src/seattle_source_ranker/scoring.py
+- `age_factor(created_at)`: Project maturity curve (peak at 3-5 years)
 - `activity_factor(pushed_at, created_at)`: Recent maintenance scoring
 - `health_factor(open_issues, stars)`: Issue management quality
 - `log_normalize(value, base)`: Logarithmic scaling for distribution
+- Frontend applies PyPI bonuses during data generation
 
-**Technologies**: Python math library, datetime handling
+**Technologies**: Python math library, datetime with timezone handling, zoneinfo
 
 ---
 
-### Component 4: Frontend Data Generator
+### Component 4: Secondary Validation & Enrichment
 
-**Purpose**: Transform collected data into optimized JSON files for web interface consumption.
+**Purpose**: Validate repository data integrity and enrich with accurate watchers count after initial collection.
 
 **Inputs**:
-- `seattle_projects_YYYYMMDD_HHMMSS.json`: Raw project data
-- `seattle_pypi_projects.json`: PyPI detection results
+- `data/seattle_projects_YYYYMMDD_HHMMSS.json`: Timestamped project data from initial collection
+- GitHub API access via Token Manager
+- Redis server for Celery task queue
 
 **Outputs**:
-- Paginated project files:
-  - `frontend/public/pages/overall_page_1.json` through `page_200.json`
-  - `frontend/public/pages/python_page_1.json` through `page_50.json`
+- `data/seattle_projects.json`: Final validated and enriched project data
+  ```json
+  {
+    "total_projects": ~430000,  // After removing invalid repos
+    "total_stars": ~2800000,   // Recalculated after filtering
+    "validated_repos": ~425000,
+    "removed_repos": ~5000,
+    "removal_reasons": {
+      "deleted": 3000,
+      "private": 1500,
+      "blocked_451": 500
+    },
+    "projects": [
+      {
+        "name": "project",
+        "owner": "user",
+        "stars": 1500,
+        "forks": 200,
+        "watchers": 85,  // Real subscribers, not duplicate of stars
+        "validated": true,
+        ...
+      }
+    ]
+  }
+  ```
+
+**Key Functions**:
+- `update_watchers_batch_task()`: Celery task for parallel validation
+- `validate_repository()`: Check if repo is accessible (not deleted/private/blocked)
+- `fetch_real_watchers()`: Get actual subscribers_count from GitHub API
+- `filter_invalid_repos()`: Remove repositories that fail validation
+- `recalculate_statistics()`: Update totals after filtering
+
+**Validation Process**:
+1. **Accessibility Check**: Verify repository still exists and is public
+2. **HTTP 451 Detection**: Remove legally blocked repositories
+3. **Watchers Update**: Replace star-duplicate with real subscribers_count
+4. **Statistical Recalculation**: Update total_projects, total_stars after filtering
+5. **Distributed Processing**: Use 8 workers × 2 concurrency for speed
+
+**Performance**:
+- **Single-threaded**: ~5 hours for ~430K repositories
+- **8 Workers (distributed)**: ~30-40 minutes
+- **Speedup**: ~7-8× faster with parallel processing
+
+**Error Handling**:
+- **404 Not Found**: Mark as deleted, remove from dataset
+- **403 Forbidden**: Check if private or blocked, remove if inaccessible
+- **451 Unavailable (Legal)**: Remove blocked repositories
+- **Rate Limiting**: Automatic token rotation via Token Manager
+
+**Technologies**: Celery, Redis, Python requests, GitHub REST API
+
+---
+
+### Component 5: Frontend Data Generator
+
+**Purpose**: Transform validated data into optimized JSON files for web interface consumption.
+
+**Inputs**:
+- `data/seattle_projects.json`: Validated and enriched project data (from Secondary Validation)
+- `data/seattle_pypi_projects.json`: PyPI detection results
+- `data/seattle_top_pypi_matches.json`: Top 15k PyPI matches
+
+**Outputs**:
+- Paginated project files (generated locally, not in Git):
+  - `frontend/public/pages/overall/page_1.json` through `page_~173.json` (50 projects each)
+  - `frontend/public/pages/python/page_1.json` through `page_~109.json`
   - Each file contains 50 projects
   
 - Metadata file:
   ```json
   {
-    "total_projects": 457212,
-    "total_pages": 200,
+    "total_projects": ~430000,
+    "total_pages": ~200,
     "projects_per_page": 50,
-    "last_updated": "2025-12-02T09:30:38",
+    "last_updated": "2025-12-07T02:25:22-08:00",
     "languages": {
-      "Python": 54188,
-      "JavaScript": 89234,
+      "Python": ~54000,
+      "JavaScript": ~89000,
       ...
     }
   }
@@ -230,7 +305,7 @@ Tiered PyPI Bonuses:
 
 ---
 
-### Component 5: Token Manager
+### Component 6: Token Manager
 
 **Purpose**: Manage multiple GitHub API tokens to maximize rate limits and ensure uninterrupted data collection.
 
@@ -272,36 +347,94 @@ Tiered PyPI Bonuses:
 
 ---
 
-### Component 6: Web Interface (React Frontend)
+### Component 7: Web Interface (React Frontend)
 
-**Purpose**: Provide interactive, user-friendly interface for exploring Seattle projects.
+**Purpose**: Provide interactive, user-friendly interface for exploring Seattle projects with advanced search, filtering, and visualization features.
 
 **Inputs**:
 - Paginated JSON files from Frontend Data Generator
-- User interactions (search, filter, pagination)
+- Metadata file with statistics and language counts
+- PyPI project data for badge display
+- Owner index files for autocomplete
+- User interactions (search, filter, pagination, navigation)
 
 **Outputs**:
-- Rendered web pages with:
-  - Project listings with SSR scores
-  - Search and filter controls
-  - Pagination controls
-  - Direct links to GitHub repositories
+- Five interactive web pages:
+  1. **Home Page**: Project overview and navigation
+  2. **Overall Rankings**: Top 10K projects with multi-language filtering
+  3. **Python Rankings**: Python-specific rankings with PyPI badges
+  4. **Scoring Methodology**: SSR algorithm explanation
+  5. **Data Validation**: Quality assurance documentation
 
 **Key Features**:
-- **Homepage**: Statistics overview, navigation
-- **Overall Rankings**: All 457k projects, multi-language filtering
-- **Python Rankings**: Python-specific view with PyPI badges
-- **Scoring Page**: Algorithm explanation and methodology
-- **Validation Page**: Data quality metrics
 
-**Components**:
-- `HomePage.js`: Landing page with statistics
-- `OverallRankingsPage.js`: Main rankings interface
-- `PythonRankingsPage.js`: Python-specific rankings
-- `ScoringPage.js`: Algorithm documentation
-- `ValidationPage.js`: Data quality information
+1. **Advanced Search System**:
+   - Real-time autocomplete with debounce (300ms)
+   - Owner suggestions (👤 icon) from pre-loaded indices
+   - Topic suggestions (🏷️ icon) from project metadata
+   - Keyboard navigation (arrow keys + Enter)
+   - Search state persisted in URL parameters
+   - Owner filtering mode for viewing all projects by specific user
 
-**Technologies**: React, React Router, CSS (Glass Morphism design)
+2. **Filtering and Navigation**:
+   - Multi-select language filter (Overall Rankings)
+   - "Show All" / "Show Selected Languages" toggle
+   - Page-based navigation (Previous/Next/Jump to Page)
+   - URL state preservation for sharing filtered views
+   - Browser back/forward support
+
+3. **Data Visualization**:
+   - SSR Score bars (relative to min/max per language)
+   - Animated PyPI badges:
+     * Rainbow gradient (regular PyPI, 4s animation)
+     * Luxury gold-purple gradient (Top 15k, glow effects)
+   - Language tags and topic chips
+   - Hover tooltips with project details
+   - Star/Fork/Watcher counts with icons
+
+4. **Performance Optimizations**:
+   - Client-side page caching (50 projects/page)
+   - Lazy loading of paginated data
+   - Owner index pre-loading (a-z + other groups)
+   - Session storage for scroll position
+   - Debounced search to reduce re-renders
+   - Row animations and table flash effects
+
+5. **User Experience**:
+   - Glass morphism design with backdrop blur
+   - Responsive layout (mobile + desktop)
+   - Smooth scroll restoration on refresh (F5)
+   - Visual feedback (hover states, loading indicators)
+   - Accessible (ARIA labels, keyboard support)
+   - Direct GitHub links (repository + owner profile)
+
+**React Components**:
+- `App.js`: Main router with 5 routes, GitHub source link
+- `HomePage.js`: Landing page with overview cards
+- `OverallRankingsPage.js`: Main rankings with language filters (~1687 lines)
+  - Multi-language selection
+  - Owner/topic search with suggestions
+  - Pagination with caching
+  - URL state management
+- `PythonRankingsPage.js`: Python-specific rankings (~1029 lines)
+  - PyPI badge display (rainbow + luxury)
+  - Search and owner filtering
+  - PyPI data integration
+- `ScoringPage.js`: Algorithm documentation (~411 lines)
+- `ValidationPage.js`: Data quality metrics (~479 lines)
+
+**State Management**:
+- URL Parameters: `?page=1&search=owner&langs=JavaScript,Python`
+- Session Storage: Scroll positions for each page
+- Local State: Page cache, search suggestions, filters
+- React Hooks: `useState`, `useEffect`, `useRef`, `useSearchParams`
+
+**Technologies**: 
+- React 18+ with Hooks
+- React Router v6 (URL-based navigation)
+- CSS3 (glass morphism, gradients, animations)
+- GitHub Pages (static hosting)
+- Vanilla JavaScript (no external UI libraries)
 
 ---
 
@@ -625,6 +758,6 @@ Midnight Seattle Time
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: December 4, 2025  
+**Document Version**: 2.0  
+**Last Updated**: December 7, 2025  
 **Authors**: Seattle Source Ranker Team
