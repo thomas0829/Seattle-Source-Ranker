@@ -12,17 +12,18 @@ Seattle has a thriving open-source community with thousands of developers contri
 
 ### Solution
 Seattle Source Ranker addresses these challenges by:
-1. **Automated Data Collection**: Systematically collecting data from 28,256 Seattle-based GitHub users
+1. **Automated Data Collection**: Systematically collecting data from ~28K+ Seattle-based GitHub users
 2. **Intelligent Ranking**: Using a multi-factor SSR (Seattle Source Ranker) algorithm that considers popularity, maintenance, and project health
 3. **Interactive Visualization**: Providing a web-based interface for exploring projects by language, PyPI status, and other criteria
 4. **Daily Updates**: Maintaining fresh data through automated collection and deployment
+5. **One-Command Setup**: Local pipeline execution via `./run_local.sh` for development and testing
 
 ### Project Goals
 - Provide a comprehensive, searchable database of Seattle open-source projects
 - Rank projects using quality metrics beyond simple popularity
 - Support multiple user personas from recruiters to students
 - Maintain data freshness through automated daily updates
-- Serve as a tool for both Python package distribution (via pip install) and web-based exploration
+- Serve as both a Python library (installable from source) and web-based exploration tool
 
 ---
 
@@ -88,47 +89,68 @@ Seattle Source Ranker addresses these challenges by:
 
 **Type**: REST API v3 and GraphQL API v4  
 **Access**: Personal Access Tokens with `read:org` scope  
-**Rate Limits**: 5,000 requests/hour per token (30,000/hour with 6 tokens)
+**Rate Limits**: 5K requests/hour per token (~30K/hour with 6 tokens)
 
-**Data Collected**:
-- **User Discovery** (GraphQL Search API):
-  - Seattle-based users via location filters (76 optimized queries)
-  - Handles both User and Organization account types
-  - Filters by follower count and repository count for quality
-  
-- **Repository Metadata** (REST API):
+**Three-Stage Collection Strategy**:
+
+**Stage 1: User Discovery (GraphQL Search API)**
+- **Purpose**: Fast collection of Seattle-based user accounts
+- **Why GraphQL**: Search API is extremely fast for user discovery (~76 optimized location queries)
+- **Limitation**: GraphQL bulk queries for repository details are unstable and error-prone
+- **Data Collected**: 
+  - User login names, account types (User/Organization)
+  - Location filters: Seattle, Redmond, Bellevue, etc.
+  - Quality filters: follower count, repository count thresholds
+
+**Stage 2: Repository Collection (REST API)**
+- **Purpose**: Stable, reliable collection of repository metadata
+- **Why REST**: More stable than GraphQL for bulk operations, less prone to errors
+- **Limitation**: `watchers` field returns `stargazers_count` (incorrect), cannot detect empty/private repos accurately
+- **Data Collected**:
   - Repository name, description, owner
-  - Stars, forks, watchers counts
+  - Stars, forks, watchers (incorrect value - actually returns stars)
   - Open issues count
   - Primary programming language
   - Topics/tags
   - Creation date, last push date
   - Homepage URL, repository URL
 
+**Stage 3: Secondary Validation (GraphQL API + HEAD requests)**
+- **Purpose**: Fix REST API limitations and validate repository accessibility
+- **Why GraphQL Again**: Provides accurate `watchers` field (real `subscribers_count`, not stars)
+- **Why HEAD Requests**: Detect deleted/private/blocked repositories (HTTP 4xx errors)
+- **Corrections Made**:
+  - Replace incorrect watchers with real subscribers count via GraphQL
+  - Remove inaccessible repositories (deleted, private, legally blocked)
+  - Recalculate aggregate statistics with validated data
+
 **Data Characteristics**:
 - **Granularity**: Individual repository level
 - **Freshness**: Updated daily via automated collection
-- **Volume**: ~457,212 projects from 28,256 users
+- **Volume**: ~430K+ projects from ~28K+ users
 - **Completeness**: Full metadata for public repositories
 
 ### 3.2 PyPI (Python Package Index)
 
-**Type**: JSON API and package registry  
+**Type**: JSON API and Simple Index HTML  
 **Access**: Public API, no authentication required
 
 **Data Collected**:
-- Complete list of published package names (707,093 packages)
+- Complete list of published package names (~700K+ packages)
+- Top 15K most-downloaded packages (for global impact detection)
 - Used for offline matching against GitHub projects
 
 **Data Characteristics**:
 - **Granularity**: Package name level
-- **Freshness**: Updated periodically (cache refreshed as needed)
-- **Usage**: Binary classification (on PyPI / not on PyPI)
+- **Freshness**: Package index cached for ~7 days, refreshed automatically
+- **Usage**: Binary classification (on PyPI / not on PyPI, Top 15K / not Top 15K)
+- **Volume**: ~700K+ total packages, Top 15K most-downloaded packages
 - **Matching Strategy**: Multiple algorithms including:
-  - Direct name matching
+  - Direct name matching (case-insensitive)
   - Prefix removal (python-, py-, django-, flask-, pytest-)
   - Underscore/hyphen normalization
-  - Manual mappings for edge cases
+  - Manual mappings for edge cases (e.g., beautifulsoup → beautifulsoup4)
+  - Signal verification (topics, description keywords)
 
 ### 3.3 Data Integration
 
@@ -140,16 +162,28 @@ Projects are matched between GitHub and PyPI using:
 
 **Data Flow**:
 ```
-GitHub API → User Collection → Repository Collection → PyPI Matching → Top PyPI Matching → Scoring → Web Interface
+GitHub API → User Collection (GraphQL) → Repository Collection (REST + Celery) → 
+Secondary Validation & Enrichment (scripts/secondary_update.py):
+  - Validate repository accessibility (HEAD requests)
+  - Remove deleted/private/blocked repositories (HTTP 4xx errors)
+  - Update watchers with real subscribers_count (not stars)
+  - Recalculate aggregate statistics
+  - 8 workers × 2 concurrency = 16 parallel validations
+  - Processing time: ~30-40 minutes (vs ~5 hours single-threaded) →
+PyPI Matching (Offline) → Top PyPI Matching → SSR Scoring → 
+Frontend Data Generation → Web Interface Deployment
 ```
 
 **Data Quality**:
-- **Coverage**: 28,256 Seattle users, 457,212 projects
-- **Precision**: 100% for PyPI matching (zero false positives)
+- **Coverage**: ~28K+ Seattle users, ~430K+ projects, ~2.8M+ total stars
+- **Accuracy**: ~2% of repositories removed during secondary validation (deleted/private/blocked)
+- **Watchers Validation**: Real subscribers count via REST API (not stars field)
+- **Repository Accessibility**: All projects verified as accessible before deployment
+- **Precision**: ~100% for PyPI matching (zero false positives via strict matching)
 - **Detection Rates**: 
-  - PyPI packages: ~2.74% of Python projects (1,071 packages)
-  - Top 15k Global: ~0.07% of Python projects (28 packages)
-- **Update Frequency**: Daily automated collection at midnight Seattle time
+  - PyPI packages: ~2-3% of Python projects (~1K+ packages)
+  - Top 15k Global: ~0.05-0.1% of Python projects (~30 packages)
+- **Update Frequency**: Daily automated collection at midnight Seattle time (~08:00 UTC)
 
 ---
 
@@ -163,33 +197,53 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → T
 
 1. **Access System**
    - Jessica visits https://thomas0829.github.io/Seattle-Source-Ranker/
-   - Sees homepage with total statistics (457,212 projects, 2.4M stars)
+   - Sees homepage with total statistics (~430K+ projects, ~2.8M+ stars, overview cards)
 
 2. **Navigate to Python Rankings**
-   - Clicks "Python Rankings" navigation link
-   - Views page showing ~54,188 Python projects from Seattle
+   - Clicks "Python Rankings" navigation link from home page
+   - Views page showing ~54K Python projects from Seattle
+   - Sees dedicated Python page with PyPI bonus information
 
 3. **Filter and Search**
-   - Uses search bar to type "machine learning" 
-   - System provides autocomplete suggestions for topics and owners
-   - Filters results to projects with Top 15k PyPI badge (indicating globally-impactful packages)
+   - Uses search bar with real-time autocomplete suggestions
+   - System provides owner suggestions (👤 icon) and topic suggestions (🏷️ icon)
+   - Keyboard navigation: arrow keys to select, Enter to apply
+   - Can filter by owner name or search by repository name
+   - Search query persisted in URL for sharing
+
+4. **Browse PyPI Projects**
+   - Filters results to projects with PyPI badges
+   - Rainbow badge: Regular PyPI packages (~1K+ projects, +5% bonus)
+   - Gold-purple luxury badge: Top 15k Global packages (~30 projects, +15.5% bonus)
+   - Badges animate with gradient effects
 
 4. **Review Project Details**
-   - Browses paginated results (50 projects per page)
+   - Browses paginated results (~50 projects per page)
    - For each project, sees:
-     * SSR Score (e.g., 843,215 points)
+     * SSR Score with visualization bar (e.g., 843,215 points)
      * Stars, Forks, Watchers counts
-     * Last activity date
-     * PyPI badges: rainbow (5% bonus) or luxury gold-purple (15.5% total bonus)
-     * Topics/tags
+     * Last activity date (formatted as relative time)
+     * PyPI badges: rainbow (regular) or luxury gold-purple (Top 15k)
+     * Language tag and topic chips
+     * Hover tooltip with additional details
      * Direct links to GitHub repository and owner profile
+   - Can jump to specific page using page input box
+   - Can navigate using Previous/Next buttons or page numbers
 
-5. **Identify Candidates**
+5. **Use Advanced Features**
+   - Multi-language filtering on Overall Rankings page
+   - Toggle "Show All" / "Show Selected" languages
+   - URL state preservation (can bookmark or share filtered views)
+   - Browser back/forward navigation maintains search state
+   - Scroll position restored on page refresh (F5)
+   - Row animations on search/filter changes
+
+6. **Identify Candidates**
    - Clicks on promising project owners' GitHub profiles
    - Reviews their public contributions
    - Records candidate information for outreach
 
-**Expected Outcome**: Jessica identifies 5-10 high-quality Python developers with active PyPI packages, especially those in the Top 15k global packages, indicating production-level Python expertise and global impact. The SSR score helps her prioritize candidates by combining popularity with code quality and maintenance activity.
+**Expected Outcome**: Jessica successfully identifies 5-10 high-quality Python developers with active PyPI packages, especially those in the Top 15k global packages, indicating production-level Python expertise and global impact. The SSR score helps her prioritize candidates by combining popularity with code quality and maintenance activity. The search and filtering features allow her to quickly narrow down candidates matching specific criteria.
 
 ---
 
@@ -199,9 +253,11 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → T
 
 **User Interactions**:
 
-1. **Install Package**
+1. **Clone and Install from Source**
    ```bash
-   pip install seattle-source-ranker
+   git clone https://github.com/thomas0829/Seattle-Source-Ranker.git
+   cd Seattle-Source-Ranker
+   pip install -e .
    ```
 
 2. **Import and Use Scoring Module**
@@ -228,25 +284,29 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → T
    
    checker = PyPIChecker()
    
-   projects = [
-       {'name': 'requests', 'language': 'Python', 'topics': ['http']},
-       {'name': 'flask', 'language': 'Python', 'topics': ['web-framework']},
-       {'name': 'my-project', 'language': 'Python', 'topics': []}
-   ]
+   # Check individual project
+   project = {
+       'name': 'requests', 
+       'language': 'Python', 
+       'topics': ['http', 'python'],
+       'description': 'Python HTTP for Humans'
+   }
    
-   results = checker.batch_check(projects)
-   # Returns: [True, True, False]
+   is_on_pypi = checker.check_project(project)
+   print(f"On PyPI: {is_on_pypi}")  # Output: On PyPI: True
    ```
 
 4. **Manage GitHub Tokens**
    ```python
-   from seattle_source_ranker.tokens import TokenManager
+   from seattle_source_ranker.tokens import get_token_manager
    
-   tm = TokenManager()  # Loads from .env.tokens
+   tm = get_token_manager()  # Singleton instance
    token = tm.get_token()  # Gets best available token
    
-   limit_info = tm.check_rate_limit()
-   print(f"Remaining: {limit_info['remaining']}/5000")
+   # Check all tokens
+   for i, token in enumerate(tm.get_all_tokens(), 1):
+       info = tm._check_token_rate_limit(token)
+       print(f"Token {i}: {info['remaining']}/{info['limit']}")
    ```
 
 5. **Build Custom Analysis**
@@ -302,57 +362,102 @@ GitHub API → User Collection → Repository Collection → PyPI Matching → T
 
 ### Web Interface Workflow
 ```
-User → Homepage → Rankings Page → Filter/Search → Project Details → GitHub Profile
+User → Home Page → [Overall Rankings | Python Rankings | Scoring | Validation] → 
+Search/Filter → Browse Results → View Details → Click GitHub Links
 ```
+
+### Additional Web Features
+- **URL State Management**: All filters, search, and pagination preserved in URL
+- **Session Storage**: Scroll position maintained across page refreshes
+- **Responsive Design**: Mobile and desktop optimized layouts
+- **Accessibility**: Keyboard navigation, semantic HTML, ARIA labels
+- **Performance**: Page caching, lazy loading, debounced search
 
 ### Library Usage Workflow
 ```
 pip install → Import modules → Call functions → Integrate into application
 ```
 
-### Data Collection Workflow (Automated)
-```
-GitHub Actions Trigger → Celery Workers → Data Collection → PyPI Matching → 
-SSR Scoring → JSON Generation → Website Deployment → README Update
+### Local Development Workflow
+```bash
+# One-command pipeline execution
+./run_local.sh          # Test mode (30 users)
+./run_local.sh --full   # Full collection (all users)
 ```
 
+**Automated Steps**:
+1. Environment setup (conda/pip auto-detection and installation)
+2. Token validation (checks all GitHub tokens in `.env.tokens`)
+3. Redis server check/start
+4. Data collection (GraphQL + REST with Celery workers)
+5. PyPI official index update (~700K packages)
+6. Secondary validation (repository accessibility, watchers update)
+7. PyPI detection and matching
+8. Top PyPI rankings check and extraction (~15K packages)
+9. SSR scoring calculation
+10. Frontend generation and build
+11. Local development server launch
+
+### Automated Data Pipeline
+System runs daily via GitHub Actions:
+1. **Collection**: GraphQL (users) → REST (repositories) → GraphQL Validation (accessibility check)
+2. **Enrichment**: PyPI matching → SSR scoring
+3. **Deployment**: Frontend generation → GitHub Pages
+
+(See Component Specification for detailed workflow)
+
 ### Key System Behaviors
-- **Real-time Search**: Debounced input with autocomplete suggestions
-- **Pagination**: 50 projects per page for performance
-- **Score Calculation**: SSR algorithm runs during data generation (not on-demand)
-- **PyPI Detection**: Offline matching using cached package list
-- **Token Rotation**: Automatic selection of best available GitHub token
-- **Error Handling**: Graceful fallback for rate limits and API errors
+- **Real-time Search**: Debounced input (~300ms) with autocomplete suggestions for owners and topics
+- **Smart Suggestions**: Pre-loaded owner indices (a-z + other) for instant autocomplete
+- **Keyboard Navigation**: Arrow keys + Enter for suggestion selection
+- **Pagination**: ~50 projects per page with lazy loading and page caching
+- **Score Visualization**: Relative score bars based on min/max scores per language
+- **Score Calculation**: SSR algorithm runs during frontend data generation (backend-only, not on-demand)
+- **PyPI Detection**: Offline matching using cached package list (refreshed every ~7 days)
+- **Token Rotation**: Automatic selection of best available GitHub token (highest remaining rate limit)
+- **Error Handling**: Graceful fallback for rate limits, API errors, with retry logic
+- **Distributed Processing**: ~8 Celery workers with ~2 concurrent tasks each (~16 parallel operations)
+- **Seattle Timezone**: All timestamps in America/Los_Angeles timezone for consistency
+- **URL State Preservation**: Search, filters, and page number stored in URL parameters
+- **Scroll Restoration**: Session storage maintains scroll position across refreshes
+- **Cache Strategy**: Page data cached in memory to avoid redundant fetches
+- **Animation System**: Row animations and table flash effects on data updates
 
 ---
 
 ## 6. Non-Functional Requirements
 
 ### Performance
-- Website loads in < 2 seconds
-- Search autocomplete responds within 200ms
-- Complete data collection finishes within 90 minutes
-- PyPI checking processes 55k projects in < 30 seconds
+- Website loads in < ~2 seconds (static GitHub Pages hosting)
+- Search autocomplete responds within ~200ms (debounced)
+- Pagination and filtering are instant (client-side with cached data)
+- Complete data collection finishes within ~60-90 minutes for ~30K users
+- PyPI checking processes ~54K Python projects in < ~30 seconds (offline matching)
+- Distributed workers achieve ~5-7.5× speedup over single-threaded collection
+- Owner index loading: <~100ms per character group (a-z)
 
 ### Reliability  
-- Daily automated updates with failure recovery
-- 99%+ uptime for static website (GitHub Pages)
-- Zero false positives for PyPI package detection
+- Daily automated updates with failure recovery and rollback protection
+- ~99.9%+ uptime for static website (GitHub Pages SLA)
+- Zero false positives for PyPI package detection (~100% precision)
+- Automatic token rotation prevents rate limit exhaustion
+- Celery task retry logic for transient failures
+- Graceful degradation when PyPI data unavailable
 
 ### Usability
-- Mobile-responsive design
-- Clear documentation in README and examples/
-- Intuitive search and filter interface
+- Mobile-responsive design with glass morphism aesthetic
+- Clear documentation in README, doc/, and examples/
+- Intuitive search and filter interface with instant feedback
 - Accessible to users with basic technical knowledge
+- Five dedicated pages (Home, Overall Rankings, Python Rankings, Scoring, Validation)
+- Keyboard shortcuts and navigation support
+- Visual feedback (animations, hover effects, loading states)
+- URL-based state for easy sharing and bookmarking
 
 ### Maintainability
-- 91+ passing tests with pytest
-- Code quality score ≥ 8.75/10 (pylint)
-- Modular architecture for easy updates
-- Comprehensive documentation in docs/
+- ~225+ passing tests with pytest (~56% overall coverage, ~94-100% core modules)
+- Modular architecture with clear separation of concerns
+- Comprehensive documentation in doc/ folder
+- Automated CI/CD via GitHub Actions
+- React component-based frontend architecture
 
----
-
-**Document Version**: 1.0  
-**Last Updated**: December 4, 2025  
-**Authors**: Seattle Source Ranker Team
