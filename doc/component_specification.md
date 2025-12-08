@@ -742,22 +742,22 @@ Midnight Seattle Time
 ## 7. Future Enhancements
 
 ### Short-term (Next 3 months)
-- Add more cities (Portland, Vancouver BC, San Francisco)
-- Implement historical trend tracking (score changes over time)
-- Add email notifications for featured projects
+- **Multi-Platform Support**: Extend data collection to GitLab, Bitbucket, and other open-source platforms
+- **User Authentication System**: Implement login functionality for personalized features
+- **Project Watchlist**: Allow users to save and track projects of interest
+- Add historical trend tracking (score changes over time)
 
 ### Medium-term (6-12 months)
+- **User Dashboard**: Personal project collections with custom tags and notes
+- **Email Notifications**: Alerts for watched project updates and releases
+- **Geographic Expansion**: Add more cities (Portland, Vancouver BC, San Francisco)
 - Machine learning for project categorization
 - Contributor network graph visualization
-- API endpoint for programmatic access
 
 ### Long-term (1+ years)
-- Support for non-GitHub platforms (GitLab, Bitbucket)
+- **Backend Database Integration**: PostgreSQL/MongoDB for user data persistence
+- **Advanced Filtering**: Custom queries and saved search filters
+- **Collaboration Features**: Share project collections and recommendations
 - Real-time updates instead of daily batch processing
 - Community voting and curation features
-
----
-
-**Document Version**: 2.0  
-**Last Updated**: December 7, 2025  
-**Authors**: Seattle Source Ranker Team
+- API endpoint for programmatic access
