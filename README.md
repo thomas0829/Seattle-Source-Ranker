@@ -116,7 +116,7 @@ project = {
 }
 
 score = calculate_github_score(project)
-print(f"SSR Score: {score:.2f}")  # Output: SSR Score: 6842.35
+print(f"SSR Score: {score:.2f}")  # Output: SSR Score: 631885.00
 ```
 
 #### Example 2: Check PyPI Publication
@@ -125,15 +125,16 @@ from seattle_source_ranker.pypi import PyPIChecker
 
 checker = PyPIChecker()
 
+# Example project data (simplified)
 project = {
-    'name': 'requests',
-    'language': 'Python',
-    'topics': ['http', 'python'],
-    'description': 'Python HTTP library'
+    'name': 'flask',
+    'owner': {'login': 'pallets'},
+    'language': 'Python'
 }
 
-is_on_pypi = checker.check_project(project)
+is_on_pypi, confidence, reason = checker.check_project(project)
 print(f"On PyPI: {is_on_pypi}")  # Output: On PyPI: True
+print(f"Match reason: {reason}")  # Output: Match reason: direct_match_verified
 ```
 
 #### Example 3: Manage GitHub Tokens
@@ -145,10 +146,11 @@ tm = TokenManager()
 
 # Get best available token
 token = tm.get_token()
+print(f"Token: {token[:10]}...")  # Output: Token: ghp_xxxxx...
 
-# Check rate limit
-limit_info = tm.check_rate_limit()
-print(f"Remaining: {limit_info['remaining']}")
+# Get total token count
+token_count = tm.get_token_count()
+print(f"Total tokens: {token_count}")  # Output: Total tokens: 6
 ```
 
 See the **[examples/](examples/)** directory for more detailed usage examples.
