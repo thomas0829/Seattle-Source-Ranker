@@ -1,43 +1,47 @@
 Repo Metrics Quality Summary
+
+This report provides descriptive statistics for key GitHub repository metrics (stars, forks, watchers, open issues).
+It is used to assess data health, detect anomalies, and understand score distribution characteristics.
+No missing or negative values were found. Metrics appear clean and suitable for ranking computations.
 ================================
 
 [stars]
-total: 457223
+total: 432421
 missing: 0
 missing_rate: 0.0
 negatives: 0
 min: 0.0
-max: 60680.0
-mean: 5.417481185329697
+max: 60761.0
+mean: 6.54021196935394
 median: 0.0
 
 [forks]
-total: 457223
+total: 432421
 missing: 0
 missing_rate: 0.0
 negatives: 0
 min: 0.0
-max: 243381.0
-mean: 1.8461800915526996
+max: 243374.0
+mean: 2.0928955809269207
 median: 0.0
 
 [watchers]
-total: 457223
+total: 432421
 missing: 0
 missing_rate: 0.0
 negatives: 0
 min: 0.0
 max: 1786.0
-mean: 1.2338727491836587
+mean: 1.2941323386237025
 median: 1.0
 
 [open_issues]
-total: 457223
+total: 432421
 missing: 0
 missing_rate: 0.0
 negatives: 0
 min: 0.0
-max: 1519.0
-mean: 0.911924815680751
+max: 1523.0
+mean: 0.9930600040238564
 median: 0.0
 
