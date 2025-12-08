@@ -1,0 +1,18 @@
+Repo Metrics Consistency Checks
+
+This file reports consistency checks on raw GitHub repository metadata.
+It verifies basic structural correctness of repository fields, such as timestamp relationships and non-negative issue counts.
+Most repositories pass validation; only a small number show unusual timestamp patterns, marked as low-severity warnings.
+================================
+
+[created_vs_pushed]
+valid_count: 432421
+invalid_count: 2806
+invalid_rate: 0.0064890465541682756
+severity: warning
+
+[open_issues_non_negative]
+valid_count: 432421
+negative_count: 0
+severity: ok
+

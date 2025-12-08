@@ -1,0 +1,27 @@
+Ranking Validation Report: python
+
+This report validates the Python + PyPI Ranking, a filtered subset of Seattle GitHub projects that include Python repositories with optional PyPI bonuses.
+The validation ensures correct score ordering, dataset consistency, and Python-only inclusion.
+Global ranks are expected to be non-continuous because this ranking represents a subset of all projects.
+All checks passed with no sorting issues, no duplicates, and 0 non-Python entries.
+=============================================
+
+ranking_name: python
+schema_ok: True
+row_count: 53885
+expected_length: None
+length_match: None
+score_nan_count: 0
+sorting_violations: 0
+is_sorted_desc: True
+duplicate_projects: 0
+has_duplicates: False
+global_rank_nan_count: 0
+global_rank_min: 5
+global_rank_max: 422603
+global_rank_duplicates: 0
+global_rank_gaps: 368714
+global_rank_continuous: False
+python_language_field_present: True
+non_python_rows: 0
+non_python_rate: 0.0
