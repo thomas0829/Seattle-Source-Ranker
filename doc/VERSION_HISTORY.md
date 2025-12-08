@@ -63,7 +63,7 @@
   - Combined effect: 1.05 × 1.10 = 1.155 (+15.5%)
 
 ### Documentation Updates
-- **ARCHITECTURE.md**: Updated PyPI stats, tiered scoring formula, 0-1M scale
+- **Component Specification**: Updated PyPI stats, tiered scoring formula, 0-1M scale
 - **ScoringPage.js**: Replaced 10% flat bonus with tiered system explanation
 - **HomePage.js**: Updated PyPI section with tiered bonus details
 - **All docs**: Corrected statistics (1,071 PyPI, 28 Top 15k, 2.74%, 0.07%)
@@ -191,9 +191,8 @@
 - Enhanced documentation structure with links to detailed guides
 
 ### Documentation
-- Created `docs/ARCHITECTURE.md` - Detailed system architecture
-- Created `docs/VERSION_HISTORY.md` - Complete version changelog
-- Simplified main README with user stories and team contributions
+- Functional and Component Specifications - Complete system design
+- Simplified documentation structure with focused guides
 - Added target audience section for students and recruiters
 
 ## Beta-v3.0 (2025-11-06) - Major Collection Upgrade
