@@ -21,7 +21,7 @@
     "collected_at": "2025-12-07T02:25:22.634530-08:00",
     "query_strategy": "graphql multi-filter",
     "filters_used": 76,
-    "usernames": ["user1", "user2", ...]
+    "usernames": ["user1", "user2", "user3"]
   }
   ```
 - `data/seattle_projects.json`: Repository metadata (local only, not in Git)
