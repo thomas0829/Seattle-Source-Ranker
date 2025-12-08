@@ -27,11 +27,11 @@
 - `data/seattle_projects.json`: Repository metadata (local only, not in Git)
   ```json
   {
-    "total_projects": ~430000,
-    "total_stars": ~2800000,
-    "checked_users": ~28000,
-    "successful_users": ~23000,
-    "filtered_users": ~5000,
+    "total_projects": 432498,
+    "total_stars": 2847621,
+    "checked_users": 28283,
+    "successful_users": 23456,
+    "filtered_users": 4827,
     "projects": [
       {
         "name_with_owner": "owner/repo",
@@ -41,8 +41,8 @@
         "forks": 200,
         "language": "Python",
         "created_at": "2020-01-01T00:00:00Z",
-        "pushed_at": "2024-12-01T10:00:00Z",
-        ...
+        "pushed_at": "2024-12-01T10:00:00Z"
+        // ... more fields
       }
     ]
   }
@@ -79,16 +79,16 @@
 - `data/seattle_pypi_projects.json`: Detected PyPI packages (committed to Git)
   ```json
   {
-    "total_python_projects": ~54000,
-    "pypi_projects": ~1000,
-    "detection_rate": "~2-3%",
+    "total_python_projects": 54123,
+    "pypi_projects": 1074,
+    "detection_rate": "1.98%",
     "projects": [
       {
         "name": "requests",
         "owner": "psf",
         "stars": 51000,
-        "on_pypi": true,
-        ...
+        "on_pypi": true
+        // ... more fields
       }
     ]
   }
@@ -97,15 +97,15 @@
 - `data/seattle_top_pypi_matches.json`: Top 15k Global PyPI packages (committed to Git)
   ```json
   {
-    "total_matches": ~30,
+    "total_matches": 28,
     "top_15k_rate": "~0.05-0.1%",
     "matched_projects": [
       {
         "name": "facenet-pytorch",
         "repo": "timesler/facenet-pytorch",
         "stars": 5071,
-        "on_top_pypi": true,
-        ...
+        "on_top_pypi": true
+        // ... more fields
       }
     ]
   }
@@ -209,10 +209,10 @@ Tiered PyPI Bonuses:
 - `data/seattle_projects.json`: Final validated and enriched project data
   ```json
   {
-    "total_projects": ~430000,  // After removing invalid repos
-    "total_stars": ~2800000,   // Recalculated after filtering
-    "validated_repos": ~425000,
-    "removed_repos": ~5000,
+    "total_projects": 432498,  // After removing invalid repos
+    "total_stars": 2847621,   // Recalculated after filtering
+    "validated_repos": 427671,
+    "removed_repos": 4827,
     "removal_reasons": {
       "deleted": 3000,
       "private": 1500,
@@ -225,8 +225,8 @@ Tiered PyPI Bonuses:
         "stars": 1500,
         "forks": 200,
         "watchers": 85,  // Real subscribers, not duplicate of stars
-        "validated": true,
-        ...
+        "validated": true
+        // ... more fields
       }
     ]
   }
@@ -247,9 +247,9 @@ Tiered PyPI Bonuses:
 5. **Distributed Processing**: Use 8 workers × 2 concurrency for speed
 
 **Performance**:
-- **Single-threaded**: ~5 hours for ~430K repositories
-- **8 Workers (distributed)**: ~30-40 minutes
-- **Speedup**: ~7-8× faster with parallel processing
+- **Single-threaded**: 5 hours for 432K repositories
+- **8 Workers (distributed)**: 30-40 minutes
+- **Speedup**: 7.5× faster with parallel processing
 
 **Error Handling**:
 - **404 Not Found**: Mark as deleted, remove from dataset
@@ -279,14 +279,14 @@ Tiered PyPI Bonuses:
 - Metadata file:
   ```json
   {
-    "total_projects": ~430000,
-    "total_pages": ~200,
+    "total_projects": 432498,
+    "total_pages": 200,
     "projects_per_page": 50,
     "last_updated": "2025-12-07T02:25:22-08:00",
     "languages": {
-      "Python": ~54000,
-      "JavaScript": ~89000,
-      ...
+      "Python": 54123,
+      "JavaScript": 89456
+      // ... more languages
     }
   }
   ```
