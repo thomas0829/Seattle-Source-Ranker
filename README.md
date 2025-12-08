@@ -100,60 +100,58 @@ pip install -e .
 
 ### Simple Usage Examples
 
-The package can be used as a library for analyzing GitHub projects:
+The package can be used as a library for analyzing GitHub projects. See the **[examples/](examples/)** directory for complete working examples.
 
-#### Example 1: Calculate Project Score
-```python
-from seattle_source_ranker.scoring import calculate_github_score
+#### Example 1: Token Management
+```bash
+python examples/example_1_token_management.py
+```
+Demonstrates how to:
+- Load GitHub tokens from `.env.tokens`
+- Get the best available token
+- View all configured tokens
 
-project = {
-    'stars': 1000,
-    'forks': 150,
-    'watchers': 200,
-    'open_issues': 25,
-    'created_at': '2020-01-01T00:00:00Z',
-    'pushed_at': '2024-11-15T10:30:00Z'
-}
-
-score = calculate_github_score(project)
-print(f"SSR Score: {score:.2f}")  # Output: SSR Score: 631885.00
+**Sample Output:**
+```
+✓ Loaded 6 GitHub tokens
+✓ Current token: ghp_AxzS1Y...
+✓ Total available tokens: 6
 ```
 
-#### Example 2: Check PyPI Publication
-```python
-from seattle_source_ranker.pypi import PyPIChecker
+#### Example 2: PyPI Package Detection
+```bash
+python examples/example_2_pypi_checker.py
+```
+Demonstrates how to:
+- Check if GitHub projects are published on PyPI
+- Use individual and batch checking methods
+- Interpret confidence scores and match reasons
 
-checker = PyPIChecker()
-
-# Example project data (simplified)
-project = {
-    'name': 'flask',
-    'owner': {'login': 'pallets'},
-    'language': 'Python'
-}
-
-is_on_pypi, confidence, reason = checker.check_project(project)
-print(f"On PyPI: {is_on_pypi}")  # Output: On PyPI: True
-print(f"Match reason: {reason}")  # Output: Match reason: direct_match_verified
+**Sample Output:**
+```
+requests                       ✓ ON PyPI
+                                 Confidence: 0.95 (direct_match_verified)
+flask                          ✓ ON PyPI
+                                 Confidence: 0.95 (direct_match_verified)
 ```
 
-#### Example 3: Manage GitHub Tokens
-```python
-from seattle_source_ranker.tokens import TokenManager
-
-# Load tokens from .env.tokens or environment
-tm = TokenManager()
-
-# Get best available token
-token = tm.get_token()
-print(f"Token: {token[:10]}...")  # Output: Token: ghp_xxxxx...
-
-# Get total token count
-token_count = tm.get_token_count()
-print(f"Total tokens: {token_count}")  # Output: Total tokens: 6
+#### Example 3: Project Scoring
+```bash
+python examples/example_3_scoring.py
 ```
+Demonstrates how to:
+- Calculate SSR scores for GitHub projects
+- Analyze age, activity, and health factors
+- Rank projects by their scores
 
-See the **[examples/](examples/)** directory for more detailed usage examples.
+**Sample Output:**
+```
+High Quality Project:
+  SSR Score: 796,364.00
+  Stars: 5,000
+  Age Factor: 0.93
+  Activity Factor: 1.00
+```
 
 ---
 
