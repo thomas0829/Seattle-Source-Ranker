@@ -40,7 +40,7 @@ import pandas as pd
 # Required schema definition
 # -----------------------------
 
-# 你可以根据自己的数据结构再补充字段
+# You can add more fields based on your data structure
 REQUIRED_FIELDS = [
     "name_with_owner",
     "name",
