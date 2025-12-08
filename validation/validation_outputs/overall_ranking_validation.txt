@@ -1,0 +1,26 @@
+Ranking Validation Report: overall
+
+This report validates the integrity of the Overall Ranking dataset generated for the Seattle-Source-Ranker project.
+It checks whether the global ranking of the top 10,000 GitHub projects is correctly ordered, complete, and internally consistent.
+Results show that the dataset is fully valid: no missing scores, no duplicates, and global_rank is perfectly continuous from 1 to 10,000.
+=============================================
+
+ranking_name: overall
+schema_ok: True
+row_count: 10000
+expected_length: None
+length_match: None
+score_nan_count: 0
+sorting_violations: 0
+is_sorted_desc: True
+duplicate_projects: 0
+has_duplicates: False
+global_rank_nan_count: 0
+global_rank_min: 1
+global_rank_max: 10000
+global_rank_duplicates: 0
+global_rank_gaps: 0
+global_rank_continuous: True
+python_language_field_present: False
+non_python_rows: None
+non_python_rate: None
