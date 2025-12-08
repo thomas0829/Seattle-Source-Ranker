@@ -14,7 +14,8 @@ class TestFetchUsersBatchTask:
         """Test that task is registered"""
         assert fetch_users_batch_task is not None
         assert hasattr(fetch_users_batch_task, 'name')
-        assert fetch_users_batch_task.name == "workers.collection_worker.fetch_users_batch"
+        # Task name should be the fully qualified module path
+        assert fetch_users_batch_task.name == "seattle_source_ranker.collector.collection_worker.fetch_users_batch"
     
     def test_task_max_retries(self):
         """Test task max_retries configuration"""
