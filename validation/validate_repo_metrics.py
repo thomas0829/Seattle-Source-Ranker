@@ -39,6 +39,8 @@ import pandas as pd
 # -----------------------------
 # Required schema definition
 # -----------------------------
+
+# You can add more fields based on your data structure
 REQUIRED_FIELDS = [
     "name_with_owner",
     "name",
