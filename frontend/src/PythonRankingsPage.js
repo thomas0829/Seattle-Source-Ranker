@@ -631,6 +631,25 @@ export default function PythonRankingsPage() {
         }
     };
 
+    const [lastClickedProject, setLastClickedProject] = useState(null);
+
+    function handleBarClick(project) {
+        const isMobile = window.innerWidth <= 768;
+
+        if (!isMobile) {
+            window.open(project.url, "_blank");
+            return;
+        }
+
+        if (lastClickedProject !== project.full_name) {
+            setLastClickedProject(project.full_name);
+            setHoveredProject(project.full_name);
+            return;
+        }
+
+        window.open(project.url, "_blank");
+    }
+
     return (
         <div className="container">
             <Link to="/" className="back-btn">
@@ -833,7 +852,8 @@ export default function PythonRankingsPage() {
                                                 <div className="bar-container">
                                                     <div 
                                                         className="bar-wrapper-column"
-                                                        onClick={() => window.open(project.url, '_blank')}
+                                                        // onClick={() => window.open(project.url, '_blank')}
+                                                        onClick={() => handleBarClick(project)}
                                                         style={{ cursor: 'pointer' }}
                                                         onMouseEnter={(e) => {
                                                             if (timeoutRef.current) {
