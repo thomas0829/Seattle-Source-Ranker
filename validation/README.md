@@ -155,6 +155,7 @@ Seattle-Source-Ranker/
 │   ├── json_to_csv.py
 │   ├── validate_repo_metrics.py
 │   ├── validate_rankings.py
+│   ├── if_seattle_Random_manual_sampling.xlsx
 │   ├── README.md
 │   └── validation_outputs/
 │       ├── overall_ranking_validation.txt
