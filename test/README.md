@@ -30,7 +30,7 @@ Tests use pytest. Install if needed:
 pip install pytest pytest-mock
 ```
 
-## 📁 Test Structure
+## Test Structure
 
 ```
 test/
@@ -99,7 +99,7 @@ test/
    - Data parsing
    - Error handling
 
-9. **Scoring Algorithms** 🔥 Core Logic
+9. **Scoring Algorithms** [CRITICAL] Core Logic
    - Normalization (linear & logarithmic)
    - Age factor (2-8 year peak scoring)
    - Activity factor (recent updates)
@@ -113,7 +113,7 @@ test/
     - Execute permissions
     - GitHub Actions workflow validation
 
-11. **Token Management** 🔥 Critical
+11. **Token Management** [CRITICAL]
     - Multi-token initialization
     - Environment variable loading
     - Token rotation logic
@@ -127,7 +127,7 @@ test/
     - Statistics updates
     - Date formatting
 
-## 🔑 Critical Tests
+## Critical Tests
 
 ### 1. Organization Fragment Test [WARNING] MUST PASS
 **Why**: Ensures Seattle organizations (allenai, awslabs, FredHutch) are included in results.
@@ -147,7 +147,7 @@ Without this, organizations appear as empty objects and are excluded from projec
 - Low issue/star ratio indicates project health
 - Final score: 0-10,000 (not 0-100!)
 
-### 3. Token Manager Tests 🔐
+### 3. Token Manager Tests [SECURITY]
 **Why**: Prevents rate limit failures in production.
 
 - Validates 6-token rotation system
@@ -202,7 +202,7 @@ pytest --cov=src/seattle_source_ranker --cov-report=html
 # Open htmlcov/index.html
 ```
 
-## ✍️ Writing New Tests
+## Writing New Tests
 
 ### Template
 ```python
@@ -232,7 +232,7 @@ class TestFeature:
 - [OK] Mock external API calls to avoid rate limits
 - [OK] Test edge cases (None, empty, negative values)
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### ImportError: No module named 'xxx'
 ```bash
@@ -287,7 +287,7 @@ cd test && bash run_tests.sh
 | `test_update_readme.py` | [OK] Pass |
 | **Total** | **225 tests (all passing)** |
 
-## 🎓 Understanding Test Output
+## Understanding Test Output
 
 ```bash
 ================================= test session starts ==================================
