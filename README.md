@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Discover and rank open source projects from Seattle's tech community**
-<img width="1835" height="932" alt="og-image" src="https://github.com/user-attachments/assets/cf1c3863-917e-484b-bb1d-50870c9080ce" />
+<img width="3839" height="1969" alt="螢幕擷取畫面 2025-12-10 121942" src="https://github.com/user-attachments/assets/21aba3d2-1ed9-41ec-bb19-d723d705b3ab" />
 
 A comprehensive system that collects, validates, and ranks open source projects from Seattle-based GitHub users. Features three-stage API collection strategy, intelligent multi-factor scoring, secondary validation workflow, distributed processing with Celery/Redis, PyPI integration, and automated daily updates via GitHub Actions.
 
