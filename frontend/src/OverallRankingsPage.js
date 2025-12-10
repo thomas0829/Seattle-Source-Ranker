@@ -37,6 +37,7 @@ export default function OverallRankingsPage() {
     const searchTimeoutRef = useRef(null);
     const [pageInput, setPageInput] = useState(null);
     const [searchMatchCounts, setSearchMatchCounts] = useState({});
+    const [allSearchResults, setAllSearchResults] = useState([]); // Store ALL search results for client-side pagination
     const [ownerIndexCache, setOwnerIndexCache] = useState({});
     const [showFilters, setShowFilters] = useState(false);
     const [searchSuggestions, setSearchSuggestions] = useState([]);
@@ -465,6 +466,10 @@ export default function OverallRankingsPage() {
         setCurrentPage(newPage);
         const newParams = new URLSearchParams(searchParams);
         newParams.set('page', newPage.toString());
+        // Preserve search query in URL
+        if (debouncedSearchQuery.trim()) {
+            newParams.set('search', debouncedSearchQuery);
+        }
         setSearchParams(newParams);
     };
 
@@ -483,6 +488,7 @@ export default function OverallRankingsPage() {
             setDebouncedSearchQuery('');
             setActiveOwner(null);
             setSearchMatchCounts({});
+            setAllSearchResults([]);
             // Return to the page we were on before the search
             const returnPage = pageBeforeSearchRef.current;
             setCurrentPage(returnPage);
@@ -538,6 +544,21 @@ export default function OverallRankingsPage() {
                 previousFiltersRef.current.showAll !== showAll ||
                 JSON.stringify(previousFiltersRef.current.languages) !== JSON.stringify(selectedLanguages);
             
+            // For search results, use client-side pagination (don't reload on page change)
+            // But only if we already have the search results loaded
+            if (debouncedSearchQuery.trim() && !filtersChanged && allSearchResults.length > 0) {
+                // Just update the displayed page from allSearchResults
+                const pageSize = 50;
+                const startIndex = (currentPage - 1) * pageSize;
+                const pageRepos = allSearchResults.slice(startIndex, startIndex + pageSize);
+                setRepos(pageRepos);
+                if (pageRepos.length > 0) {
+                    const pageMax = Math.max(...pageRepos.map(r => r.score));
+                    if (pageMax > maxScore) setMaxScore(pageMax);
+                }
+                return;
+            }
+            
             // Only show loading for search queries (not for language filters or pagination)
             const isSearchQuery = debouncedSearchQuery.trim() !== '';
             const shouldShowLoading = isSearchQuery && filtersChanged && !skipScanAnimationRef.current;
@@ -556,8 +577,9 @@ export default function OverallRankingsPage() {
             }
             
             // Close loading state after data is ready
+            // Use setTimeout to ensure all state updates (including searchMatchCounts) complete first
             if (shouldShowLoading) {
-                setIsLoading(false);
+                setTimeout(() => setIsLoading(false), 0);
             }
             
             // THEN trigger animation after data is ready
@@ -780,13 +802,16 @@ export default function OverallRankingsPage() {
             
             setSearchMatchCounts(matchCounts);
             
-            // Sort by score and paginate
+            // Sort by score and store ALL results for client-side pagination
             const allMatchingRepos = [...ownerProjects];
             allMatchingRepos.sort((a, b) => b.score - a.score);
-            const pageSize = 50;
-            const startIndex = (currentPage - 1) * pageSize;
-            const pageRepos = allMatchingRepos.slice(startIndex, startIndex + pageSize);
             
+            // Store all results
+            setAllSearchResults(allMatchingRepos);
+            
+            // Display first page
+            const pageSize = 50;
+            const pageRepos = allMatchingRepos.slice(0, pageSize);
             setRepos(pageRepos);
             
             if (pageRepos.length > 0) {
@@ -804,6 +829,7 @@ export default function OverallRankingsPage() {
             // If activeOwner is set but we didn't find in index, no results
             console.log(`⚠️ Owner '${query}' not found in index`);
             setRepos([]);
+            setAllSearchResults([]);
             setSearchMatchCounts({});
             return;
         }
@@ -921,10 +947,12 @@ export default function OverallRankingsPage() {
             return (a.global_rank || 999999) - (b.global_rank || 999999);
         });
         
+        // Store all results for client-side pagination
+        setAllSearchResults(allMatchingRepos);
+        
+        // Display first page
         const pageSize = 50;
-        const startIndex = (currentPage - 1) * pageSize;
-        const pageRepos = allMatchingRepos.slice(startIndex, startIndex + pageSize);
-
+        const pageRepos = allMatchingRepos.slice(0, pageSize);
         setRepos(pageRepos);
 
         if (pageRepos.length > 0) {
@@ -940,6 +968,7 @@ export default function OverallRankingsPage() {
             setSearchQuery('');
             setDebouncedSearchQuery('');
             setSearchMatchCounts({});
+            setAllSearchResults([]);
         }
         
         // Calculate new state first
@@ -1019,12 +1048,13 @@ export default function OverallRankingsPage() {
         const MAX_PAGES = Math.ceil(MAX_PROJECTS / 50); // 200 pages
         
         if (debouncedSearchQuery.trim()) {
-            // Search mode: show all search results
-            const totalMatches = Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0);
-            if (totalMatches === 0) {
-                return currentPage;
+            // Search mode: use allSearchResults length for accurate count
+            if (allSearchResults.length > 0) {
+                return Math.ceil(allSearchResults.length / 50);
             }
-            return Math.ceil(totalMatches / 50);
+            // If still loading, use searchMatchCounts as fallback
+            const totalMatches = Object.values(searchMatchCounts).reduce((sum, count) => sum + count, 0);
+            return totalMatches > 0 ? Math.ceil(totalMatches / 50) : 1;
         } else if (selectedLanguages.length > 0) {
             // Language filter mode: calculate based on filtered languages
             // Each language shows up to 10000 projects, but total might be less
@@ -1661,8 +1691,8 @@ export default function OverallRankingsPage() {
                 )}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
+            {/* Pagination - hide during search loading until results are ready */}
+            {totalPages > 1 && !(debouncedSearchQuery.trim() && isLoading) && (
                 <div className="pagination-container">
                     <button
                         className="pagination-btn pagination-edge"
