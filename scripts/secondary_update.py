@@ -34,7 +34,6 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from seattle_source_ranker.tokens import TokenManager
 import atexit
 from pathlib import Path
 from celery import group

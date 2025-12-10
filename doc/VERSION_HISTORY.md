@@ -1,5 +1,34 @@
 # Version History
 
+## v1.0 (2025-12-10) - Production Release
+
+### Highlights
+- **Production-ready release** - Stable search and pagination functionality
+- **Client-side pagination** - Search results cached for instant page navigation
+- **URL state persistence** - Search queries preserved across page changes
+- **Mobile-responsive design** - Optimized for all screen sizes
+- **Bug fixes** - Resolved search result clearing issues on pagination
+
+### Search & Pagination Improvements
+- **Client-side search pagination**: All search results loaded once, instant page switching
+- **URL parameter preservation**: Search queries persist in URL when navigating pages
+- **Consistent behavior**: Both Overall Rankings and Python Rankings pages fixed
+- **Better loading states**: Pagination hidden during search loading to prevent errors
+
+### Bug Fixes
+- Fixed search results disappearing when clicking next/last page buttons
+- Fixed URL sync clearing search query on page changes
+- Fixed pagination state not preserved across navigation
+- Improved state management for search filters and language selection
+
+### Technical Improvements
+- Added `allSearchResults` state for client-side pagination
+- Enhanced `updatePage()` to preserve search parameters
+- Optimized useEffect dependencies to prevent unnecessary reloads
+- Better separation of concerns between data loading and pagination
+
+---
+
 ## Beta-v4.2 (2025-12-07) - Tiered PyPI Scoring System
 
 ### Highlights
