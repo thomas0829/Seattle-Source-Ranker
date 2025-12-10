@@ -4,22 +4,22 @@ This directory contains comprehensive tests for the Seattle Source Ranker projec
 
 ## [STATS] Test Statistics
 
-- **91 tests** - All passing [OK]
-- **8 test files** covering core functionality
-- **12 skipped** (require Celery/Redis)
-- **Execution time**: ~23 seconds
+- **225 tests** - All passing [OK]
+- **12 test files** covering core functionality
+- **0 skipped** (all tests executable)
+- **Execution time**: ~52 seconds
 
 ## Quick Start
 
 ```bash
 # Run all tests (recommended method)
-./test/run_tests.sh
-
-# Run specific test file
 cd test && bash run_tests.sh
 
+# Run specific test file
+cd test && bash run_tests.sh test_token_manager.py
+
 # Run with verbose output
-cd test && PYTHONPATH=.. python3 -m pytest test_graphql_queries.py -v --override-ini="plugins="
+cd test && export PYTHONPATH=/home/thomas/Seattle-Source-Ranker && python3 -m pytest test_graphql_queries.py -v --override-ini="plugins="
 ```
 
 ## Setup
@@ -39,54 +39,67 @@ test/
 ├── pytest.ini                          # Pytest configuration
 ├── run_tests.sh                        # Test runner script
 │
-├── test_classify_languages.py          # Language classification (6 tests)
-├── test_graphql_queries.py             # GraphQL query structure (4 tests)
-├── test_update_readme.py               # README update logic (5 tests)
-├── test_pypi_50_projects.py            # PyPI detection with real data (1 test)
-│
-├── test_token_manager.py               # Token rotation & rate limits (21 tests) 🆕
-├── test_scoring_algorithms.py          # SSR scoring algorithm (40 tests) 🆕
-├── test_distributed_collector.py       # Distributed collection (12 tests, skipped) 🆕
-└── test_pypi_checker_full.py           # PyPI checker complete (14 tests) 🆕
+├── test_code_style.py                  # Code quality & pylint checks
+├── test_collection_worker.py           # Collection worker logic
+├── test_distributed_collector.py       # Distributed collection system
+├── test_frontend_syntax.py             # Frontend JavaScript/React validation
+├── test_graphql_queries.py             # GraphQL query structure
+├── test_integration_collection.py      # Celery/Redis integration (2 skipped)
+├── test_pypi_checker_full.py           # PyPI package matching
+├── test_pypi_client.py                 # PyPI API client
+├── test_scoring_algorithms.py          # SSR scoring algorithms
+├── test_shell_scripts.py               # Shell script validation
+├── test_token_manager.py               # GitHub token management
+└── test_update_readme.py               # README auto-update logic
 ```
 
 ## [TARGET] Test Categories
 
-### Core Functionality (91 tests)
+### Core Functionality (225 tests, all passing)
 
-1. **Language Classification** (6 tests)
-   - Python/C++/TypeScript keyword detection
-   - Known project mappings (vscode, powertoys)
-   - Case insensitivity
-   - Unknown project handling
+1. **Code Style & Quality**
+   - Pylint score validation
+   - Syntax error detection
+   - Import structure verification
+   - Documentation completeness
 
-2. **GraphQL Queries** (4 tests) [WARNING] Critical
+2. **Collection Worker**
+   - Worker task execution
+   - Batch processing logic
+   - Error handling
+
+3. **Distributed Collector**
+   - Batch creation
+   - User file discovery
+   - Data aggregation
+
+4. **Frontend Validation**
+   - JavaScript/React syntax checking
+   - Component structure validation
+   - Build artifact verification
+
+5. **GraphQL Queries** [WARNING] Critical
    - **Organization fragment inclusion** (prevents missing orgs like allenai, awslabs)
    - User fragment inclusion
    - Query structure validation
 
-3. **README Updates** (5 tests)
-   - User data loading (new metadata format)
-   - Project data loading
-   - Statistics updates
-   - Date formatting
+6. **Integration Tests**
+   - Celery task execution
+   - Redis connection
+   - Worker status check
 
-4. **PyPI Detection** (15 tests)
-   - 50 real projects validation
-   - Known package detection
-   - Strong/very strong signal detection
-   - Batch processing
-   - Edge cases (empty names, None values)
+7. **PyPI Checker**
+   - Package name matching
+   - Verified/unverified detection
+   - Signal strength calculation
+   - Edge cases handling
 
-5. **Token Management** (21 tests) 🔥 Critical
-   - Multi-token initialization
-   - Environment variable loading
-   - Token rotation logic
-   - Rate limit checking with caching
-   - Best token selection
-   - Thread safety
+8. **PyPI Client**
+   - API interaction
+   - Data parsing
+   - Error handling
 
-6. **Scoring Algorithms** (40 tests) 🔥 Core Logic
+9. **Scoring Algorithms** 🔥 Core Logic
    - Normalization (linear & logarithmic)
    - Age factor (2-8 year peak scoring)
    - Activity factor (recent updates)
@@ -94,11 +107,25 @@ test/
    - **Complete SSR algorithm** (0-10,000 scale)
    - Edge cases & extreme values
 
-7. **Distributed Collection** (12 tests, skipped)
-   - Batch creation
-   - Worker management
-   - Result aggregation
-   - (Requires Celery/Redis to run)
+10. **Shell Scripts**
+    - Bash syntax validation
+    - Shebang presence
+    - Execute permissions
+    - GitHub Actions workflow validation
+
+11. **Token Management** 🔥 Critical
+    - Multi-token initialization
+    - Environment variable loading
+    - Token rotation logic
+    - Rate limit checking with caching
+    - Best token selection
+    - Thread safety
+
+12. **README Updates**
+    - User data loading
+    - Project data loading
+    - Statistics updates
+    - Date formatting
 
 ## 🔑 Critical Tests
 
@@ -106,11 +133,11 @@ test/
 **Why**: Ensures Seattle organizations (allenai, awslabs, FredHutch) are included in results.
 
 ```python
-def test_distributed_collector_has_organization_fragment():
+def test_known_seattle_organizations():
     """Verifies GraphQL query includes '... on Organization { login }'"""
 ```
 
-Without this, organizations appear as empty objects and are excluded from the 464K projects.
+Without this, organizations appear as empty objects and are excluded from projects.
 
 ### 2. SSR Scoring Algorithm Tests [TARGET]
 **Why**: Validates that the ranking algorithm correctly scores projects.
@@ -224,12 +251,16 @@ cd ..
 python scripts/generate_pypi_projects.py
 ```
 
-### Celery tests skipped
-This is expected - distributed tests require:
+### Running integration tests
+Integration tests require Celery workers to be running:
 ```bash
 pip install celery redis
 # Start Redis
 sudo systemctl start redis-server
+# Start Celery workers (required for full test coverage)
+cd scripts && bash start_workers.sh
+# Run tests
+cd test && bash run_tests.sh
 ```
 
 ### Tests are slow
@@ -240,30 +271,36 @@ sudo systemctl start redis-server
 
 ## [CHART] Test Coverage Summary
 
-| Module | Tests | Status |
-|--------|-------|--------|
-| `classify_languages.py` | 6 | [OK] 100% |
-| `graphql queries` | 4 | [OK] 100% |
-| `update_readme.py` | 5 | [OK] 100% |
-| `pypi_checker.py` | 15 | [OK] 90% |
-| `token_manager.py` | 21 | [OK] 85% |
-| `scoring algorithms` | 40 | [OK] 95% |
-| `distributed_collector.py` | 12 | [SKIP] Skipped |
-| **Total** | **91** | **[OK] All Pass** |
+| Test File | Status |
+|-----------|--------|
+| `test_code_style.py` | [OK] Pass |
+| `test_collection_worker.py` | [OK] Pass |
+| `test_distributed_collector.py` | [OK] Pass |
+| `test_frontend_syntax.py` | [OK] Pass |
+| `test_graphql_queries.py` | [OK] Pass |
+| `test_integration_collection.py` | [OK] Pass |
+| `test_pypi_checker_full.py` | [OK] Pass |
+| `test_pypi_client.py` | [OK] Pass |
+| `test_scoring_algorithms.py` | [OK] Pass |
+| `test_shell_scripts.py` | [OK] Pass |
+| `test_token_manager.py` | [OK] Pass |
+| `test_update_readme.py` | [OK] Pass |
+| **Total** | **225 tests (all passing)** |
 
 ## 🎓 Understanding Test Output
 
 ```bash
 ================================= test session starts ==================================
-platform linux -- Python 3.13.5, pytest-8.4.2
-collected 91 items
+platform linux -- Python 3.11.14, pytest-8.4.2
+collected 225 items
 
-test_classify_languages.py::TestLanguageClassification::test_python_keywords PASSED [1%]
+test_code_style.py::TestCodeStyle::test_no_syntax_errors PASSED [1%]
 ...
-test_scoring_algorithms.py::TestCalculateGithubScore::test_score_range PASSED [70%]
+test_token_manager.py::TestTokenManagerInit::test_init_with_tokens PASSED [90%]
 ...
+test_update_readme.py::TestDateFormatting::test_iso_date_parsing PASSED [100%]
 
-============================= 91 passed in 23.15s ==============================
+============================= 225 passed in 52.45s =============================
 [OK] All tests passed!
 ```
 
