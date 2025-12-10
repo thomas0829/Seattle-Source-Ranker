@@ -6,7 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Discover and rank open source projects from Seattle's tech community**
-<img width="3839" height="1969" alt="螢幕擷取畫面 2025-12-10 121942" src="https://github.com/user-attachments/assets/21aba3d2-1ed9-41ec-bb19-d723d705b3ab" />
+
+![Seattle Source Ranker](frontend/public/og-image.png)
 
 A comprehensive system that collects, validates, and ranks open source projects from Seattle-based GitHub users. Features three-stage API collection strategy, intelligent multi-factor scoring, secondary validation workflow, distributed processing with Celery/Redis, PyPI integration, and automated daily updates via GitHub Actions.
 
@@ -289,7 +290,7 @@ open htmlcov/index.html
   - Scoring module: 100%
   - PyPI detection: 97%
   - Token management: 94%
-- **Code Quality**: pylint 8.14/10
+- **Code Quality**: pylint 8.08/10
 - **Test Types**: Unit tests, integration tests, syntax validation
 - **Total Tests**: 225 tests across 12 test files
 
@@ -385,10 +386,10 @@ Having issues? Check the **[Troubleshooting Guide](doc/TROUBLESHOOTING.md)** for
 - **[Component Specification](doc/component_specification.md)** - 7 software components, interactions, workflows, and implementation details
 
 ### Technical Documentation
-- **[VERSION_HISTORY.md](doc/VERSION_HISTORY.md)** - Project changelog and version history
-- **[MULTI_TOKEN_GUIDE.md](doc/MULTI_TOKEN_GUIDE.md)** - 6-token setup, rotation strategy, and performance optimization
-- **[USER_STORIES.md](doc/USER_STORIES.md)** - Detailed user personas and use cases
-- **[TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md)** - Common issues, solutions, and FAQs
+- **[Version History](doc/VERSION_HISTORY.md)** - Project changelog and version history
+- **[Multi Token Guide](doc/MULTI_TOKEN_GUIDE.md)** - 6-token setup, rotation strategy, and performance optimization
+- **[User Stories](doc/USER_STORIES.md)** - Detailed user personas and use cases
+- **[Troubleshooting](doc/TROUBLESHOOTING.md)** - Common issues, solutions, and FAQs
 
 ---
 
@@ -412,7 +413,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <div align="center">
 
-**Seattle Source Ranker Beta v4.2** - Three-stage API collection with secondary validation
+**Seattle Source Ranker v1.0** - Production-ready ranking system with advanced search and PyPI integration
 
 *Statistics automatically updated daily by GitHub Actions at midnight Seattle time.*
 
