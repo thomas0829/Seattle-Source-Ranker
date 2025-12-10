@@ -533,6 +533,10 @@ export default function PythonRankingsPage() {
         setCurrentPage(newPage);
         const newParams = new URLSearchParams(searchParams);
         newParams.set('page', newPage.toString());
+        // Preserve search query in URL
+        if (debouncedSearchQuery.trim()) {
+            newParams.set('search', debouncedSearchQuery);
+        }
         setSearchParams(newParams);
     };
 
