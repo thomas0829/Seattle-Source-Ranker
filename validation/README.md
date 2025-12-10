@@ -169,6 +169,90 @@ Seattle-Source-Ranker/
 
 ---
 
+# 📊 Manual Random Sampling Validation (Human-Audited Location Check)
+
+To evaluate the real-world reliability of GitHub location metadata, we manually audited **50 randomly sampled GitHub users** and compared:
+
+- GitHub profile location  
+- External profiles (LinkedIn, personal websites, company pages)  
+- Public employment / bio / project metadata  
+
+This cross-verification helps confirm whether GitHub location data is a valid proxy for real user location — an essential assumption for this project.
+
+---
+
+## 📈 Sampling Results (50 Users)
+
+| Category | Count | Percentage |
+|----------|--------|------------|
+| **Matched (GitHub location = external profile)** | **44** | **88%** |
+| **Mismatched (conflicts or unverifiable)** | **6** | **12%** |
+
+---
+
+## 🥧 Visual Breakdown
+
+```
+Matched      ████████████████████████████████████████  44 (88%)
+Mismatched   ████                                      6 (12%)
+```
+
+---
+
+## 🔍 Interpretation of Mismatches (6 Users)
+
+The 6 mismatches typically fell into the following categories:
+
+### ❗ 1. Users who relocated but never updated GitHub  
+- GitHub still shows “Seattle”  
+- LinkedIn lists a new city (e.g., SF / NYC / remote)
+
+
+### ❗ 2. Missing external references  
+- No LinkedIn / personal website  
+- No self-reported external location  
+- Not strictly a mismatch, but unverifiable
+
+---
+
+## 📌 Meaning for Our Project
+
+An **88% match rate** demonstrates:
+
+### ✔ GitHub user location is generally reliable  
+### ✔ Filtering Seattle users based on GitHub metadata is statistically supported  
+### ✔ The observed mismatch rate is reasonable in public datasets  
+### ✔ Manual sampling strengthens dataset credibility  
+
+---
+
+## 📁 Sampling File
+
+```
+validation/if_seattle_Random_manual_sampling.xlsx
+```
+
+Contains fields such as:
+
+- GitHub username  
+- GitHub location field  
+- External profile URL  
+- Match? (Yes / No)  
+- Notes on mismatch reasoning  
+
+---
+
+## 🧾 Conclusion
+
+This manual audit adds a human-verification layer on top of automated validation.
+
+**Even with a 12% mismatch rate, our sampling strongly supports the use of GitHub location as a meaningful proxy for identifying Seattle-based developers.**
+
+This provides additional real-world endorsement for the correctness and robustness of our dataset filtering logic.
+
+
+---
+
 # 🌐 **Technologies**
 - Python  
 - GitHub REST API  
