@@ -52,6 +52,7 @@ export default function OverallRankingsPage() {
     const previousFiltersRef = useRef({ languages: selectedLanguages, showAll, search: debouncedSearchQuery });
     const tableFlashTimeoutRef = useRef(null);
     const isInitialLoadRef = useRef(true); // Track if this is the initial page load
+    const previousLangsParamRef = useRef(searchParams.get('langs'));
 
     // Use refs to track current values without causing re-renders
     const currentPageRef = useRef(currentPage);
@@ -136,14 +137,18 @@ export default function OverallRankingsPage() {
             }
         }
         
-        // Update language filter
-        if (langsParam) {
-            const langs = langsParam.split(',').filter(l => l);
-            setSelectedLanguages(langs);
-            setShowAll(langs.length === 0);
-        } else if (!searchParam) {
-            setSelectedLanguages([]);
-            setShowAll(true);
+        // Update language filter - only if langs param actually changed
+        if (langsParam !== previousLangsParamRef.current) {
+            previousLangsParamRef.current = langsParam;
+            if (langsParam) {
+                const langs = langsParam.split(',').filter(l => l);
+                setSelectedLanguages(langs);
+                setShowAll(langs.length === 0);
+            } else if (!searchParam) {
+                // Only reset languages if no search param either
+                setSelectedLanguages([]);
+                setShowAll(true);
+            }
         }
         
         // Update page number
@@ -460,10 +465,6 @@ export default function OverallRankingsPage() {
         setCurrentPage(newPage);
         const newParams = new URLSearchParams(searchParams);
         newParams.set('page', newPage.toString());
-        // Clear search param if search query is empty
-        if (!searchQuery.trim()) {
-            newParams.delete('search');
-        }
         setSearchParams(newParams);
     };
 
@@ -1114,7 +1115,13 @@ export default function OverallRankingsPage() {
 
     return (
         <div className="container">
-            <Link to="/" className="back-btn">
+            <Link 
+                to={{
+                    pathname: "/",
+                    search: searchParams.toString()
+                }}
+                className="back-btn"
+            >
                 ‹ Back
             </Link>
 
@@ -1151,24 +1158,45 @@ export default function OverallRankingsPage() {
                                         setShowSuggestions(false);
                                         setSelectedSuggestionIndex(-1);
                                         setSearchSuggestions([]);
-                                        setCurrentPage(1);
                                         
                                         // Determine which language category to use
                                         const topLanguages = ['JavaScript', 'Python', 'HTML', 'Java', 'Jupyter Notebook', 
                                                               'TypeScript', 'C#', 'Ruby', 'CSS', 'C++'];
                                         
                                         if (topLanguages.includes(selectedText)) {
-                                            // It's a top 10 language - select it and clear search
-                                            setShowAll(false);
-                                            setSelectedLanguages([selectedText]);
+                                            // It's a top 10 language - use the same logic as clicking the filter checkbox
+                                            // Clear search input
                                             setSearchQuery('');
                                             setDebouncedSearchQuery('');
+                                            
+                                            // Toggle the language (same as handleLanguageToggle)
+                                            const newLanguages = [selectedText];
+                                            setSelectedLanguages(newLanguages);
+                                            setShowAll(false);
+                                            setCurrentPage(1);
+                                            
+                                            // Update URL
+                                            const newParams = new URLSearchParams(searchParams);
+                                            newParams.set('langs', newLanguages.join(','));
+                                            newParams.set('page', '1');
+                                            newParams.delete('search');
+                                            setSearchParams(newParams);
                                         } else {
                                             // It's from Other category - select Other and search for exact language
+                                            const newLanguages = ['Other'];
+                                            setSelectedLanguages(newLanguages);
                                             setShowAll(false);
-                                            setSelectedLanguages(['Other']);
-                                            setSearchQuery(`language:${selectedText}`);
-                                            setDebouncedSearchQuery(`language:${selectedText}`);
+                                            const languageSearch = `language:${selectedText}`;
+                                            setSearchQuery(languageSearch);
+                                            setDebouncedSearchQuery(languageSearch);
+                                            setCurrentPage(1);
+                                            
+                                            // Update URL
+                                            const newParams = new URLSearchParams(searchParams);
+                                            newParams.set('langs', newLanguages.join(','));
+                                            newParams.set('search', languageSearch);
+                                            newParams.set('page', '1');
+                                            setSearchParams(newParams);
                                         }
                                     } else {
                                         // For owner/topic suggestions, set active owner and skip scan animation
@@ -1280,24 +1308,45 @@ export default function OverallRankingsPage() {
                                             setShowSuggestions(false);
                                             setSelectedSuggestionIndex(-1);
                                             setSearchSuggestions([]);
-                                            setCurrentPage(1);
                                             
                                             // Determine which language category to use
                                             const topLanguages = ['JavaScript', 'Python', 'HTML', 'Java', 'Jupyter Notebook', 
                                                                   'TypeScript', 'C#', 'Ruby', 'CSS', 'C++'];
                                             
                                             if (topLanguages.includes(selectedText)) {
-                                                // It's a top 10 language - select it and clear search
-                                                setShowAll(false);
-                                                setSelectedLanguages([selectedText]);
+                                                // It's a top 10 language - use the same logic as clicking the filter checkbox
+                                                // Clear search input
                                                 setSearchQuery('');
                                                 setDebouncedSearchQuery('');
+                                                
+                                                // Toggle the language (same as handleLanguageToggle)
+                                                const newLanguages = [selectedText];
+                                                setSelectedLanguages(newLanguages);
+                                                setShowAll(false);
+                                                setCurrentPage(1);
+                                                
+                                                // Update URL
+                                                const newParams = new URLSearchParams(searchParams);
+                                                newParams.set('langs', newLanguages.join(','));
+                                                newParams.set('page', '1');
+                                                newParams.delete('search');
+                                                setSearchParams(newParams);
                                             } else {
                                                 // It's from Other category - select Other and search for exact language
+                                                const newLanguages = ['Other'];
+                                                setSelectedLanguages(newLanguages);
                                                 setShowAll(false);
-                                                setSelectedLanguages(['Other']);
-                                                setSearchQuery(`language:${selectedText}`);
-                                                setDebouncedSearchQuery(`language:${selectedText}`);
+                                                const languageSearch = `language:${selectedText}`;
+                                                setSearchQuery(languageSearch);
+                                                setDebouncedSearchQuery(languageSearch);
+                                                setCurrentPage(1);
+                                                
+                                                // Update URL
+                                                const newParams = new URLSearchParams(searchParams);
+                                                newParams.set('langs', newLanguages.join(','));
+                                                newParams.set('search', languageSearch);
+                                                newParams.set('page', '1');
+                                                setSearchParams(newParams);
                                             }
                                         } else {
                                             // For owner/topic suggestions, check if it's an owner and skip scan animation
