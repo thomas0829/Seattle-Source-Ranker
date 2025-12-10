@@ -291,7 +291,7 @@ open htmlcov/index.html
   - Token management: 94%
 - **Code Quality**: pylint 8.14/10
 - **Test Types**: Unit tests, integration tests, syntax validation
-- **Total Tests**: 225 tests across 13 test files
+- **Total Tests**: 225 tests across 12 test files
 
 ---
 
