@@ -1,62 +1,62 @@
 {
   "languages": {
     "Other": {
-      "total": 122459,
-      "pages": 2450
+      "total": 120401,
+      "pages": 2409
     },
     "JavaScript": {
-      "total": 96542,
-      "pages": 1931
+      "total": 95098,
+      "pages": 1902
     },
     "Python": {
-      "total": 54072,
-      "pages": 1082
+      "total": 53252,
+      "pages": 1066
     },
     "HTML": {
-      "total": 40520,
-      "pages": 811
+      "total": 39907,
+      "pages": 799
     },
     "Java": {
-      "total": 27398,
-      "pages": 548
+      "total": 26909,
+      "pages": 539
     },
     "TypeScript": {
-      "total": 17647,
-      "pages": 353
-    },
-    "Jupyter Notebook": {
-      "total": 17449,
+      "total": 17419,
       "pages": 349
     },
+    "Jupyter Notebook": {
+      "total": 17239,
+      "pages": 345
+    },
     "C#": {
-      "total": 16637,
-      "pages": 333
+      "total": 16339,
+      "pages": 327
     },
     "Ruby": {
-      "total": 14664,
-      "pages": 294
+      "total": 14327,
+      "pages": 287
     },
     "CSS": {
-      "total": 13639,
-      "pages": 273
+      "total": 13466,
+      "pages": 270
     },
     "C++": {
-      "total": 12412,
-      "pages": 249
+      "total": 12202,
+      "pages": 245
     },
     "All": {
-      "total": 433439,
+      "total": 426559,
       "pages": 200,
-      "max_score": 887917,
+      "max_score": 887918,
       "min_score": 120000
     },
     "Python_PyPI": {
-      "total": 54072,
-      "pages": 1082,
-      "max_score": 868262,
-      "min_score": 161630
+      "total": 53252,
+      "pages": 1066,
+      "max_score": 868246,
+      "min_score": 161622
     }
   },
   "page_size": 50,
-  "last_updated": "2025-12-17 01:49:36 PST"
+  "last_updated": "2025-12-18 01:50:09 PST"
 }
