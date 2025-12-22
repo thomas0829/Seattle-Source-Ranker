@@ -42,17 +42,6 @@ A comprehensive system that collects, validates, and ranks open source projects 
 
 ---
 
-## Team & Contributions
-
-| Team Member | Role | Contributions |
-|------------|------|---------------|
-| **thomas0829** | Project Lead & Full-Stack Developer | • System architecture & distributed processing<br>• Frontend/Backend implementation<br>• GitHub API integration & optimization<br>• PyPI integration & Python rankings<br>• Automated deployment & CI/CD |
-| **Wenshu0206** | Mobile UI/UX Designer | • Mobile responsive design<br>• Mobile interface optimization |
-| **Muwen320** | Scoring Algorithm Specialist | • SSR scoring algorithm design<br>• Algorithm documentation |
-| **Chase-Zou** | Data Validation & Reliability Engineer | • Validation methods design<br>• Data quality assurance<br>• Verification mechanisms<br>• Integrity testing |
-
----
-
 ## Key Features
 
 ### Core Functionality
