@@ -5,11 +5,13 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Discover and rank open source projects from Seattle's tech community**
+> **Discover and rank Seattle's top GitHub projects and open source repositories**
 
 ![Seattle Source Ranker](frontend/public/og-image.png)
 
-A comprehensive system that collects, validates, and ranks open source projects from Seattle-based GitHub users. Features three-stage API collection strategy, intelligent multi-factor scoring, secondary validation workflow, distributed processing with Celery/Redis, PyPI integration, and automated daily updates via GitHub Actions.
+**GitHub Seattle | Seattle Source | Seattle GitHub Projects**
+
+A comprehensive system that collects, validates, and ranks open source projects from Seattle-based GitHub users. Search Seattle source code, explore GitHub Seattle rankings, and discover trending repositories from Seattle's tech community. Features three-stage API collection strategy, intelligent multi-factor scoring, secondary validation workflow, distributed processing with Celery/Redis, PyPI integration, and automated daily updates via GitHub Actions.
 
 **Live Website**: [https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)
 
