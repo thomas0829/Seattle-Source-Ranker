@@ -1,7 +1,20 @@
 # https://www.robotstxt.org/robotstxt.html
+# Seattle Source Ranker - GitHub Projects Rankings
 User-agent: *
 Allow: /
 Disallow: /static/
+Disallow: /*.json$
+
+# Crawl-delay
+Crawl-delay: 0
 
 # Sitemap
 Sitemap: https://thomas0829.github.io/Seattle-Source-Ranker/sitemap.xml
+
+# Google
+User-agent: Googlebot
+Allow: /
+
+# Bing
+User-agent: Bingbot
+Allow: /
