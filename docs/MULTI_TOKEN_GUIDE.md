@@ -265,10 +265,9 @@ time.sleep(0.05)  # Adjust between requests (default: 50ms)
 
 ## Additional Resources
 
-- [Functional Specification](functional_specification.md) - User profiles, use cases, data sources
-- [Component Specification](component_specification.md) - System components and workflows
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
 - [Changelog](../CHANGELOG.md) - Version history and release notes
+- [Contributing](../CONTRIBUTING.md) - How to contribute to this project
 - [GitHub API Documentation](https://docs.github.com/en/rest) - REST API reference
 
 ---
