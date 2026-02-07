@@ -311,4 +311,4 @@ Initial implementation of weighted scoring:
 
 ## Back to Main Documentation
 
-← [Return to README](../README.md) - Main project documentation and quick start guide
+← [Return to README](README.md)

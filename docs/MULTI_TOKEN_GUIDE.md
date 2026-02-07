@@ -268,12 +268,11 @@ time.sleep(0.05)  # Adjust between requests (default: 50ms)
 - [Functional Specification](functional_specification.md) - User profiles, use cases, data sources
 - [Component Specification](component_specification.md) - System components and workflows
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
-- [User Stories](USER_STORIES.md) - Use cases and scenarios
-- [Version History](VERSION_HISTORY.md) - Project changelog
+- [Changelog](../CHANGELOG.md) - Version history and release notes
 - [GitHub API Documentation](https://docs.github.com/en/rest) - REST API reference
 
 ---
 
 ## Back to Main Documentation
 
-← [Return to README](../README.md) - Main project documentation and quick start guide
+← [Return to README](../README.md)

@@ -88,4 +88,4 @@ A: **No**. Frontend data files are regenerated during deployment. Only commit:
 
 ## Back to Main Documentation
 
-← [Return to README](../README.md) - Main project documentation and quick start guide
+← [Return to README](../README.md)
