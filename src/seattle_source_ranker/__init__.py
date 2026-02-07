@@ -23,7 +23,7 @@ Example:
     >>> token = tm.get_token()
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "thomas0829"
 
 # Import main components for easy access
