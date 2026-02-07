@@ -84,4 +84,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-[Return to README](README.md)
+← [Return to README](README.md)
