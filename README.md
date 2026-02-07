@@ -226,7 +226,7 @@ The tiered system rewards both PyPI publication and global ecosystem impact whil
 
 Projects are ranked both **overall** and **by programming language** (10 major categories: JavaScript, Python, HTML, Java, TypeScript, C#, Ruby, CSS, C++, Jupyter Notebook).
 
-For detailed factor calculations and examples, visit the [Scoring Methodology](https://thomas0829.github.io/Seattle-Source-Ranker/#/scoring) page on the live website.
+For detailed factor calculations and examples, visit the [Scoring Methodology](https://thomas0829.github.io/Seattle-Source-Ranker/scoring) page on the live website.
 
 ---
 
