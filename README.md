@@ -9,9 +9,7 @@
 
 ![Seattle Source Ranker](frontend/public/og-image.png)
 
-**GitHub Seattle | Seattle Source | Seattle GitHub Projects**
-
-A comprehensive system that collects, validates, and ranks open source projects from Seattle-based GitHub users. Search Seattle source code, explore GitHub Seattle rankings, and discover trending repositories from Seattle's tech community. Features three-stage API collection strategy, intelligent multi-factor scoring, secondary validation workflow, distributed processing with Celery/Redis, PyPI integration, and automated weekly updates via GitHub Actions.
+A comprehensive system that collects, validates, and ranks open source projects from Seattle-based GitHub users. Features three-stage API collection strategy, intelligent multi-factor scoring, secondary validation workflow, distributed processing with Celery/Redis, PyPI integration, and automated weekly updates via GitHub Actions.
 
 **Live Website**: [https://thomas0829.github.io/Seattle-Source-Ranker/](https://thomas0829.github.io/Seattle-Source-Ranker/)
 
