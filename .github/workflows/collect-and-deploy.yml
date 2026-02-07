@@ -3,7 +3,7 @@ name: Collect Data and Deploy Website
 on:
   schedule:
     # Daily at UTC 08:00 (Seattle 00:00 PST / 01:00 PDT)
-    - cron: '0 8 * * *'
+    - cron: '0 8 * * 1'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
