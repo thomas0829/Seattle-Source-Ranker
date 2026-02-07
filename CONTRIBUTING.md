@@ -81,3 +81,7 @@ All tests should pass before your PR can be merged.
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
+
+---
+
+[Return to README](README.md)
