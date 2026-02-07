@@ -1,8 +1,13 @@
-# Version History
+# Changelog
 
-## v1.0 (2025-12-10) - Production Release
+All notable changes to Seattle Source Ranker will be documented in this file.
 
-### Highlights
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2026-02-06
+
+### Added
 - **Production-ready release** - Stable search and pagination functionality
 - **Client-side pagination** - Search results cached for instant page navigation
 - **URL state persistence** - Search queries preserved across page changes
@@ -199,14 +204,14 @@
 ## Beta-v3.1 (2025-11-15) - GitHub Actions Automation
 
 ### Highlights
-- **Automated daily collection** - Runs at midnight Seattle time (08:00 UTC)
+- **Automated weekly collection** - Runs every Monday at midnight Seattle time (08:00 UTC)
 - **GraphQL Search API** - 76 pre-optimized filters for efficient user discovery
 - **Seattle timezone support** - All timestamps in America/Los_Angeles timezone
 - **Simplified documentation** - README reduced from 632 to 224 lines (-65%)
 - **Separated detailed docs** - Architecture and version history in dedicated files
 
 ### Automation Features
-- Daily scheduled collection via GitHub Actions
+- Weekly scheduled collection via GitHub Actions (every Monday)
 - Automatic README statistics update
 - Frontend rebuild and deployment to GitHub Pages
 - Intelligent failure protection with rollback

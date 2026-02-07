@@ -1,6 +1,6 @@
 [project]
 name = "seattle-source-ranker"
-version = "0.1.0"
+version = "1.0.0"
 description = "Discover and rank open source projects from Seattle's tech community"
 readme = "README.md"
 requires-python = ">=3.11"
