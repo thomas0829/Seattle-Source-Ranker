@@ -533,10 +533,24 @@ def update_watchers_batch_task(self, repos_batch):
 
     results = {}
     attempt = 0
+    max_attempts = 20
+    task_start_time = time.time()
+    max_task_duration = 3000  # 50 minutes - must finish before Celery's 3600s hard limit
     
-    # Use while loop for retries - keep trying until success
+    # Use while loop for retries - with safety limits
     while True:
         attempt += 1
+        
+        # Safety: check if we're running out of time or attempts
+        elapsed = time.time() - task_start_time
+        if attempt > max_attempts or elapsed > max_task_duration:
+            print(f"[SAFETY] Stopping retries: attempt={attempt}, elapsed={elapsed:.0f}s")
+            print(f"[SAFETY] Returning partial results ({len(results)}/{len(repo_keys)} repos)")
+            # Mark remaining repos as None (unknown) so they are kept
+            for repo_key in repo_keys:
+                if repo_key not in results:
+                    results[repo_key] = None
+            return results
         
         try:
             # Execute GraphQL query

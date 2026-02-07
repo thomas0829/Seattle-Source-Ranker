@@ -121,15 +121,23 @@ def monitor_celery_task(result, total_tasks: int, desc: str = "Processing",
         progress.update(total_tasks, force=True)
         progress.finish()
         
-        # Get results (will raise exception if task failed)
+        # Collect results individually - tolerate failed tasks
         print(f"\n[STATS] Collecting results...")
-        try:
-            results = result.get()
-            return results
-        except Exception as e:
-            print(f"\n[FATAL ERROR] Task failed: {e}")
-            print("[ABORT] Data collection/verification incomplete")
-            raise
+        results = []
+        failed_count = 0
+        for i, child in enumerate(result.results):
+            try:
+                res = child.get(timeout=30)
+                results.append(res)
+            except Exception as e:
+                failed_count += 1
+                print(f"\n[WARNING] Task {i+1}/{total_tasks} failed: {type(e).__name__}: {e}")
+                results.append(None)  # Use None as placeholder for failed tasks
+        
+        if failed_count > 0:
+            print(f"[WARNING] {failed_count}/{total_tasks} tasks failed, {total_tasks - failed_count} succeeded")
+        
+        return results
             
     except KeyboardInterrupt:
         progress.finish()
