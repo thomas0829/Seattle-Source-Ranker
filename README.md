@@ -154,7 +154,7 @@ cd frontend && npm start
 
 ---
 
-## Enhanced SSR Scoring Algorithm
+## SSR Scoring Algorithm
 
 Projects are ranked using a comprehensive multi-factor scoring system that balances popularity with quality and maintenance signals.
 
