@@ -32,7 +32,7 @@ Thank you for your interest in contributing to Seattle Source Ranker! This docum
 
 3. **Test your changes**:
    ```bash
-   cd test && bash run_tests.sh
+   pytest tests/ -v
    ```
 
 4. **Commit your changes**:
@@ -60,8 +60,7 @@ Thank you for your interest in contributing to Seattle Source Ranker! This docum
 Run the test suite before submitting PRs:
 
 ```bash
-cd test
-bash run_tests.sh
+pytest tests/ -v
 ```
 
 All tests should pass before your PR can be merged.

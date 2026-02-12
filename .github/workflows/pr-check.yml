@@ -91,8 +91,7 @@ jobs:
     - name: Run code style tests
       run: |
         echo "🎨 Running code style checks..."
-        cd test
-        pytest test_code_style.py -v
+        pytest tests/quality/test_code_style.py -v
     
     - name: Summary
       if: always()
@@ -176,8 +175,7 @@ jobs:
     - name: Run distributed collector tests
       run: |
         echo "[TEST] Running distributed collector tests..."
-        cd test
-        pytest test_distributed_collector.py -v
+        pytest tests/unit/test_distributed_collector.py -v
     
     - name: Summary
       if: always()
@@ -206,8 +204,7 @@ jobs:
     - name: Run GraphQL tests
       run: |
         echo "[TEST] Running GraphQL query tests..."
-        cd test
-        pytest test_graphql_queries.py -v
+        pytest tests/unit/test_graphql_queries.py -v
     
     - name: Summary
       if: always()
@@ -236,8 +233,7 @@ jobs:
     - name: Run scoring tests
       run: |
         echo "[TEST] Running scoring algorithm tests..."
-        cd test
-        pytest test_scoring_algorithms.py -v
+        pytest tests/unit/test_scoring_algorithms.py -v
     
     - name: Summary
       if: always()
@@ -266,8 +262,7 @@ jobs:
     - name: Run token manager tests
       run: |
         echo "[TEST] Running token manager tests..."
-        cd test
-        pytest test_token_manager.py -v
+        pytest tests/unit/test_token_manager.py -v
     
     - name: Summary
       if: always()
@@ -296,8 +291,7 @@ jobs:
     - name: Run update README tests
       run: |
         echo "[TEST] Running update README tests..."
-        cd test
-        pytest test_update_readme.py -v
+        pytest tests/unit/test_update_readme.py -v
     
     - name: Summary
       if: always()
@@ -326,8 +320,7 @@ jobs:
     - name: Run PyPI checker tests
       run: |
         echo "[TEST] Running PyPI checker tests..."
-        cd test
-        pytest test_pypi_checker_full.py -v
+        pytest tests/unit/test_pypi_checker_full.py -v
     
     - name: Summary
       if: always()
@@ -404,11 +397,10 @@ jobs:
     
     - name: Run tests with coverage
       run: |
-        cd test
         unset PYTHONPATH
         unset ROS_DISTRO
         unset AMENT_PREFIX_PATH
-        python -m pytest --cov=../src/seattle_source_ranker --cov-report=term --cov-report=xml --cov-report=html -v
+        python -m pytest tests/ --cov=src/seattle_source_ranker --cov-report=term --cov-report=xml --cov-report=html -v
     
     - name: Generate coverage summary
       if: always()
