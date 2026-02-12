@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Discover and rank open source projects from Seattle's tech community"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
+license = "Apache-2.0"
 authors = [ { name = "thomas0829" } ]
 
 dependencies = [
